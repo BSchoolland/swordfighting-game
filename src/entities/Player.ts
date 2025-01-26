@@ -1,16 +1,17 @@
 import * as PIXI from 'pixi.js';
+import { Entity } from './Entity';
+import { Sword } from './Sword';
+import { Enemy } from './Enemy';
 
-export class Player extends PIXI.Container {
+export class Player extends Entity {
     private sprite: PIXI.Graphics;
     private speed: number = 2.5;
     private dashSpeed: number = 10;
-    private bounds: { width: number; height: number };
     private dashDirection: { dx: number, dy: number } | null = null;
+    private sword: Sword;
 
     constructor(screenBounds: { width: number; height: number }) {
-        super();
-        
-        this.bounds = screenBounds;
+        super(screenBounds, 100); // 100 health points
         
         // Create a simple player sprite (blue triangle for directional visibility)
         this.sprite = new PIXI.Graphics();
@@ -22,9 +23,15 @@ export class Player extends PIXI.Container {
         this.sprite.endFill();
         
         this.addChild(this.sprite);
+
+        // Add sword
+        this.sword = new Sword();
+        this.addChild(this.sword);
     }
 
-    public update(keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean): void {
+    public update(delta: number, keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean, enemies: Enemy[]): void {
+        if (!this.isAlive()) return;
+
         // Calculate movement vector
         let dx = 0;
         let dy = 0;
@@ -60,17 +67,20 @@ export class Player extends PIXI.Container {
 
         // Apply movement
         const currentSpeed = isDashing ? this.dashSpeed : this.speed;
-        this.x += dx * currentSpeed;
-        this.y += dy * currentSpeed;
+        this.velocity.x = dx * currentSpeed;
+        this.velocity.y = dy * currentSpeed;
 
-        // Clamp position to screen bounds
-        const halfWidth = 10;
-        const halfHeight = 10;
-        this.x = Math.max(halfWidth, Math.min(this.bounds.width - halfWidth, this.x));
-        this.y = Math.max(halfHeight, Math.min(this.bounds.height - halfHeight, this.y));
+        // Apply velocity and knockback
+        this.applyVelocity();
 
         // Update rotation to face mouse
         const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
         this.rotation = angle;
+
+        // Handle sword
+        if (keys.has('KeyE')) {
+            this.sword.swing();
+        }
+        this.sword.update(delta, enemies);
     }
 } 

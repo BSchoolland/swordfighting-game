@@ -1,17 +1,22 @@
 import * as PIXI from 'pixi.js';
 import { Player } from '../entities/Player';
-import { TargetCursor } from '../entities/TargetCursor';
+import { Enemy } from '../entities/Enemy';
 import { InputManager } from '../systems/InputManager';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
-    private targetCursor: TargetCursor;
+    private enemies: Enemy[] = [];
+    private targetCursor: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
+    private static readonly MAX_ENEMIES = 12;
+    private spawnTimer: number = 0;
+    private static readonly SPAWN_INTERVAL = 2000;
+    private dimensions: { width: number; height: number };
 
     constructor(dimensions: { width: number; height: number }) {
         super();
-
+        this.dimensions = dimensions;
         this.inputManager = new InputManager();
 
         // Create player with fixed game world bounds
@@ -21,8 +26,32 @@ export class GameScene extends PIXI.Container {
         this.addChild(this.player);
 
         // Create target cursor
-        this.targetCursor = new TargetCursor();
+        this.targetCursor = new PIXI.Graphics();
+        this.drawCursor();
         this.addChild(this.targetCursor);
+
+        // Initial enemy spawns
+        for (let i = 0; i < 3; i++) {
+            this.spawnEnemy();
+        }
+    }
+
+    private drawCursor(): void {
+        this.targetCursor.clear();
+        this.targetCursor.lineStyle(2, 0xff0000);
+        this.targetCursor.drawCircle(0, 0, 5);
+        this.targetCursor.moveTo(-8, 0);
+        this.targetCursor.lineTo(8, 0);
+        this.targetCursor.moveTo(0, -8);
+        this.targetCursor.lineTo(0, 8);
+    }
+
+    private spawnEnemy(): void {
+        if (this.enemies.length < GameScene.MAX_ENEMIES) {
+            const enemy = new Enemy(this.dimensions, this.player);
+            this.enemies.push(enemy);
+            this.addChild(enemy);
+        }
     }
 
     public setWorldToScreenScale(scale: number): void {
@@ -30,30 +59,46 @@ export class GameScene extends PIXI.Container {
     }
 
     private screenToWorldSpace(screenX: number, screenY: number): { x: number, y: number } {
-        // Get the game container's global position
         const globalPos = this.getGlobalPosition();
-        
-        // Convert screen coordinates to world space
         return {
             x: (screenX - globalPos.x) / this.worldToScreenScale,
             y: (screenY - globalPos.y) / this.worldToScreenScale
         };
     }
 
-    public update(): void {
+    public update(delta: number): void {
         // Convert mouse position to world space
         const mousePos = this.inputManager.getMousePosition();
         const worldPos = this.screenToWorldSpace(mousePos.x, mousePos.y);
         
         // Update target cursor position
-        this.targetCursor.updatePosition(worldPos.x, worldPos.y);
+        this.targetCursor.position.set(worldPos.x, worldPos.y);
         
-        // Update player with mouse position and dash state
+        // Update player
         this.player.update(
+            delta,
             this.inputManager.getKeys(),
             worldPos.x,
             worldPos.y,
-            this.inputManager.isDashActive()
+            this.inputManager.isDashActive(),
+            this.enemies
         );
+
+        // Update enemies and remove dead ones
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i];
+            enemy.update(delta);
+            if (!enemy.isAlive()) {
+                this.removeChild(enemy);
+                this.enemies.splice(i, 1);
+            }
+        }
+
+        // Handle enemy spawning
+        this.spawnTimer += delta;
+        if (this.spawnTimer >= GameScene.SPAWN_INTERVAL) {
+            this.spawnTimer = 0;
+            this.spawnEnemy();
+        }
     }
 } 
