@@ -16,10 +16,12 @@ export class Enemy extends Entity {
     private sword: Sword;
     private attackRange: number;
     private retreatRange: number;
+    private canMoveWhileWindingUp: boolean = false;
 
-    constructor(bounds: { width: number; height: number }, player: Player) {
+    constructor(bounds: { width: number; height: number }, player: Player, canMoveWhileWindingUp: boolean = false) {
         super(bounds, 40);
         this.player = player;
+        this.canMoveWhileWindingUp = canMoveWhileWindingUp;
 
         this.sprite = new PIXI.Graphics();
         this.sprite.beginFill(0xff0000);
@@ -60,8 +62,12 @@ export class Enemy extends Entity {
     public update(delta: number): void {
         if (!this.isAlive()) return;
 
+        // Update sword first
+        this.sword.update(delta, [this.player]);
+
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
+        // Handle stun and knockback first
         if (this.stunned) {
             this.stunTimer -= delta * 16.67;
             if (this.stunTimer <= 0 || currentSpeed < Enemy.KNOCKBACK_THRESHOLD) {
@@ -71,9 +77,16 @@ export class Enemy extends Entity {
                     this.velocity.y = 0;
                 }
             }
+            // Apply velocity and knockback while stunned
+            this.applyVelocity();
+            return;
         }
 
-        if (!this.stunned) {
+        // Don't move if winding up and not allowed to
+        if (this.sword.isInWindUp() && !this.canMoveWhileWindingUp) {
+            this.velocity.x = 0;
+            this.velocity.y = 0;
+        } else if (!this.stunned) {
             const dx = this.player.x - this.x;
             const dy = this.player.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -89,11 +102,11 @@ export class Enemy extends Entity {
                     this.velocity.y += Math.sin(angle) * this.speed;
                 } else if (distance < this.retreatRange) {
                     // Back away if too close
-                    this.velocity.x -= Math.cos(angle) * this.speed * 1.2; // Faster retreat
+                    this.velocity.x -= Math.cos(angle) * this.speed * 1.2;
                     this.velocity.y -= Math.sin(angle) * this.speed * 1.2;
                 } else {
                     // In perfect range, slow down and attack
-                    this.velocity.x *= 0.8; // Faster deceleration
+                    this.velocity.x *= 0.8;
                     this.velocity.y *= 0.8;
                     this.sword.swing();
                 }
@@ -111,9 +124,6 @@ export class Enemy extends Entity {
                 this.velocity.y *= 0.95;
             }
         }
-
-        // Update sword
-        this.sword.update(delta, [this.player]);
 
         // Apply velocity and knockback
         this.applyVelocity();

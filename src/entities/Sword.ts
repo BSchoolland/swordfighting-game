@@ -3,12 +3,17 @@ import { Entity } from './Entity';
 
 export class Sword extends PIXI.Container {
     private sprite: PIXI.Graphics;
+    private previewSprite: PIXI.Graphics;
     private isSwinging: boolean = false;
+    private isWindingUp: boolean = false;
     private swingAngle: number = 0;
     private lastSwingTime: number = 0;
+    private windUpTimer: number = 0;
     private hitEntities: Set<Entity> = new Set();
     private owner: Entity;
     private isEnemy: boolean;
+    private debugId: string;
+    private windUpStartTime: number = 0;
 
     // Sword parameters
     private static readonly PLAYER_PARAMS = {
@@ -22,7 +27,9 @@ export class Sword extends PIXI.Container {
         SWING_INFLUENCE: 0.5,
         COLOR: 0xFFFFFF,
         OPTIMAL_RANGE: 0.8, // Multiplier of blade length for optimal range
-        RETREAT_RANGE: 0.6  // Multiplier of blade length for retreat range
+        RETREAT_RANGE: 0.6,  // Multiplier of blade length for retreat range
+        WIND_UP_TIME: 100, // Shorter delay for player
+        PREVIEW_ALPHA: 0.4
     };
 
     private static readonly ENEMY_PARAMS = {
@@ -36,13 +43,25 @@ export class Sword extends PIXI.Container {
         SWING_INFLUENCE: 0.3,
         COLOR: 0xFF6666,
         OPTIMAL_RANGE: 0.9, // Enemies try to stay a bit closer
-        RETREAT_RANGE: 0.7
+        RETREAT_RANGE: 0.7,
+        WIND_UP_TIME: 300, // Longer delay for enemies
+        PREVIEW_ALPHA: 0.3
     };
 
     constructor(owner: Entity, isEnemy: boolean = false) {
         super();
         this.owner = owner;
         this.isEnemy = isEnemy;
+        this.debugId = isEnemy ? `Enemy_${Math.floor(Math.random() * 1000)}` : 'Player';
+        console.log(`[${this.debugId}] Sword created`);
+
+        // Create preview sprite (lighter version of sword)
+        this.previewSprite = new PIXI.Graphics();
+        this.drawPreviewSword();
+        this.addChild(this.previewSprite);
+        this.previewSprite.visible = false;
+
+        // Create main sword sprite
         this.sprite = new PIXI.Graphics();
         this.drawSword();
         this.addChild(this.sprite);
@@ -67,15 +86,41 @@ export class Sword extends PIXI.Container {
         this.sprite.endFill();
     }
 
+    private drawPreviewSword(): void {
+        this.previewSprite.clear();
+        this.previewSprite.beginFill(this.PARAMS.COLOR);
+        this.previewSprite.drawRect(0, -this.PARAMS.BLADE_WIDTH/2, this.PARAMS.BLADE_LENGTH, this.PARAMS.BLADE_WIDTH);
+        this.previewSprite.endFill();
+        this.previewSprite.alpha = this.PARAMS.PREVIEW_ALPHA;
+    }
+
     public update(delta: number, targets: Entity[]): void {
+        if (this.isWindingUp) {
+            const currentTime = Date.now();
+            const elapsedWindUpTime = currentTime - this.windUpStartTime;
+            const remainingWindUp = this.PARAMS.WIND_UP_TIME - elapsedWindUpTime;
+            
+            console.log(`Sword wind-up: ${remainingWindUp.toFixed(0)}ms remaining, owner: ${this.isEnemy ? 'Enemy' : 'Player'}`);
+            
+            if (remainingWindUp <= 0) {
+                console.log('Wind-up complete, starting swing');
+                this.isWindingUp = false;
+                this.isSwinging = true;
+                this.previewSprite.visible = false;
+                this.sprite.visible = true;
+                this.swingAngle = 0;
+            }
+        }
+
         if (this.isSwinging) {
-            this.sprite.visible = true;
             this.swingAngle += this.PARAMS.SWING_SPEED;
             this.rotation = -this.PARAMS.SWING_RANGE/2 + this.swingAngle;
+            console.log(`Sword swinging: angle=${(this.swingAngle * 180 / Math.PI).toFixed(1)}°`);
 
             if (this.swingAngle <= this.PARAMS.SWING_RANGE) {
                 this.checkHits(targets);
             } else {
+                console.log('Swing complete');
                 this.isSwinging = false;
                 this.rotation = 0;
                 this.swingAngle = 0;
@@ -87,13 +132,25 @@ export class Sword extends PIXI.Container {
 
     public swing(): void {
         const currentTime = Date.now();
-        if (!this.isSwinging && currentTime - this.lastSwingTime >= this.PARAMS.COOLDOWN) {
-            this.isSwinging = true;
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        console.log(`Swing attempt - cooldown: ${(this.PARAMS.COOLDOWN - timeSinceLastSwing).toFixed(0)}ms remaining`);
+
+        if (!this.isWindingUp && !this.isSwinging && timeSinceLastSwing >= this.PARAMS.COOLDOWN) {
+            console.log('Starting new swing (wind-up)');
+            this.isWindingUp = true;
+            this.windUpStartTime = currentTime;
             this.swingAngle = 0;
+            this.rotation = -this.PARAMS.SWING_RANGE/2;
+            this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
-            this.sprite.visible = true;
             this.hitEntities.clear();
+        } else {
+            console.log(`Swing rejected - ${this.isWindingUp ? 'winding up' : this.isSwinging ? 'swinging' : 'on cooldown'}`);
         }
+    }
+
+    public isInWindUp(): boolean {
+        return this.isWindingUp;
     }
 
     private checkHits(targets: Entity[]): void {
@@ -111,6 +168,7 @@ export class Sword extends PIXI.Container {
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < this.PARAMS.BLADE_LENGTH) {
+                console.log(`[${this.debugId}] Hit detected at distance ${distance.toFixed(1)}`);
                 const knockbackDir = {
                     x: dx / distance,
                     y: dy / distance
