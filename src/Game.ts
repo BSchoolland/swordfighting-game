@@ -11,10 +11,11 @@ export class Game {
     private static readonly GAME_HEIGHT = 600;
 
     constructor() {
+        // Create application with darker background for letterboxed areas
         this.app = new PIXI.Application({
             width: window.innerWidth,
             height: window.innerHeight,
-            backgroundColor: 0x1a1a1a,
+            backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
             antialias: true,
             resolution: window.devicePixelRatio || 1,
             view: document.createElement('canvas') as HTMLCanvasElement,
@@ -23,8 +24,16 @@ export class Game {
 
         document.body.appendChild(this.app.view as HTMLCanvasElement);
 
-        // Create a container for the game world
+        // Create a container for the game world with its own background
         this.gameContainer = new PIXI.Container();
+        
+        // Add a background for the actual game area
+        const gameBackground = new PIXI.Graphics();
+        gameBackground.beginFill(0x1a1a1a); // Lighter gray for game area
+        gameBackground.drawRect(0, 0, Game.GAME_WIDTH, Game.GAME_HEIGHT);
+        gameBackground.endFill();
+        this.gameContainer.addChild(gameBackground);
+        
         this.app.stage.addChild(this.gameContainer);
         
         // Create the game scene with fixed size
@@ -81,6 +90,9 @@ export class Game {
         this.gameContainer.scale.set(scale);
         this.gameContainer.x = (screenWidth - Game.GAME_WIDTH * scale) / 2;
         this.gameContainer.y = (screenHeight - Game.GAME_HEIGHT * scale) / 2;
+
+        // Update scene with new scale
+        this.currentScene.setWorldToScreenScale(scale);
     }
 
     private update(): void {
