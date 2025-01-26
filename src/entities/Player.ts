@@ -15,18 +15,33 @@ export class Player extends Entity {
         
         // Create a simple player sprite (blue triangle for directional visibility)
         this.sprite = new PIXI.Graphics();
+        this.drawSprite();
+        this.addChild(this.sprite);
+
+        // Add sword
+        this.sword = new Sword(this, false);
+        this.addChild(this.sword);
+    }
+
+    private drawSprite(): void {
+        this.sprite.clear();
         this.sprite.beginFill(0x3498db);
         this.sprite.moveTo(-10, -10);
         this.sprite.lineTo(10, 0);
         this.sprite.lineTo(-10, 10);
         this.sprite.lineTo(-10, -10);
         this.sprite.endFill();
-        
-        this.addChild(this.sprite);
+    }
 
-        // Add sword
-        this.sword = new Sword();
-        this.addChild(this.sword);
+    public reset(): void {
+        this.health = this.maxHealth;
+        this.velocity.x = 0;
+        this.velocity.y = 0;
+        this.dashDirection = null;
+    }
+
+    public getMaxHealth(): number {
+        return this.maxHealth;
     }
 
     public update(delta: number, keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean, enemies: Enemy[]): void {

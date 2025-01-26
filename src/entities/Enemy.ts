@@ -1,23 +1,26 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from './Entity';
 import { Player } from './Player';
+import { Sword } from './Sword';
 
 export class Enemy extends Entity {
     private sprite: PIXI.Graphics;
-    private speed: number = 0.5; // Halved speed
+    private speed: number = 0.5;
     private player: Player;
-    private static readonly CHASE_RANGE = 250; // Slightly increased chase range
-    private maxSpeed: number = 2; // Cap on velocity
+    private static readonly CHASE_RANGE = 250;
+    private maxSpeed: number = 2;
     private stunned: boolean = false;
     private stunTimer: number = 0;
-    private static readonly STUN_DURATION = 200; // milliseconds
-    private static readonly KNOCKBACK_THRESHOLD = 0.5; // Speed threshold to exit stun
+    private static readonly STUN_DURATION = 200;
+    private static readonly KNOCKBACK_THRESHOLD = 0.5;
+    private sword: Sword;
+    private attackRange: number;
+    private retreatRange: number;
 
     constructor(bounds: { width: number; height: number }, player: Player) {
-        super(bounds, 40); // Increased health points
+        super(bounds, 40);
         this.player = player;
 
-        // Create enemy sprite (red triangle)
         this.sprite = new PIXI.Graphics();
         this.sprite.beginFill(0xff0000);
         this.sprite.moveTo(-10, -10);
@@ -28,11 +31,18 @@ export class Enemy extends Entity {
         
         this.addChild(this.sprite);
 
-        // Random starting position away from player
+        this.sword = new Sword(this, true);
+        this.addChild(this.sword);
+
+        // Get weapon ranges
+        const ranges = this.sword.getRange();
+        this.attackRange = ranges.attackRange;
+        this.retreatRange = ranges.retreatRange;
+
         do {
             this.x = Math.random() * (bounds.width - 20) + 10;
             this.y = Math.random() * (bounds.height - 20) + 10;
-        } while (this.distanceToPlayer() < 150); // Ensure minimum spawn distance
+        } while (this.distanceToPlayer() < 150);
     }
 
     private distanceToPlayer(): number {
@@ -50,16 +60,12 @@ export class Enemy extends Entity {
     public update(delta: number): void {
         if (!this.isAlive()) return;
 
-        // Get current velocity magnitude
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
-        // Update stun state
         if (this.stunned) {
             this.stunTimer -= delta * 16.67;
-            // Exit stun if timer expired or knockback has slowed significantly
             if (this.stunTimer <= 0 || currentSpeed < Enemy.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
-                // Clear remaining knockback velocity when exiting stun
                 if (currentSpeed < Enemy.KNOCKBACK_THRESHOLD) {
                     this.velocity.x = 0;
                     this.velocity.y = 0;
@@ -67,30 +73,47 @@ export class Enemy extends Entity {
             }
         }
 
-        // Only chase if not stunned
         if (!this.stunned) {
             const dx = this.player.x - this.x;
             const dy = this.player.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            
+            // Always face the player
+            this.rotation = angle;
 
             if (distance < Enemy.CHASE_RANGE) {
-                const angle = Math.atan2(dy, dx);
-                this.velocity.x += Math.cos(angle) * this.speed;
-                this.velocity.y += Math.sin(angle) * this.speed;
-                this.rotation = angle;
+                if (distance > this.attackRange) {
+                    // Move towards player if too far
+                    this.velocity.x += Math.cos(angle) * this.speed;
+                    this.velocity.y += Math.sin(angle) * this.speed;
+                } else if (distance < this.retreatRange) {
+                    // Back away if too close
+                    this.velocity.x -= Math.cos(angle) * this.speed * 1.2; // Faster retreat
+                    this.velocity.y -= Math.sin(angle) * this.speed * 1.2;
+                } else {
+                    // In perfect range, slow down and attack
+                    this.velocity.x *= 0.8; // Faster deceleration
+                    this.velocity.y *= 0.8;
+                    this.sword.swing();
+                }
 
-                // Cap chase velocity
+                // Cap velocity
+                const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
                 if (currentSpeed > this.maxSpeed) {
                     const scale = this.maxSpeed / currentSpeed;
                     this.velocity.x *= scale;
                     this.velocity.y *= scale;
                 }
             } else {
-                // Slow down when out of range
+                // Outside chase range, slow down
                 this.velocity.x *= 0.95;
                 this.velocity.y *= 0.95;
             }
         }
+
+        // Update sword
+        this.sword.update(delta, [this.player]);
 
         // Apply velocity and knockback
         this.applyVelocity();

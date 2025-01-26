@@ -43,5 +43,5 @@ export abstract class Entity extends PIXI.Container {
         this.y = Math.max(halfHeight, Math.min(this.bounds.height - halfHeight, this.y));
     }
 
-    abstract update(delta: number): void;
+    public abstract update(...args: any[]): void;
 } 
