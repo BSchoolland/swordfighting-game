@@ -1,13 +1,16 @@
 import * as PIXI from 'pixi.js';
 import { Player } from '../entities/Player';
-import { Enemy } from '../entities/Enemy';
+import { BaseEnemy } from '../entities/enemies/BaseEnemy';
+import { BasicEnemy } from '../entities/enemies/BasicEnemy';
+import { FastEnemy } from '../entities/enemies/FastEnemy';
+import { TankEnemy } from '../entities/enemies/TankEnemy';
 import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
-    private enemies: Enemy[] = [];
+    private enemies: BaseEnemy[] = [];
     private targetCursor: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
@@ -95,7 +98,17 @@ export class GameScene extends PIXI.Container {
 
     private spawnEnemy(): void {
         if (this.enemies.length < GameScene.MAX_ENEMIES) {
-            const enemy = new Enemy(this.dimensions, this.player);
+            let enemy: BaseEnemy;
+            const roll = Math.random();
+            
+            if (roll < 0.2) { // 20% chance for tank
+                enemy = new TankEnemy(this.dimensions, this.player);
+            } else if (roll < 0.5) { // 30% chance for fast
+                enemy = new FastEnemy(this.dimensions, this.player);
+            } else { // 50% chance for basic
+                enemy = new BasicEnemy(this.dimensions, this.player);
+            }
+            
             this.enemies.push(enemy);
             this.addChild(enemy);
         }
@@ -130,7 +143,8 @@ export class GameScene extends PIXI.Container {
             worldPos.x,
             worldPos.y,
             this.inputManager.isDashActive(),
-            this.enemies
+            this.enemies,
+            this.inputManager.isAttacking()
         );
 
         // Update health bar

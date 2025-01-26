@@ -1,14 +1,14 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from './Entity';
-import { Sword } from './Sword';
-import { Enemy } from './Enemy';
+import { BasicSword } from './weapons/BasicSword';
+import { BaseEnemy } from './enemies/BaseEnemy';
 
 export class Player extends Entity {
     private sprite: PIXI.Graphics;
     private speed: number = 2.5;
     private dashSpeed: number = 10;
     private dashDirection: { dx: number, dy: number } | null = null;
-    private sword: Sword;
+    private sword: BasicSword;
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -19,7 +19,7 @@ export class Player extends Entity {
         this.addChild(this.sprite);
 
         // Add sword
-        this.sword = new Sword(this, false);
+        this.sword = new BasicSword(this, false);
         this.addChild(this.sword);
     }
 
@@ -44,7 +44,7 @@ export class Player extends Entity {
         return this.maxHealth;
     }
 
-    public update(delta: number, keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean, enemies: Enemy[]): void {
+    public update(delta: number, keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean, enemies: BaseEnemy[], isAttacking: boolean): void {
         if (!this.isAlive()) return;
 
         // Calculate movement vector
@@ -93,7 +93,7 @@ export class Player extends Entity {
         this.rotation = angle;
 
         // Handle sword
-        if (keys.has('KeyE')) {
+        if (isAttacking) {
             this.sword.swing();
         }
         this.sword.update(delta, enemies);

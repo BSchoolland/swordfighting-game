@@ -3,6 +3,7 @@ export class InputManager {
     private mousePosition: { x: number, y: number } = { x: 0, y: 0 };
     private isDashing: boolean = false;
     private lastDashTime: number = 0;
+    private isMouseDown: boolean = false;
     private static readonly DASH_COOLDOWN = 500; // milliseconds
     private static readonly DASH_DURATION = 200; // milliseconds
 
@@ -11,6 +12,12 @@ export class InputManager {
         window.addEventListener('keyup', (e) => this.keys.delete(e.code));
         window.addEventListener('mousemove', (e) => {
             this.mousePosition = { x: e.clientX, y: e.clientY };
+        });
+        window.addEventListener('mousedown', () => {
+            this.isMouseDown = true;
+        });
+        window.addEventListener('mouseup', () => {
+            this.isMouseDown = false;
         });
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
@@ -52,5 +59,9 @@ export class InputManager {
 
     public getKeys(): Set<string> {
         return this.keys;
+    }
+
+    public isAttacking(): boolean {
+        return this.isMouseDown;
     }
 } 
