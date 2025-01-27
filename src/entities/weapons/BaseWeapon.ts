@@ -81,11 +81,12 @@ export abstract class BaseWeapon extends PIXI.Container {
         }
 
         if (this.isSwinging) {
+            const prevAngle = this.rotation;
             this.swingAngle += this.stats.swingSpeed;
             this.rotation = -this.stats.swingRange/2 + this.swingAngle;
 
             if (this.swingAngle <= this.stats.swingRange) {
-                this.checkHits(targets);
+                this.checkHits(targets, prevAngle);
             } else {
                 this.isSwinging = false;
                 this.rotation = 0;
@@ -115,36 +116,45 @@ export abstract class BaseWeapon extends PIXI.Container {
         return this.isWindingUp;
     }
 
-    protected checkHits(targets: Entity[]): void {
-        const globalPos = this.getGlobalPosition();
-        const weaponTip = {
-            x: globalPos.x + Math.cos(this.rotation) * this.stats.bladeLength,
-            y: globalPos.y + Math.sin(this.rotation) * this.stats.bladeLength
-        };
-
+    protected checkHits(targets: Entity[], prevAngle: number): void {
         targets.forEach(target => {
             if (target === this.owner || !target.isAlive() || this.hitEntities.has(target)) return;
 
             const dx = target.x - this.owner.x;
             const dy = target.y - this.owner.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-
+            // Check if target is in range
             if (distance < this.stats.bladeLength) {
-                const knockbackDir = {
-                    x: dx / distance,
-                    y: dy / distance
-                };
+                // Get angle to target relative to world coordinates
+                const angleToTarget = Math.atan2(dy, dx);
                 
-                const swingFactor = Math.sin(this.swingAngle - this.stats.swingRange/2) * this.stats.swingInfluence;
-                knockbackDir.x += Math.cos(this.rotation + Math.PI/2) * swingFactor;
-                knockbackDir.y += Math.sin(this.rotation + Math.PI/2) * swingFactor;
+                // Get the weapon's world angle by adding owner's rotation
+                const weaponWorldAngle = this.rotation + this.owner.rotation;
                 
-                const length = Math.sqrt(knockbackDir.x * knockbackDir.x + knockbackDir.y * knockbackDir.y);
-                knockbackDir.x /= length;
-                knockbackDir.y /= length;
+                // Normalize angles to [-PI, PI] range
+                const normalizedWeaponAngle = ((weaponWorldAngle % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+                const normalizedTargetAngle = ((angleToTarget % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
                 
-                target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
-                this.hitEntities.add(target);
+                // Calculate the absolute angular difference accounting for wrap-around
+                let angleDiff = Math.abs(normalizedWeaponAngle - normalizedTargetAngle);
+                if (angleDiff > Math.PI) {
+                    angleDiff = 2 * Math.PI - angleDiff;
+                }
+
+                console.log(`[${this.debugId}] weaponAngle: ${normalizedWeaponAngle.toFixed(2)}, targetAngle: ${normalizedTargetAngle.toFixed(2)}, diff: ${angleDiff.toFixed(2)}`);
+
+                // Check if the weapon is pointing towards the target within the hit arc
+                if (angleDiff < Math.PI/6) {  // Increased hit arc slightly to 30 degrees
+                    console.log(`[${this.debugId}] Target hit`);
+                    // Knockback direction is directly away from player
+                    const knockbackDir = {
+                        x: dx / distance,
+                        y: dy / distance
+                    };
+                    
+                    target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
+                    this.hitEntities.add(target);
+                }
             }
         });
     }

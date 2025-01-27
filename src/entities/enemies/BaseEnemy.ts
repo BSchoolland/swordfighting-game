@@ -47,7 +47,7 @@ export abstract class BaseEnemy extends Entity {
         do {
             this.x = Math.random() * (bounds.width - 20) + 10;
             this.y = Math.random() * (bounds.height - 20) + 10;
-        } while (this.distanceToPlayer() < 150);
+        } while (this.distanceToPlayer() < 250);
     }
 
     protected abstract initializeWeapon(): void;

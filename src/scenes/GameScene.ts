@@ -8,19 +8,56 @@ import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
 
+interface WaveConfig {
+    basicEnemyChance: number;
+    fastEnemyChance: number;
+    tankEnemyChance: number;
+    totalEnemies: number;
+    spawnInterval: number;
+}
+
 export class GameScene extends PIXI.Container {
     private player: Player;
     private enemies: BaseEnemy[] = [];
     private targetCursor: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
-    private static readonly MAX_ENEMIES = 12;
+    private static readonly MAX_ENEMIES = 15;
     private spawnTimer: number = 0;
-    private static readonly SPAWN_INTERVAL = 2000;
+    private static readonly DEFAULT_SPAWN_INTERVAL = 2000;
     private dimensions: { width: number; height: number };
     private healthBar: HealthBar;
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
+
+    // Wave system
+    private currentWave: number = 1;
+    private enemiesRemainingInWave: number = 0;
+    private waveComplete: boolean = false;
+    private waveText: PIXI.Text;
+    private static readonly WAVE_BREAK_DURATION = 5000; // 5 seconds between waves
+    private waveBreakTimer: number = 0;
+
+    private getWaveConfig(wave: number): WaveConfig {
+        // Base configuration
+        const config: WaveConfig = {
+            basicEnemyChance: 0.5,
+            fastEnemyChance: 0.3,
+            tankEnemyChance: 0.2,
+            totalEnemies: 10 + Math.floor(wave * 2), // Increases by 2 each wave
+            spawnInterval: Math.max(500, 2000 - wave * 100) // Gets faster each wave, minimum 500ms
+        };
+
+        // Adjust enemy distribution based on wave
+        if (wave > 5) {
+            // After wave 5, gradually increase harder enemies
+            config.basicEnemyChance = Math.max(0.3, 0.5 - (wave - 5) * 0.02);
+            config.fastEnemyChance = Math.min(0.4, 0.3 + (wave - 5) * 0.01);
+            config.tankEnemyChance = Math.min(0.3, 0.2 + (wave - 5) * 0.01);
+        }
+
+        return config;
+    }
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -43,10 +80,18 @@ export class GameScene extends PIXI.Container {
         this.healthBar.position.set(20, 20);
         this.addChild(this.healthBar);
 
-        // Initial enemy spawns
-        for (let i = 0; i < 3; i++) {
-            this.spawnEnemy();
-        }
+        // Create wave text
+        this.waveText = new PIXI.Text('Wave 1', {
+            fontFamily: 'Arial',
+            fontSize: 24,
+            fill: 0xffffff,
+            align: 'center'
+        });
+        this.waveText.position.set(dimensions.width - 150, 20);
+        this.addChild(this.waveText);
+
+        // Start first wave
+        this.startWave(1);
 
         // Listen for restart
         window.addEventListener('keydown', (e) => {
@@ -56,28 +101,41 @@ export class GameScene extends PIXI.Container {
         });
     }
 
+    private startWave(waveNumber: number): void {
+        this.currentWave = waveNumber;
+        const config = this.getWaveConfig(waveNumber);
+        this.enemiesRemainingInWave = config.totalEnemies;
+        this.waveComplete = false;
+        this.spawnTimer = 0; // Reset spawn timer at wave start
+        this.waveText.text = `Wave ${waveNumber}`;
+        
+        // Initial spawn of enemies
+        const initialSpawns = Math.min(5, config.totalEnemies);
+        for (let i = 0; i < initialSpawns; i++) {
+            this.spawnEnemy();
+        }
+    }
+
     private restart(): void {
-        // Remove game over screen
         if (this.gameOverScreen) {
             this.removeChild(this.gameOverScreen);
             this.gameOverScreen = null;
         }
 
-        // Reset player
         this.player.reset();
         this.player.x = this.dimensions.width / 2;
         this.player.y = this.dimensions.height / 2;
 
-        // Clear enemies
         this.enemies.forEach(enemy => this.removeChild(enemy));
         this.enemies = [];
 
-        // Spawn initial enemies
-        for (let i = 0; i < 3; i++) {
-            this.spawnEnemy();
-        }
-
+        this.currentWave = 1;
         this.isGameOver = false;
+        this.waveComplete = false;
+        this.waveBreakTimer = 0;
+        this.spawnTimer = 0; // Reset spawn timer on restart
+        
+        this.startWave(1);
     }
 
     private showGameOver(): void {
@@ -97,20 +155,22 @@ export class GameScene extends PIXI.Container {
     }
 
     private spawnEnemy(): void {
-        if (this.enemies.length < GameScene.MAX_ENEMIES) {
+        if (this.enemies.length < GameScene.MAX_ENEMIES && this.enemiesRemainingInWave > 0) {
+            const config = this.getWaveConfig(this.currentWave);
             let enemy: BaseEnemy;
             const roll = Math.random();
             
-            if (roll < 0.2) { // 20% chance for tank
+            if (roll < config.tankEnemyChance) {
                 enemy = new TankEnemy(this.dimensions, this.player);
-            } else if (roll < 0.5) { // 30% chance for fast
+            } else if (roll < config.tankEnemyChance + config.fastEnemyChance) {
                 enemy = new FastEnemy(this.dimensions, this.player);
-            } else { // 50% chance for basic
+            } else {
                 enemy = new BasicEnemy(this.dimensions, this.player);
             }
             
             this.enemies.push(enemy);
             this.addChild(enemy);
+            this.enemiesRemainingInWave--;
         }
     }
 
@@ -127,7 +187,31 @@ export class GameScene extends PIXI.Container {
     }
 
     public update(delta: number): void {
+        // Safeguard against undefined delta
+        if (delta === undefined) {
+            delta = 1/60;
+        }
+
         if (this.isGameOver) return;
+
+        // Handle wave breaks
+        if (this.waveComplete) {
+            // delta is in seconds, convert to ms and ensure it's not too large
+            const deltaMs = Math.min(delta * 1000, 100); // Cap at 100ms to prevent huge jumps
+            this.waveBreakTimer += deltaMs;
+            
+            
+            if (this.waveBreakTimer >= GameScene.WAVE_BREAK_DURATION) {
+                this.waveBreakTimer = 0;
+                this.waveComplete = false; // Reset wave complete flag
+                this.startWave(this.currentWave + 1);
+            } else {
+                // Show wave complete message during break
+                const secondsRemaining = Math.ceil((GameScene.WAVE_BREAK_DURATION - this.waveBreakTimer) / 1000);
+                this.waveText.text = `Wave ${this.currentWave} Complete!\nNext wave in ${secondsRemaining}...`;
+            }
+            return; // Don't process other updates during wave break
+        }
 
         // Convert mouse position to world space
         const mousePos = this.inputManager.getMousePosition();
@@ -163,14 +247,39 @@ export class GameScene extends PIXI.Container {
             if (!enemy.isAlive()) {
                 this.removeChild(enemy);
                 this.enemies.splice(i, 1);
+
+                // Check wave completion after each enemy death
+                if (this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
+                    this.waveComplete = true;
+                    this.waveBreakTimer = 0;
+                }
             }
         }
 
-        // Handle enemy spawning
-        this.spawnTimer += delta;
-        if (this.spawnTimer >= GameScene.SPAWN_INTERVAL) {
-            this.spawnTimer = 0;
-            this.spawnEnemy();
+        // Handle enemy spawning during waves
+        if (!this.waveComplete && this.enemiesRemainingInWave > 0) {
+            const config = this.getWaveConfig(this.currentWave);
+            const spawnInterval = config.spawnInterval || GameScene.DEFAULT_SPAWN_INTERVAL;
+            const deltaMs = Math.min(delta * 1000, 100); // Cap at 100ms to prevent huge jumps
+            
+            
+            
+            if (typeof this.spawnTimer !== 'number') {
+                this.spawnTimer = 0;
+            }
+            
+            this.spawnTimer += deltaMs;
+            
+            if (this.spawnTimer >= spawnInterval) {
+                this.spawnTimer = 0;
+                this.spawnEnemy();
+            }
+        }
+
+        // Check for wave completion after all updates
+        if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
+            this.waveComplete = true;
+            this.waveBreakTimer = 0;
         }
     }
 } 
