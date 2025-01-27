@@ -9,6 +9,7 @@ import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
 import { Projectile } from '../entities/projectiles/Projectile';
+import { SoundManager } from '../systems/SoundManager';
 
 interface WaveConfig {
     basicEnemyChance: number;
@@ -33,6 +34,7 @@ export class GameScene extends PIXI.Container {
     private healthBar: HealthBar;
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
+    private soundManager: SoundManager;
 
     // Wave system
     private currentWave: number = 1;
@@ -51,8 +53,8 @@ export class GameScene extends PIXI.Container {
             fastEnemyChance: 0,
             tankEnemyChance: 0,
             rangedEnemyChance: 0,
-            totalEnemies: wave + Math.floor(wave * 3),
-            spawnInterval: Math.max(500, 2000 - wave * 100) // Gets faster each wave, minimum 500ms
+            totalEnemies: 1 + Math.floor(wave * 3),
+            spawnInterval: 1500 // Gets faster each wave, minimum 500ms
         };
 
         // Wave 2: Introduce Fast Enemies
@@ -91,6 +93,10 @@ export class GameScene extends PIXI.Container {
         super();
         this.dimensions = dimensions;
         this.inputManager = new InputManager();
+        this.soundManager = SoundManager.getInstance();
+        
+        // Initialize sound system
+        this.soundManager.initialize().catch(console.error);
 
         // Create player with fixed game world bounds
         this.player = new Player(dimensions);
@@ -162,10 +168,14 @@ export class GameScene extends PIXI.Container {
         this.waveText.text = `Wave ${waveNumber}`;
         this.canSpawnEnemies = false;
         
+        // Play wave start sound
+        this.soundManager.playWaveStartSound();
+        
         // Heal player by 30% of missing health between waves
         if (waveNumber > 1) {
             const healAmount = Math.floor(30);
             this.player.heal(healAmount);
+            this.soundManager.playHealSound();
         }
 
         // Show wave announcement
@@ -199,6 +209,7 @@ export class GameScene extends PIXI.Container {
         this.isGameOver = true;
         this.gameOverScreen = new GameOverScreen(this.dimensions.width, this.dimensions.height);
         this.addChild(this.gameOverScreen);
+        this.soundManager.playGameOverSound();
     }
 
     private drawCursor(): void {

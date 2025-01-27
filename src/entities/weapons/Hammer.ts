@@ -4,8 +4,8 @@ import { BaseWeapon, WeaponStats } from './BaseWeapon';
 
 export class Hammer extends BaseWeapon {
     private static readonly ENEMY_PARAMS: WeaponStats = {
-        swingSpeed: 0.15, // Slower swing
-        swingRange: Math.PI * 0.6, // Smaller arc but powerful
+        swingSpeed: 0.1, // Slower swing
+        swingRange: Math.PI / 0.8, 
         damage: 25, // High damage
         knockback: 8, // Strong knockback
         attackSpeed: 2500, // Slow attack speed

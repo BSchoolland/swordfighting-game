@@ -10,6 +10,7 @@ export class Dash extends BaseAbility {
     private dashDirection: { dx: number, dy: number } | null = null;
     private originalSpeed: number;
     private dashSpeed: number = 10;
+    private dashForce: number = 20;
 
     constructor(owner: Entity, stats: AbilityStats = Dash.DEFAULT_STATS) {
         super(owner, stats);
@@ -17,7 +18,21 @@ export class Dash extends BaseAbility {
         this.originalSpeed = owner.getSpeed();
     }
 
+    public tryActivate(): boolean {
+        const currentTime = Date.now();
+        if (currentTime - this.lastUseTime >= this.stats.cooldown) {
+            this.activate();
+            return true;
+        }
+        return false;
+    }
+
     protected onActivate(): void {
+        // Apply dash force
+        const angle = this.owner.rotation;
+        this.owner.velocity.x += Math.cos(angle) * this.dashForce;
+        this.owner.velocity.y += Math.sin(angle) * this.dashForce;
+
         // Calculate dash direction from current movement
         const velocity = this.owner.getVelocity();
         const length = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
