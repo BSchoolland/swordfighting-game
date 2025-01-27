@@ -8,6 +8,7 @@ export abstract class Entity extends PIXI.Container {
     public target: Entity | null = null;
     protected bounds: PIXI.Rectangle;
     protected friction: number = 0.95;
+    protected speed: number = 1.5;  // Default movement speed
 
     constructor(bounds: { width: number; height: number }, maxHealth: number) {
         super();
@@ -32,6 +33,18 @@ export abstract class Entity extends PIXI.Container {
 
     public getRadius(): number {
         return this.radius;
+    }
+
+    public getSpeed(): number {
+        return this.speed;
+    }
+
+    public setSpeed(speed: number): void {
+        this.speed = speed;
+    }
+
+    public getVelocity(): { x: number, y: number } {
+        return { ...this.velocity };
     }
 
     protected applyVelocity(): void {

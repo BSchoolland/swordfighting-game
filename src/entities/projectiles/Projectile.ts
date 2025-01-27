@@ -8,6 +8,7 @@ export interface ProjectileStats {
     size: number;
     color: number;
     lifetime: number; // How long the projectile lives before despawning
+    maxRange: number; // Maximum distance the projectile can travel
 }
 
 export abstract class Projectile extends Entity {
@@ -16,6 +17,8 @@ export abstract class Projectile extends Entity {
     protected direction: { x: number, y: number };
     protected owner: Entity;
     protected lifetime: number;
+    protected distanceTraveled: number = 0;
+    protected startPos: { x: number, y: number };
 
     constructor(
         bounds: { width: number; height: number },
@@ -30,6 +33,7 @@ export abstract class Projectile extends Entity {
         this.direction = direction;
         this.lifetime = stats.lifetime;
         this.radius = stats.size; // Use projectile size as collision radius
+        this.startPos = { x: startPos.x, y: startPos.y };
         
         // Set initial position
         this.x = startPos.x;
@@ -59,6 +63,25 @@ export abstract class Projectile extends Entity {
         if (this.lifetime <= 0) {
             this.destroy();
             return;
+        }
+
+        // Calculate distance from start position
+        const dx = this.x - this.startPos.x;
+        const dy = this.y - this.startPos.y;
+        this.distanceTraveled = Math.sqrt(dx * dx + dy * dy);
+
+        // Start slowing down after max range
+        if (this.distanceTraveled > this.stats.maxRange) {
+            // Gentle slowdown - reduce speed by 2% per update
+            this.velocity.x *= 0.98;
+            this.velocity.y *= 0.98;
+
+            // Destroy when speed becomes very low
+            const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+            if (currentSpeed < 0.5) {
+                this.destroy();
+                return;
+            }
         }
 
         // Move projectile

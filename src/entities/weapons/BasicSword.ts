@@ -9,7 +9,7 @@ export class BasicSword extends BaseWeapon {
         damage: 15,
         knockback: 5,
         attackSpeed: 1000,
-        bladeLength: 60,
+        bladeLength: 50,
         bladeWidth: 4,
         swingInfluence: 0.5,
         color: 0xFFFFFF,

@@ -9,13 +9,13 @@ export class Hammer extends BaseWeapon {
         damage: 25, // High damage
         knockback: 8, // Strong knockback
         attackSpeed: 2500, // Slow attack speed
-        bladeLength: 45,
+        bladeLength: 60,
         bladeWidth: 8, // Thicker weapon
         swingInfluence: 0.7, // Strong swing influence
         color: 0x666666,
         optimalRange: 0.8,
         retreatRange: 0.6,
-        windUpTime: 500, // Long wind-up
+        windUpTime: 750, // Long wind-up
         previewAlpha: 0.4,
         range: 45
     };

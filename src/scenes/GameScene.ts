@@ -39,23 +39,45 @@ export class GameScene extends PIXI.Container {
     private enemiesRemainingInWave: number = 0;
     private waveComplete: boolean = false;
     private waveText: PIXI.Text;
-    private static readonly WAVE_BREAK_DURATION = 5000; // 5 seconds between waves
-    private waveBreakTimer: number = 0;
+    private waveAnnouncement: PIXI.Text;
+    private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
+    private waveAnnouncementTimer: number = 0;
+    private canSpawnEnemies: boolean = false;
 
     private getWaveConfig(wave: number): WaveConfig {
-        // Base configuration
+        // Base configuration with only basic enemies initially
         const config: WaveConfig = {
-            basicEnemyChance: 0.4,
-            fastEnemyChance: 0.25,
-            tankEnemyChance: 0.15,
-            rangedEnemyChance: 0.2, // 20% chance for ranged enemies
-            totalEnemies: 10 + Math.floor(wave * 2), // Increases by 2 each wave
+            basicEnemyChance: 1.0,
+            fastEnemyChance: 0,
+            tankEnemyChance: 0,
+            rangedEnemyChance: 0,
+            totalEnemies: wave + Math.floor(wave * 3),
             spawnInterval: Math.max(500, 2000 - wave * 100) // Gets faster each wave, minimum 500ms
         };
 
-        // Adjust enemy distribution based on wave
+        // Wave 2: Introduce Fast Enemies
+        if (wave >= 2) {
+            config.basicEnemyChance = 0.7;
+            config.fastEnemyChance = 0.3;
+        }
+
+        // Wave 3: Introduce Ranged Enemies
+        if (wave >= 3) {
+            config.basicEnemyChance = 0.5;
+            config.fastEnemyChance = 0.25;
+            config.rangedEnemyChance = 0.25;
+        }
+
+        // Wave 4: Introduce Tank Enemies
+        if (wave >= 4) {
+            config.basicEnemyChance = 0.4;
+            config.fastEnemyChance = 0.25;
+            config.tankEnemyChance = 0.15;
+            config.rangedEnemyChance = 0.2;
+        }
+
+        // After wave 5, gradually increase harder enemies
         if (wave > 5) {
-            // After wave 5, gradually increase harder enemies
             config.basicEnemyChance = Math.max(0.25, 0.4 - (wave - 5) * 0.02);
             config.fastEnemyChance = Math.min(0.3, 0.25 + (wave - 5) * 0.01);
             config.tankEnemyChance = Math.min(0.2, 0.15 + (wave - 5) * 0.005);
@@ -86,7 +108,7 @@ export class GameScene extends PIXI.Container {
         this.healthBar.position.set(20, 20);
         this.addChild(this.healthBar);
 
-        // Create wave text
+        // Create wave text (top right corner)
         this.waveText = new PIXI.Text('Wave 1', {
             fontFamily: 'Arial',
             fontSize: 24,
@@ -96,13 +118,37 @@ export class GameScene extends PIXI.Container {
         this.waveText.position.set(dimensions.width - 150, 20);
         this.addChild(this.waveText);
 
+        // Create centered wave announcement text
+        this.waveAnnouncement = new PIXI.Text('', {
+            fontFamily: 'Arial',
+            fontSize: 48,
+            fill: 0xffffff,
+            align: 'center'
+        });
+        this.waveAnnouncement.anchor.set(0.5);
+        this.waveAnnouncement.position.set(dimensions.width / 2, dimensions.height / 2);
+        this.waveAnnouncement.alpha = 0;
+        this.addChild(this.waveAnnouncement);
+
         // Start first wave
         this.startWave(1);
 
-        // Listen for restart
+        // Listen for restart and debug keys
         window.addEventListener('keydown', (e) => {
             if (e.code === 'KeyR' && this.isGameOver) {
                 this.restart();
+            }
+            // Debug: Skip to wave number using number keys (1-9)
+            const waveMatch = e.code.match(/Digit([1-9])/);
+            if (waveMatch) {
+                const targetWave = parseInt(waveMatch[1]);
+                console.log(`Debug: Skipping to wave ${targetWave}`);
+                // Clear current enemies
+                this.enemies.forEach(enemy => this.removeChild(enemy));
+                this.enemies = [];
+                this.enemiesRemainingInWave = 0;
+                // Start the target wave
+                this.startWave(targetWave);
             }
         });
     }
@@ -112,14 +158,20 @@ export class GameScene extends PIXI.Container {
         const config = this.getWaveConfig(waveNumber);
         this.enemiesRemainingInWave = config.totalEnemies;
         this.waveComplete = false;
-        this.spawnTimer = 0; // Reset spawn timer at wave start
+        this.spawnTimer = 0;
         this.waveText.text = `Wave ${waveNumber}`;
+        this.canSpawnEnemies = false;
         
-        // Initial spawn of enemies
-        const initialSpawns = Math.min(5, config.totalEnemies);
-        for (let i = 0; i < initialSpawns; i++) {
-            this.spawnEnemy();
+        // Heal player by 30% of missing health between waves
+        if (waveNumber > 1) {
+            const healAmount = Math.floor(30);
+            this.player.heal(healAmount);
         }
+
+        // Show wave announcement
+        this.waveAnnouncement.text = `Wave ${waveNumber}`;
+        this.waveAnnouncement.alpha = 1;
+        this.waveAnnouncementTimer = 0;
     }
 
     private restart(): void {
@@ -138,7 +190,6 @@ export class GameScene extends PIXI.Container {
         this.currentWave = 1;
         this.isGameOver = false;
         this.waveComplete = false;
-        this.waveBreakTimer = 0;
         this.spawnTimer = 0; // Reset spawn timer on restart
         
         this.startWave(1);
@@ -200,30 +251,61 @@ export class GameScene extends PIXI.Container {
     }
 
     public update(delta: number): void {
-        // Safeguard against undefined delta
         if (delta === undefined) {
             delta = 1/60;
         }
 
         if (this.isGameOver) return;
 
-        // Handle wave breaks
-        if (this.waveComplete) {
-            // delta is in seconds, convert to ms and ensure it's not too large
-            const deltaMs = Math.min(delta * 1000, 100); // Cap at 100ms to prevent huge jumps
-            this.waveBreakTimer += deltaMs;
+        // Handle wave announcement fade out
+        if (this.waveAnnouncement.alpha > 0) {
+            const deltaMs = Math.min(delta * 1000, 100);
+            this.waveAnnouncementTimer += deltaMs;
             
-            
-            if (this.waveBreakTimer >= GameScene.WAVE_BREAK_DURATION) {
-                this.waveBreakTimer = 0;
-                this.waveComplete = false; // Reset wave complete flag
-                this.startWave(this.currentWave + 1);
+            if (this.waveAnnouncementTimer >= GameScene.WAVE_ANNOUNCEMENT_DURATION) {
+                this.waveAnnouncement.alpha = 0;
+                // Start spawning enemies when announcement ends
+                if (!this.canSpawnEnemies) {
+                    this.canSpawnEnemies = true;
+                    // Initial spawn of enemies
+                    const config = this.getWaveConfig(this.currentWave);
+                    const initialSpawns = Math.min(5, config.totalEnemies);
+                    for (let i = 0; i < initialSpawns; i++) {
+                        this.spawnEnemy();
+                    }
+                }
             } else {
-                // Show wave complete message during break
-                const secondsRemaining = Math.ceil((GameScene.WAVE_BREAK_DURATION - this.waveBreakTimer) / 1000);
-                this.waveText.text = `Wave ${this.currentWave} Complete!\nNext wave in ${secondsRemaining}...`;
+                // Fade out gradually during the last second
+                const fadeStartTime = GameScene.WAVE_ANNOUNCEMENT_DURATION - 1000;
+                if (this.waveAnnouncementTimer > fadeStartTime) {
+                    this.waveAnnouncement.alpha = 1 - (this.waveAnnouncementTimer - fadeStartTime) / 1000;
+                }
             }
-            return; // Don't process other updates during wave break
+        }
+
+        // Add regular enemy spawning
+        if (this.canSpawnEnemies && this.enemiesRemainingInWave > 0) {
+            const deltaMs = Math.min(delta * 1000, 100);
+            this.spawnTimer += deltaMs;
+            
+            const config = this.getWaveConfig(this.currentWave);
+            const spawnInterval = config.spawnInterval || GameScene.DEFAULT_SPAWN_INTERVAL;
+            
+            if (this.spawnTimer >= spawnInterval) {
+                this.spawnTimer = 0;
+                this.spawnEnemy();
+            }
+        }
+
+        // Debug log wave state
+        if (this.currentWave === 3) {
+            console.log(`Wave 3 state - Enemies alive: ${this.enemies.length}, Remaining to spawn: ${this.enemiesRemainingInWave}`);
+        }
+
+        // Check for wave completion and start next wave immediately
+        if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
+            console.log(`Wave ${this.currentWave} complete! Starting next wave.`);
+            this.startWave(this.currentWave + 1);
         }
 
         // Convert mouse position to world space
@@ -261,39 +343,7 @@ export class GameScene extends PIXI.Container {
             if (!enemy.isAlive()) {
                 this.removeChild(enemy);
                 this.enemies.splice(i, 1);
-
-                // Check wave completion after each enemy death
-                if (this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
-                    this.waveComplete = true;
-                    this.waveBreakTimer = 0;
-                }
             }
-        }
-
-        // Handle enemy spawning during waves
-        if (!this.waveComplete && this.enemiesRemainingInWave > 0) {
-            const config = this.getWaveConfig(this.currentWave);
-            const spawnInterval = config.spawnInterval || GameScene.DEFAULT_SPAWN_INTERVAL;
-            const deltaMs = Math.min(delta * 1000, 100); // Cap at 100ms to prevent huge jumps
-            
-            
-            
-            if (typeof this.spawnTimer !== 'number') {
-                this.spawnTimer = 0;
-            }
-            
-            this.spawnTimer += deltaMs;
-            
-            if (this.spawnTimer >= spawnInterval) {
-                this.spawnTimer = 0;
-                this.spawnEnemy();
-            }
-        }
-
-        // Check for wave completion after all updates
-        if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
-            this.waveComplete = true;
-            this.waveBreakTimer = 0;
         }
 
         // Update projectiles

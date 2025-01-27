@@ -9,7 +9,8 @@ export class Arrow extends Projectile {
         knockback: 3,
         size: 4,
         color: 0xCCCCCC,
-        lifetime: 2000 // 2 seconds
+        lifetime: 2000, // 2 seconds
+        maxRange: 300  // Maximum travel distance
     };
 
     constructor(

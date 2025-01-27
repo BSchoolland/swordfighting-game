@@ -2,10 +2,7 @@ export class InputManager {
     private keys: Set<string> = new Set();
     private mousePosition: { x: number, y: number } = { x: 0, y: 0 };
     private isDashing: boolean = false;
-    private lastDashTime: number = 0;
     private isMouseDown: boolean = false;
-    private static readonly DASH_COOLDOWN = 500; // milliseconds
-    private static readonly DASH_DURATION = 200; // milliseconds
 
     constructor() {
         window.addEventListener('keydown', (e) => this.keys.add(e.code));
@@ -21,22 +18,14 @@ export class InputManager {
         });
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
-                this.tryDash();
+                this.isDashing = true;
             }
         });
-    }
-
-    private tryDash(): void {
-        const currentTime = Date.now();
-        if (!this.isDashing && currentTime - this.lastDashTime >= InputManager.DASH_COOLDOWN) {
-            this.isDashing = true;
-            this.lastDashTime = currentTime;
-            
-            // Automatically end dash after duration
-            setTimeout(() => {
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
                 this.isDashing = false;
-            }, InputManager.DASH_DURATION);
-        }
+            }
+        });
     }
 
     public isKeyPressed(code: string): boolean {
@@ -49,12 +38,6 @@ export class InputManager {
 
     public isDashActive(): boolean {
         return this.isDashing;
-    }
-
-    public getDashCooldownProgress(): number {
-        const currentTime = Date.now();
-        const timeSinceLastDash = currentTime - this.lastDashTime;
-        return Math.min(1, timeSinceLastDash / InputManager.DASH_COOLDOWN);
     }
 
     public getKeys(): Set<string> {

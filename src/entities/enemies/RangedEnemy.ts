@@ -7,7 +7,7 @@ export class RangedEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
         health: 30,
         speed: 0.2, // very slow
-        maxSpeed: 1,
+        maxSpeed: 0.5,
         chaseRange: 400, // Longer range for archer
         color: 0x00AA00, // Green color
         canMoveWhileWindingUp: true, // Can move while drawing bow
