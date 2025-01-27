@@ -1,138 +1,33 @@
 import * as PIXI from 'pixi.js';
 import { Player } from '../entities/Player';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
-import { BasicEnemy } from '../entities/enemies/BasicEnemy';
-import { FastEnemy } from '../entities/enemies/FastEnemy';
-import { TankEnemy } from '../entities/enemies/TankEnemy';
-import { RangedEnemy } from '../entities/enemies/RangedEnemy';
-import { SpearEnemy } from '../entities/enemies/SpearEnemy';
-import { BlitzerEnemy } from '../entities/enemies/BlitzerEnemy';
-import { FlankerEnemy } from '../entities/enemies/FlankerEnemy';
-import { BoomerangEnemy } from '../entities/enemies/BoomerangEnemy';
 import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
 import { Projectile } from '../entities/projectiles/Projectile';
 import { SoundManager } from '../systems/SoundManager';
-
-interface WaveConfig {
-    basicEnemyChance: number;
-    fastEnemyChance: number;
-    tankEnemyChance: number;
-    rangedEnemyChance: number;
-    spearEnemyChance: number;
-    blitzerEnemyChance: number;
-    flankerEnemyChance: number;
-    boomerangEnemyChance: number;
-    totalEnemies: number;
-    spawnInterval: number;
-}
+import { WaveSystem } from '../systems/WaveSystem';
+import { Entity } from '../entities/Entity';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
-    private enemies: BaseEnemy[] = [];
+    private enemies: Entity[] = [];
     private projectiles: Projectile[] = [];
     private targetCursor: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
-    private static readonly MAX_ENEMIES = 10;
-    private spawnTimer: number = 0;
-    private static readonly DEFAULT_SPAWN_INTERVAL = 2000;
     private dimensions: { width: number; height: number };
     private healthBar: HealthBar;
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
+    private waveSystem: WaveSystem;
 
-    // Wave system
-    private currentWave: number = 1;
-    private enemiesRemainingInWave: number = 0;
-    private waveComplete: boolean = false;
+    // Wave display
     private waveText: PIXI.Text;
     private waveAnnouncement: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
-    private canSpawnEnemies: boolean = false;
-
-    private getWaveConfig(wave: number): WaveConfig {
-        const config: WaveConfig = {
-            basicEnemyChance: 1.0,
-            fastEnemyChance: 0,
-            tankEnemyChance: 0,
-            rangedEnemyChance: 0,
-            spearEnemyChance: 0,
-            blitzerEnemyChance: 0,
-            flankerEnemyChance: 0,
-            boomerangEnemyChance: 0,
-            totalEnemies: 1 + Math.floor(wave * 3),
-            spawnInterval: 1500
-        };
-
-        // Wave 2: Introduce Fast Enemies
-        if (wave >= 2) {
-            config.basicEnemyChance = 0.7;
-            config.fastEnemyChance = 0.3;
-        }
-
-        // Wave 3: Introduce Ranged Enemies
-        if (wave >= 3) {
-            config.basicEnemyChance = 0.5;
-            config.fastEnemyChance = 0.25;
-            config.rangedEnemyChance = 0.25;
-        }
-
-        // Wave 4: Introduce Tank Enemies
-        if (wave >= 4) {
-            config.basicEnemyChance = 0.4;
-            config.fastEnemyChance = 0.2;
-            config.tankEnemyChance = 0.2;
-            config.rangedEnemyChance = 0.2;
-        }
-
-        // Wave 5: Introduce Spear Enemies
-        if (wave >= 5) {
-            config.basicEnemyChance = 0.3;
-            config.fastEnemyChance = 0.15;
-            config.tankEnemyChance = 0.15;
-            config.rangedEnemyChance = 0.2;
-            config.spearEnemyChance = 0.2;
-        }
-
-        // Wave 6: Introduce Blitzer Enemies
-        if (wave >= 6) {
-            config.basicEnemyChance = 0.2;
-            config.fastEnemyChance = 0.15;
-            config.tankEnemyChance = 0.15;
-            config.rangedEnemyChance = 0.15;
-            config.spearEnemyChance = 0.15;
-            config.blitzerEnemyChance = 0.2;
-        }
-
-        // Wave 7: Introduce Flanker Enemies
-        if (wave >= 7) {
-            config.basicEnemyChance = 0.15;
-            config.fastEnemyChance = 0.1;
-            config.tankEnemyChance = 0.15;
-            config.rangedEnemyChance = 0.15;
-            config.spearEnemyChance = 0.15;
-            config.blitzerEnemyChance = 0.15;
-            config.flankerEnemyChance = 0.15;
-        }
-
-        // Wave 8: Introduce Boomerang Enemies
-        if (wave >= 8) {
-            config.basicEnemyChance = 0.1;
-            config.fastEnemyChance = 0.1;
-            config.tankEnemyChance = 0.1;
-            config.rangedEnemyChance = 0.05;
-            config.spearEnemyChance = 0.15;
-            config.blitzerEnemyChance = 0.15;
-            config.flankerEnemyChance = 0.15;
-            config.boomerangEnemyChance = 0.2;
-        }
-
-        return config;
-    }
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -181,6 +76,9 @@ export class GameScene extends PIXI.Container {
         this.waveAnnouncement.alpha = 0;
         this.addChild(this.waveAnnouncement);
 
+        // Initialize wave system
+        this.waveSystem = new WaveSystem(dimensions, this.player, this.enemies);
+
         // Start first wave
         this.startWave(1);
 
@@ -197,21 +95,25 @@ export class GameScene extends PIXI.Container {
                 // Clear current enemies
                 this.enemies.forEach(enemy => this.removeChild(enemy));
                 this.enemies = [];
-                this.enemiesRemainingInWave = 0;
+                // Update wave system's reference to the new empty array
+                this.waveSystem.setEnemiesArray(this.enemies);
                 // Start the target wave
-                this.startWave(targetWave);
+                this.waveSystem.setWave(targetWave);
+                this.waveText.text = `Wave ${targetWave}`;
+                const waveDef = this.waveSystem.getCurrentWaveDefinition();
+                this.waveAnnouncement.text = `Wave ${targetWave}\n${waveDef.description}`;
+                this.waveAnnouncement.alpha = 1;
+                this.waveAnnouncementTimer = 0;
             }
         });
     }
 
     private startWave(waveNumber: number): void {
-        this.currentWave = waveNumber;
-        const config = this.getWaveConfig(waveNumber);
-        this.enemiesRemainingInWave = config.totalEnemies;
-        this.waveComplete = false;
-        this.spawnTimer = 0;
+        // Start the wave in the wave system first
+        this.waveSystem.startNextWave();
+
+        // Update wave text
         this.waveText.text = `Wave ${waveNumber}`;
-        this.canSpawnEnemies = false;
         
         // Play wave start sound
         this.soundManager.playWaveStartSound();
@@ -223,8 +125,9 @@ export class GameScene extends PIXI.Container {
             this.soundManager.playHealSound();
         }
 
-        // Show wave announcement
-        this.waveAnnouncement.text = `Wave ${waveNumber}`;
+        // Show wave announcement (now we can safely get the wave definition)
+        const waveDef = this.waveSystem.getCurrentWaveDefinition();
+        this.waveAnnouncement.text = `Wave ${waveNumber}\n${waveDef.description}`;
         this.waveAnnouncement.alpha = 1;
         this.waveAnnouncementTimer = 0;
     }
@@ -242,11 +145,10 @@ export class GameScene extends PIXI.Container {
         this.enemies.forEach(enemy => this.removeChild(enemy));
         this.enemies = [];
 
-        this.currentWave = 1;
         this.isGameOver = false;
-        this.waveComplete = false;
-        this.spawnTimer = 0; // Reset spawn timer on restart
         
+        // Reinitialize wave system
+        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies);
         this.startWave(1);
     }
 
@@ -265,55 +167,6 @@ export class GameScene extends PIXI.Container {
         this.targetCursor.lineTo(8, 0);
         this.targetCursor.moveTo(0, -8);
         this.targetCursor.lineTo(0, 8);
-    }
-
-    private spawnEnemy(): void {
-        if (this.enemies.length < GameScene.MAX_ENEMIES && this.enemiesRemainingInWave > 0) {
-            const config = this.getWaveConfig(this.currentWave);
-            let enemy: BaseEnemy;
-            const roll = Math.random();
-            
-            let cumulativeChance = config.tankEnemyChance;
-            if (roll < cumulativeChance) {
-                enemy = new TankEnemy(this.dimensions, this.player);
-            } else {
-                cumulativeChance += config.fastEnemyChance;
-                if (roll < cumulativeChance) {
-                    enemy = new FastEnemy(this.dimensions, this.player);
-                } else {
-                    cumulativeChance += config.rangedEnemyChance;
-                    if (roll < cumulativeChance) {
-                        enemy = new RangedEnemy(this.dimensions, this.player);
-                    } else {
-                        cumulativeChance += config.spearEnemyChance;
-                        if (roll < cumulativeChance) {
-                            enemy = new SpearEnemy(this.dimensions, this.player);
-                        } else {
-                            cumulativeChance += config.blitzerEnemyChance;
-                            if (roll < cumulativeChance) {
-                                enemy = new BlitzerEnemy(this.dimensions, this.player);
-                            } else {
-                                cumulativeChance += config.flankerEnemyChance;
-                                if (roll < cumulativeChance) {
-                                    enemy = new FlankerEnemy(this.dimensions, this.player);
-                                } else {
-                                    cumulativeChance += config.boomerangEnemyChance;
-                                    if (roll < cumulativeChance) {
-                                        enemy = new BoomerangEnemy(this.dimensions, this.player);
-                                    } else {
-                                        enemy = new BasicEnemy(this.dimensions, this.player);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            this.enemies.push(enemy);
-            this.addChild(enemy);
-            this.enemiesRemainingInWave--;
-        }
     }
 
     public setWorldToScreenScale(scale: number): void {
@@ -347,16 +200,6 @@ export class GameScene extends PIXI.Container {
             
             if (this.waveAnnouncementTimer >= GameScene.WAVE_ANNOUNCEMENT_DURATION) {
                 this.waveAnnouncement.alpha = 0;
-                // Start spawning enemies when announcement ends
-                if (!this.canSpawnEnemies) {
-                    this.canSpawnEnemies = true;
-                    // Initial spawn of enemies
-                    const config = this.getWaveConfig(this.currentWave);
-                    const initialSpawns = Math.min(5, config.totalEnemies);
-                    for (let i = 0; i < initialSpawns; i++) {
-                        this.spawnEnemy();
-                    }
-                }
             } else {
                 // Fade out gradually during the last second
                 const fadeStartTime = GameScene.WAVE_ANNOUNCEMENT_DURATION - 1000;
@@ -366,24 +209,20 @@ export class GameScene extends PIXI.Container {
             }
         }
 
-        // Add regular enemy spawning
-        if (this.canSpawnEnemies && this.enemiesRemainingInWave > 0) {
-            const deltaMs = Math.min(delta * 1000, 100);
-            this.spawnTimer += deltaMs;
-            
-            const config = this.getWaveConfig(this.currentWave);
-            const spawnInterval = config.spawnInterval || GameScene.DEFAULT_SPAWN_INTERVAL;
-            
-            if (this.spawnTimer >= spawnInterval) {
-                this.spawnTimer = 0;
-                this.spawnEnemy();
+        // Update wave system
+        this.waveSystem.update(delta);
+
+        // Add any new enemies to the scene
+        for (const enemy of this.enemies) {
+            if (!enemy.parent) {
+                this.addChild(enemy);
             }
         }
 
-        // Check for wave completion and start next wave immediately
-        if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
-            console.log(`Wave ${this.currentWave} complete! Starting next wave.`);
-            this.startWave(this.currentWave + 1);
+        // Check for wave completion and start next wave
+        if (!this.waveSystem.isWaveActive() && this.enemies.length === 0) {
+            console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
+            this.startWave(this.waveSystem.getCurrentWave() + 1);
         }
 
         // Get input vectors
@@ -406,7 +245,7 @@ export class GameScene extends PIXI.Container {
             );
             this.targetCursor.position.set(mousePos.x, mousePos.y);
         }
-        
+
         // Update player with new input methods
         this.player.update(
             delta,
@@ -429,7 +268,7 @@ export class GameScene extends PIXI.Container {
 
         // Update enemies and remove dead ones
         for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i];
+            const enemy = this.enemies[i] as BaseEnemy;
             enemy.playerIsAttacking = this.inputManager.isAttacking();
             enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
             if (!enemy.isAlive()) {
