@@ -10,7 +10,8 @@ export class TankEnemy extends BaseEnemy {
         maxSpeed: 1.2,
         chaseRange: 200, // Shorter chase range
         color: 0x666666,
-        canMoveWhileWindingUp: false // Can't move while winding up heavy attack
+        canMoveWhileWindingUp: false, // Can't move while winding up heavy attack
+        chaseDuration: 4000 // 4 seconds - very persistent once angered
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {

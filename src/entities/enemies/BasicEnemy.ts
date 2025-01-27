@@ -10,7 +10,8 @@ export class BasicEnemy extends BaseEnemy {
         maxSpeed: 2,
         chaseRange: 250,
         color: 0xff0000,
-        canMoveWhileWindingUp: false
+        canMoveWhileWindingUp: false,
+        chaseDuration: 2000 // 2 seconds
     };
 
     constructor(bounds: { width: number; height: number }, player: Player, canMoveWhileWindingUp: boolean = false) {

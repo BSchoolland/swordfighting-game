@@ -10,20 +10,25 @@ export interface EnemyStats {
     chaseRange: number;
     color: number;
     canMoveWhileWindingUp: boolean;
+    chaseDuration: number; // How long enemy must be out of range before stopping chase
 }
 
 export abstract class BaseEnemy extends Entity {
     protected sprite: PIXI.Graphics;
     protected player: Player;
-    protected weapon: BaseWeapon;
+    protected weapon!: BaseWeapon;
     protected stats: EnemyStats;
     protected stunned: boolean = false;
     protected stunTimer: number = 0;
     protected attackRange: number;
     protected retreatRange: number;
+    protected isChasing: boolean = false;
+    protected outOfRangeTimer: number = 0;
 
     private static readonly STUN_DURATION = 200;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
+    private static readonly REPULSION_RANGE = 100; // Distance at which enemies start repelling each other
+    private static readonly REPULSION_FORCE = 0.3; // Strength of the repulsion
 
     constructor(bounds: { width: number; height: number }, player: Player, stats: EnemyStats) {
         super(bounds, stats.health);
@@ -63,6 +68,34 @@ export abstract class BaseEnemy extends Entity {
         super.takeDamage(amount, knockbackDir, knockbackForce);
         this.stunned = true;
         this.stunTimer = BaseEnemy.STUN_DURATION;
+        this.isChasing = true; // Start chasing when damaged
+        this.outOfRangeTimer = 0;
+    }
+
+    private applyEnemyRepulsion(): void {
+        // Get all enemies in the scene
+        const enemies = this.parent?.children.filter(
+            child => child instanceof BaseEnemy && child !== this
+        ) as BaseEnemy[];
+
+        if (!enemies) return;
+
+        // Calculate repulsion from each nearby enemy
+        for (const enemy of enemies) {
+            const dx = this.x - enemy.x;
+            const dy = this.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < BaseEnemy.REPULSION_RANGE && distance > 0) {
+                // Calculate repulsion force (stronger when closer)
+                const force = (1 - distance / BaseEnemy.REPULSION_RANGE) * BaseEnemy.REPULSION_FORCE;
+                const angle = Math.atan2(dy, dx);
+
+                // Apply repulsion
+                this.velocity.x += Math.cos(angle) * force;
+                this.velocity.y += Math.sin(angle) * force;
+            }
+        }
     }
 
     public update(delta: number): void {
@@ -88,6 +121,9 @@ export abstract class BaseEnemy extends Entity {
             return;
         }
 
+        // Apply enemy repulsion before movement
+        this.applyEnemyRepulsion();
+
         // Don't move if winding up and not allowed to
         if (this.weapon.isInWindUp() && !this.stats.canMoveWhileWindingUp) {
             this.velocity.x = 0;
@@ -101,7 +137,18 @@ export abstract class BaseEnemy extends Entity {
             // Always face the player
             this.rotation = angle;
 
+            // Update chase state
             if (distance < this.stats.chaseRange) {
+                this.isChasing = true;
+                this.outOfRangeTimer = 0;
+            } else if (this.isChasing) {
+                this.outOfRangeTimer += delta * 16.67;
+                if (this.outOfRangeTimer >= this.stats.chaseDuration) {
+                    this.isChasing = false;
+                }
+            }
+
+            if (this.isChasing) {
                 if (distance > this.attackRange) {
                     // Move towards player if too far
                     this.velocity.x += Math.cos(angle) * this.stats.speed;
@@ -125,7 +172,7 @@ export abstract class BaseEnemy extends Entity {
                     this.velocity.y *= scale;
                 }
             } else {
-                // Outside chase range, slow down
+                // Outside chase range and not chasing, slow down
                 this.velocity.x *= 0.95;
                 this.velocity.y *= 0.95;
             }

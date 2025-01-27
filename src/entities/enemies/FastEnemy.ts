@@ -10,7 +10,8 @@ export class FastEnemy extends BaseEnemy {
         maxSpeed: 3.5,
         chaseRange: 300, // Aggressive chase range
         color: 0xFFAA00,
-        canMoveWhileWindingUp: true // Can move while attacking
+        canMoveWhileWindingUp: true, // Can move while attacking
+        chaseDuration: 3000 // 3 seconds - more persistent chase for fast enemy
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {
