@@ -8,6 +8,7 @@ import { Projectile } from '../entities/projectiles/Projectile';
 import { SoundManager } from '../systems/SoundManager';
 import { WaveSystem } from '../systems/WaveSystem';
 import { Entity } from '../entities/Entity';
+import { BossEnemy } from '../entities/enemies/BossEnemy';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
@@ -22,6 +23,8 @@ export class GameScene extends PIXI.Container {
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
     private waveSystem: WaveSystem;
+    private bossHealthBar: HealthBar | null = null;
+    private bossNameText: PIXI.Text | null = null;
 
     // Wave display
     private waveText: PIXI.Text;
@@ -186,6 +189,28 @@ export class GameScene extends PIXI.Container {
         this.addChild(projectile);
     }
 
+    private updateBossUI(): void {
+        // Remove old boss UI if it exists
+        if (this.bossHealthBar && this.bossHealthBar.parent) {
+            this.removeChild(this.bossHealthBar);
+            this.bossHealthBar = null;
+        }
+        if (this.bossNameText && this.bossNameText.parent) {
+            this.removeChild(this.bossNameText);
+            this.bossNameText = null;
+        }
+
+        // Find boss in enemies array
+        const boss = this.enemies.find(enemy => enemy instanceof BossEnemy) as BossEnemy | undefined;
+        if (boss) {
+            // Add boss UI elements
+            this.bossHealthBar = boss.getHealthBar();
+            this.bossNameText = boss.getNameText();
+            this.addChild(this.bossHealthBar);
+            this.addChild(this.bossNameText);
+        }
+    }
+
     public update(delta: number): void {
         if (delta === undefined) {
             delta = 1/60;
@@ -259,6 +284,9 @@ export class GameScene extends PIXI.Container {
 
         // Update health bar
         this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
+
+        // Update boss UI
+        this.updateBossUI();
 
         // Check for game over
         if (!this.player.isAlive() && !this.isGameOver) {

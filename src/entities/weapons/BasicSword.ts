@@ -22,7 +22,7 @@ export class BasicSword extends BaseWeapon {
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
         damage: 10,
-        knockback: 10,
+        knockback: 1,
         attackSpeed: 1000, // 1 second between swings
         range: 40,
         swingSpeed: 0.15,

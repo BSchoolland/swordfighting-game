@@ -1,3 +1,4 @@
+import * as PIXI from 'pixi.js';
 import { Entity } from '../entities/Entity';
 import { BasicEnemy } from '../entities/enemies/BasicEnemy';
 import { FastEnemy } from '../entities/enemies/FastEnemy';
@@ -8,6 +9,9 @@ import { BlitzerEnemy } from '../entities/enemies/BlitzerEnemy';
 import { FlankerEnemy } from '../entities/enemies/FlankerEnemy';
 import { BoomerangEnemy } from '../entities/enemies/BoomerangEnemy';
 import { Player } from '../entities/Player';
+import { WarriorBoss } from '../entities/enemies/WarriorBoss';
+import { BerserkerBoss } from '../entities/enemies/BerserkerBoss';
+import { HunterBoss } from '../entities/enemies/HunterBoss';
 
 interface WaveComposition {
     basicEnemies: number;
@@ -24,6 +28,10 @@ interface WaveDefinition {
     composition: WaveComposition;
     spawnDelay: number;  // Time between enemy spawns in ms
     description: string; // For wave announcements
+    isBossWave?: boolean;
+    bossType?: string;
+    minionsPerMinute?: number; // For boss waves, how many minions spawn per minute
+    minionTypes?: Array<keyof WaveComposition>; // Types of minions that can spawn during boss fight
 }
 
 const zeroComposition: WaveComposition = {
@@ -57,6 +65,17 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         composition: { ...zeroComposition, tankEnemies: 2, basicEnemies: 7, fastEnemies: 1 },
         spawnDelay: 1500,
         description: "Heavy Resistance"
+    },
+    
+    // Boss Wave: Warrior Boss
+    {
+        composition: { ...zeroComposition, basicEnemies: 1, fastEnemies: 1 }, // Minion composition
+        spawnDelay: 5000, // Slow minion spawn rate
+        description: "The Warrior",
+        isBossWave: true,
+        bossType: "warrior",
+        minionsPerMinute: 15, // 15 minions per minute
+        minionTypes: ['basicEnemies', 'fastEnemies'] // Can spawn both basic and fast enemies as minions
     },
     
     // Wave 4: Ranged Introduction
@@ -98,6 +117,16 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         description: "Speed Demons"
     },
     
+    // Boss Wave: Berserker Boss
+    {
+        composition: { ...zeroComposition, rangedEnemies: 4, blitzerEnemies: 3 },
+        spawnDelay: 4000,
+        description: "The Berserker",
+        isBossWave: true,
+        bossType: "berserker",
+        minionsPerMinute: 12,
+        minionTypes: ['rangedEnemies']
+    },
     // Wave 7: Ranged Masters
     {
         composition: {
@@ -132,7 +161,16 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         spawnDelay: 700,
         description: "Ninjas"
     },
-    
+    // Boss Wave: Hunter Boss
+    {
+        composition: { ...zeroComposition, rangedEnemies: 2, flankerEnemies: 2 },
+        spawnDelay: 4000,
+        description: "The Hunter",
+        isBossWave: true,
+        bossType: "hunter",
+        minionsPerMinute: 10,
+        minionTypes: ['rangedEnemies', 'flankerEnemies']
+    },
     // Wave 10: Elite Army
     {
         composition: {
@@ -146,7 +184,7 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         },
         spawnDelay: 700,
         description: "Elite Army"
-    }
+    },
 ];
 
 export class WaveSystem {
@@ -158,6 +196,7 @@ export class WaveSystem {
     private enemies: Entity[];
     private waveActive: boolean = false;
     private spawnQueue: Array<keyof WaveComposition> = [];
+    private currentBoss: Entity | null = null;
 
     constructor(bounds: { width: number; height: number }, player: Player, enemies: Entity[]) {
         this.bounds = bounds;
@@ -281,27 +320,94 @@ export class WaveSystem {
         return Object.values(composition).reduce((sum, count) => sum + count, 0);
     }
 
+    private spawnBoss(type: string): void {
+        let boss: Entity;
+        
+        switch(type) {
+            case 'warrior':
+                boss = new WarriorBoss(this.bounds, this.player);
+                break;
+            case 'berserker':
+                boss = new BerserkerBoss(this.bounds, this.player);
+                break;
+            case 'hunter':
+                boss = new HunterBoss(this.bounds, this.player);
+                break;
+            default:
+                console.error(`Unknown boss type: ${type}`);
+                return;
+        }
+
+        // Position boss at center top of screen
+        boss.x = this.bounds.width / 2;
+        boss.y = -50;
+
+        this.enemies.push(boss);
+        this.currentBoss = boss;
+        
+        // Call onAddedToScene to ensure healthbar is added
+        if ('onAddedToScene' in boss) {
+            (boss as any).onAddedToScene();
+        }
+    }
+
     public update(delta: number): void {
         if (!this.waveActive) return;
 
         const waveDef = this.getCurrentWaveDefinition();
-        const totalEnemies = this.getTotalEnemies(waveDef.composition);
         
-        // Update spawn timer
-        this.spawnTimer += delta * 1000; // Convert to milliseconds
-
-        // Check if it's time to spawn an enemy
-        if (this.enemiesSpawned < totalEnemies && this.spawnTimer >= waveDef.spawnDelay) {
-            this.spawnTimer = 0;
-            
-            if (this.spawnQueue.length > 0) {
-                const enemyType = this.spawnQueue.pop()!;
-                this.spawnEnemy(enemyType);
+        // Handle boss wave
+        if (waveDef.isBossWave) {
+            // Spawn boss if not spawned
+            if (!this.currentBoss && this.enemiesSpawned === 0) {
+                this.spawnBoss(waveDef.bossType!);
+                this.enemiesSpawned++;
             }
 
-            // Check if wave is complete
-            if (this.enemiesSpawned >= totalEnemies) {
+            // Check if boss is dead
+            if (this.currentBoss && !this.currentBoss.isAlive()) {
                 this.waveActive = false;
+                this.currentBoss = null;
+                return;
+            }
+
+            // Spawn minions periodically
+            if (waveDef.minionsPerMinute && waveDef.minionsPerMinute > 0) {
+                this.spawnTimer += delta * 1000;
+                const spawnInterval = 60000 / waveDef.minionsPerMinute;
+                
+                if (this.spawnTimer >= spawnInterval) {
+                    this.spawnTimer = 0;
+                    if (this.spawnQueue.length === 0 && waveDef.minionTypes) {
+                        // Create a new spawn queue with just the allowed minion types
+                        const minionComposition = { ...zeroComposition };
+                        waveDef.minionTypes.forEach(type => {
+                            minionComposition[type] = waveDef.composition[type];
+                        });
+                        this.createSpawnQueue(minionComposition);
+                    }
+                    if (this.spawnQueue.length > 0) {
+                        const enemyType = this.spawnQueue.pop()!;
+                        this.spawnEnemy(enemyType);
+                    }
+                }
+            }
+        } else {
+            // Normal wave behavior
+            const totalEnemies = this.getTotalEnemies(waveDef.composition);
+            this.spawnTimer += delta * 1000;
+
+            if (this.enemiesSpawned < totalEnemies && this.spawnTimer >= waveDef.spawnDelay) {
+                this.spawnTimer = 0;
+                
+                if (this.spawnQueue.length > 0) {
+                    const enemyType = this.spawnQueue.pop()!;
+                    this.spawnEnemy(enemyType);
+                }
+
+                if (this.enemiesSpawned >= totalEnemies) {
+                    this.waveActive = false;
+                }
             }
         }
     }

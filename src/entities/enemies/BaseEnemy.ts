@@ -33,6 +33,8 @@ export abstract class BaseEnemy extends Entity {
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
     private static readonly REPULSION_RANGE = 100; // Distance at which enemies start repelling each other
     private static readonly REPULSION_FORCE = 0.3; // Strength of the repulsion
+    private static readonly SCREEN_EDGE_REPULSION_RANGE = 50; // Distance from screen edge to start repelling
+    private static readonly SCREEN_EDGE_REPULSION_FORCE = 2; // Much stronger than enemy repulsion to keep enemies away from edges
 
     constructor(bounds: { width: number; height: number }, player: Player, stats: EnemyStats) {
         super(bounds, stats.health);
@@ -76,7 +78,7 @@ export abstract class BaseEnemy extends Entity {
         this.outOfRangeTimer = 0;
     }
 
-    private applyEnemyRepulsion(): void {
+    private applyRepulsion(): void {
         // Get all enemies in the scene
         const enemies = this.parent?.children.filter(
             child => child instanceof BaseEnemy && child !== this
@@ -99,6 +101,28 @@ export abstract class BaseEnemy extends Entity {
                 this.velocity.x += Math.cos(angle) * force;
                 this.velocity.y += Math.sin(angle) * force;
             }
+        }
+
+        // Apply screen edge repulsion
+        // Left edge
+        if (this.x < BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) {
+            const force = (1 - this.x / BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) * BaseEnemy.SCREEN_EDGE_REPULSION_FORCE;
+            this.velocity.x += force;
+        }
+        // Right edge
+        if (this.bounds.width - this.x < BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) {
+            const force = (1 - (this.bounds.width - this.x) / BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) * BaseEnemy.SCREEN_EDGE_REPULSION_FORCE;
+            this.velocity.x -= force;
+        }
+        // Top edge
+        if (this.y < BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) {
+            const force = (1 - this.y / BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) * BaseEnemy.SCREEN_EDGE_REPULSION_FORCE;
+            this.velocity.y += force;
+        }
+        // Bottom edge
+        if (this.bounds.height - this.y < BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) {
+            const force = (1 - (this.bounds.height - this.y) / BaseEnemy.SCREEN_EDGE_REPULSION_RANGE) * BaseEnemy.SCREEN_EDGE_REPULSION_FORCE;
+            this.velocity.y -= force;
         }
     }
 
@@ -153,8 +177,8 @@ export abstract class BaseEnemy extends Entity {
             return;
         }
 
-        // Apply enemy repulsion before movement
-        this.applyEnemyRepulsion();
+        // Apply enemy and screen edge repulsion before movement
+        this.applyRepulsion();
 
         // Calculate movement restriction
         let movementMultiplier = 1.0;

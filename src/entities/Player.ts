@@ -17,6 +17,10 @@ export class Player extends Entity {
     private dashIndicator: PIXI.Graphics;
     private swordIndicator: PIXI.Graphics;
     private inputManager: InputManager;
+    private stunned: boolean = false;
+    private stunTimer: number = 0;
+    private static readonly STUN_DURATION: number = 100; // Reduced from 200ms to 100ms
+    private static readonly KNOCKBACK_THRESHOLD: number = 1.0; // Increased from 0.5 to make recovery faster
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -113,6 +117,37 @@ export class Player extends Entity {
         this.drawDashIndicator(this.dash.getCooldownProgress());
         this.drawSwordIndicator(this.sword.getCooldownProgress());
 
+        const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+
+        // Handle stun and knockback first
+        if (this.stunned) {
+            this.stunTimer -= delta * 16.67;
+            if (this.stunTimer <= 0 || currentSpeed < Player.KNOCKBACK_THRESHOLD) {
+                this.stunned = false;
+                if (currentSpeed < Player.KNOCKBACK_THRESHOLD) {
+                    this.velocity.x = 0;
+                    this.velocity.y = 0;
+                }
+            }
+            // Apply knockback velocity
+            this.applyVelocity();
+            
+            // Allow attacking and rotation even while stunned
+            const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
+            this.rotation = angle;
+
+            if (isAttacking && !this.isCurrentlyAttacking) {
+                this.isCurrentlyAttacking = true;
+                this.sword.swing();
+                this.soundManager.playSwingSound();
+            } else if (!isAttacking && this.isCurrentlyAttacking) {
+                this.isCurrentlyAttacking = false;
+            }
+            
+            this.sword.update(delta, targets);
+            return;
+        }
+
         // Get movement from input manager
         const movement = this.inputManager.getMovementVector();
         
@@ -162,6 +197,8 @@ export class Player extends Entity {
         if (knockbackDirection) {
             this.velocity.x = knockbackDirection.x * knockbackForce;
             this.velocity.y = knockbackDirection.y * knockbackForce;
+            this.stunned = true;
+            this.stunTimer = Player.STUN_DURATION;
         }
     }
 } 

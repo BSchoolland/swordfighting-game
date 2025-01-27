@@ -7,7 +7,7 @@ export class Dagger extends BaseWeapon {
         swingSpeed: 0.4,
         swingRange: Math.PI * 0.8, // Smaller arc
         damage: 5, // Less damage
-        knockback: 2,
+        knockback: 0,
         attackSpeed: 800, // Faster attack speed
         bladeLength: 30, // Shorter range
         bladeWidth: 2,

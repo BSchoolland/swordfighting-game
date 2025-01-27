@@ -5,11 +5,13 @@ export class HealthBar extends PIXI.Container {
     private bar: PIXI.Graphics;
     private barWidth: number;
     private barHeight: number;
+    private customColor: number | null = null;
 
-    constructor(width: number = 100, height: number = 10) {
+    constructor(width: number = 100, height: number = 10, color: number | null = null) {
         super();
         this.barWidth = width;
         this.barHeight = height;
+        this.customColor = color;
 
         // Create background (empty health)
         this.background = new PIXI.Graphics();
@@ -20,7 +22,7 @@ export class HealthBar extends PIXI.Container {
 
         // Create health bar
         this.bar = new PIXI.Graphics();
-        this.bar.beginFill(0x00ff00);
+        this.bar.beginFill(this.customColor || 0x00ff00);
         this.bar.drawRect(0, 0, width, height);
         this.bar.endFill();
         this.addChild(this.bar);
@@ -30,9 +32,11 @@ export class HealthBar extends PIXI.Container {
         const ratio = Math.max(0, Math.min(1, current / max));
         this.bar.scale.x = ratio;
 
-        // Change color based on health percentage
-        const color = this.getHealthColor(ratio);
-        this.bar.tint = color;
+        // Change color based on health percentage, unless a custom color is set
+        if (!this.customColor) {
+            const color = this.getHealthColor(ratio);
+            this.bar.tint = color;
+        }
     }
 
     private getHealthColor(ratio: number): number {
