@@ -5,6 +5,7 @@ import { BasicEnemy } from '../entities/enemies/BasicEnemy';
 import { FastEnemy } from '../entities/enemies/FastEnemy';
 import { TankEnemy } from '../entities/enemies/TankEnemy';
 import { RangedEnemy } from '../entities/enemies/RangedEnemy';
+import { SpearEnemy } from '../entities/enemies/SpearEnemy';
 import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
@@ -16,6 +17,7 @@ interface WaveConfig {
     fastEnemyChance: number;
     tankEnemyChance: number;
     rangedEnemyChance: number;
+    spearEnemyChance: number;
     totalEnemies: number;
     spawnInterval: number;
 }
@@ -53,8 +55,9 @@ export class GameScene extends PIXI.Container {
             fastEnemyChance: 0,
             tankEnemyChance: 0,
             rangedEnemyChance: 0,
+            spearEnemyChance: 0,
             totalEnemies: 1 + Math.floor(wave * 3),
-            spawnInterval: 1500 // Gets faster each wave, minimum 500ms
+            spawnInterval: 1500 
         };
 
         // Wave 2: Introduce Fast Enemies
@@ -78,12 +81,22 @@ export class GameScene extends PIXI.Container {
             config.rangedEnemyChance = 0.2;
         }
 
+        // Wave 5: Introduce Spear Enemies
+        if (wave >= 5) {
+            config.basicEnemyChance = 0;
+            config.fastEnemyChance = 0;
+            config.tankEnemyChance = 0;
+            config.rangedEnemyChance = 0;
+            config.spearEnemyChance = 1;
+        }
+
         // After wave 5, gradually increase harder enemies
         if (wave > 5) {
-            config.basicEnemyChance = Math.max(0.25, 0.4 - (wave - 5) * 0.02);
-            config.fastEnemyChance = Math.min(0.3, 0.25 + (wave - 5) * 0.01);
+            config.basicEnemyChance = Math.max(0.2, 0.35 - (wave - 5) * 0.02);
+            config.fastEnemyChance = Math.min(0.25, 0.2 + (wave - 5) * 0.01);
             config.tankEnemyChance = Math.min(0.2, 0.15 + (wave - 5) * 0.005);
-            config.rangedEnemyChance = Math.min(0.25, 0.2 + (wave - 5) * 0.005);
+            config.rangedEnemyChance = Math.min(0.2, 0.15 + (wave - 5) * 0.005);
+            config.spearEnemyChance = Math.min(0.2, 0.15 + (wave - 5) * 0.01);
         }
 
         return config;
@@ -228,14 +241,26 @@ export class GameScene extends PIXI.Container {
             let enemy: BaseEnemy;
             const roll = Math.random();
             
-            if (roll < config.tankEnemyChance) {
+            let cumulativeChance = config.tankEnemyChance;
+            if (roll < cumulativeChance) {
                 enemy = new TankEnemy(this.dimensions, this.player);
-            } else if (roll < config.tankEnemyChance + config.fastEnemyChance) {
-                enemy = new FastEnemy(this.dimensions, this.player);
-            } else if (roll < config.tankEnemyChance + config.fastEnemyChance + config.rangedEnemyChance) {
-                enemy = new RangedEnemy(this.dimensions, this.player);
             } else {
-                enemy = new BasicEnemy(this.dimensions, this.player);
+                cumulativeChance += config.fastEnemyChance;
+                if (roll < cumulativeChance) {
+                    enemy = new FastEnemy(this.dimensions, this.player);
+                } else {
+                    cumulativeChance += config.rangedEnemyChance;
+                    if (roll < cumulativeChance) {
+                        enemy = new RangedEnemy(this.dimensions, this.player);
+                    } else {
+                        cumulativeChance += config.spearEnemyChance;
+                        if (roll < cumulativeChance) {
+                            enemy = new SpearEnemy(this.dimensions, this.player);
+                        } else {
+                            enemy = new BasicEnemy(this.dimensions, this.player);
+                        }
+                    }
+                }
             }
             
             this.enemies.push(enemy);
@@ -308,30 +333,39 @@ export class GameScene extends PIXI.Container {
             }
         }
 
-        // Debug log wave state
-        if (this.currentWave === 3) {
-            console.log(`Wave 3 state - Enemies alive: ${this.enemies.length}, Remaining to spawn: ${this.enemiesRemainingInWave}`);
-        }
-
         // Check for wave completion and start next wave immediately
         if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
             console.log(`Wave ${this.currentWave} complete! Starting next wave.`);
             this.startWave(this.currentWave + 1);
         }
 
-        // Convert mouse position to world space
-        const mousePos = this.inputManager.getMousePosition();
-        const worldPos = this.screenToWorldSpace(mousePos.x, mousePos.y);
+        // Get input vectors
+        const movement = this.inputManager.getMovementVector();
+        const aim = this.inputManager.getAimDirection();
         
-        // Update target cursor position
-        this.targetCursor.position.set(worldPos.x, worldPos.y);
+        // Update target cursor position based on input type
+        if (this.inputManager.isUsingGamepad()) {
+            // For gamepad, position relative to player
+            const aimDistance = 100;
+            this.targetCursor.position.set(
+                this.player.x + aim.x * aimDistance,
+                this.player.y + aim.y * aimDistance
+            );
+        } else {
+            // For mouse, use exact mouse position in world space
+            const mousePos = this.screenToWorldSpace(
+                this.inputManager.getMousePosition().x,
+                this.inputManager.getMousePosition().y
+            );
+            this.targetCursor.position.set(mousePos.x, mousePos.y);
+        }
         
-        // Update player
+        // Update player with new input methods
         this.player.update(
             delta,
             this.inputManager.getKeys(),
-            worldPos.x,
-            worldPos.y,
+            this.targetCursor.x,
+            this.targetCursor.y,
             this.inputManager.isDashActive(),
             [...this.enemies, ...this.projectiles.filter(p => p.isAlive())],
             this.inputManager.isAttacking()
@@ -349,7 +383,6 @@ export class GameScene extends PIXI.Container {
         // Update enemies and remove dead ones
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            // Pass projectiles to enemy's update for weapon targeting
             enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
             if (!enemy.isAlive()) {
                 this.removeChild(enemy);

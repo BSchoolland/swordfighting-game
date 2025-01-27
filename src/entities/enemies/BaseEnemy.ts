@@ -9,8 +9,11 @@ export interface EnemyStats {
     maxSpeed: number;
     chaseRange: number;
     color: number;
-    canMoveWhileWindingUp: boolean;
+    movementRestriction: number; // 0 = no movement, 1 = full movement during swing
+    windupRestriction?: number; // Optional different restriction during windup
     chaseDuration: number; // How long enemy must be out of range before stopping chase
+    knockbackResistance?: number; // Value between 0 and 1, where 1 means complete knockback immunity
+    maxRotateSpeed: number; // Maximum rotation speed in radians per second
 }
 
 export abstract class BaseEnemy extends Entity {
@@ -98,6 +101,34 @@ export abstract class BaseEnemy extends Entity {
         }
     }
 
+    protected normalizeAngle(angle: number): number {
+        // Normalize angle to [-PI, PI]
+        return ((angle % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+    }
+
+    protected getAngleDifference(targetAngle: number, currentAngle: number): number {
+        // Get the smallest angle difference (accounting for wraparound)
+        let diff = this.normalizeAngle(targetAngle - currentAngle);
+        return diff;
+    }
+
+    protected rotateTowards(targetAngle: number, delta: number, movementMultiplier: number): void {
+        const angleDiff = this.getAngleDifference(targetAngle, this.rotation);
+        // Apply movement restriction to rotation speed
+        const frameRotateSpeed = this.stats.maxRotateSpeed * delta * movementMultiplier;
+        
+        // If we're close enough to the target angle, snap to it
+        if (Math.abs(angleDiff) < frameRotateSpeed) {
+            this.rotation = targetAngle;
+            return;
+        }
+
+        // Otherwise rotate towards it at max speed
+        const rotationDirection = angleDiff > 0 ? 1 : -1;
+        const newRotation = this.rotation + (rotationDirection * frameRotateSpeed);
+        this.rotation = newRotation;
+    }
+
     public update(delta: number, targets: Entity[] = []): void {
         if (!this.isAlive()) return;
 
@@ -124,18 +155,32 @@ export abstract class BaseEnemy extends Entity {
         // Apply enemy repulsion before movement
         this.applyEnemyRepulsion();
 
-        // Don't move if winding up and not allowed to
-        if (this.weapon.isInWindUp() && !this.stats.canMoveWhileWindingUp) {
-            this.velocity.x = 0;
-            this.velocity.y = 0;
-        } else if (!this.stunned) {
-            const dx = this.player.x - this.x;
-            const dy = this.player.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx);
+        // Calculate movement restriction
+        let movementMultiplier = 1.0;
+        if (this.weapon.isInWindUp()) {
+            // Use windup restriction if specified, otherwise use regular restriction
+            movementMultiplier = this.stats.windupRestriction ?? this.stats.movementRestriction;
+        } else if (this.weapon.isInSwing()) {
+            // Use regular movement restriction during swing
+            movementMultiplier = this.stats.movementRestriction;
+        }
+
+        // Apply movement with restriction
+        if (!this.stunned) {
+            // Get absolute positions
+            const enemyGlobalPos = this.getGlobalPosition();
+            const playerGlobalPos = this.player.getGlobalPosition();
             
-            // Always face the player
-            this.rotation = angle;
+            const dx = playerGlobalPos.x - enemyGlobalPos.x;
+            const dy = playerGlobalPos.y - enemyGlobalPos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const targetAngle = Math.atan2(dy, dx);
+            
+            console.log(`[${this.constructor.name}] Positions - Enemy: (${enemyGlobalPos.x.toFixed(1)}, ${enemyGlobalPos.y.toFixed(1)}), Player: (${playerGlobalPos.x.toFixed(1)}, ${playerGlobalPos.y.toFixed(1)})`);
+            console.log(`[${this.constructor.name}] Movement - Attacking: ${(this.weapon.isInWindUp() || this.weapon.isInSwing())}, Restriction: ${movementMultiplier.toFixed(2)}`);
+            
+            // Smoothly rotate towards the player with movement restriction
+            this.rotateTowards(targetAngle, delta, movementMultiplier);
 
             // Update chase state
             if (distance < this.stats.chaseRange) {
@@ -151,12 +196,12 @@ export abstract class BaseEnemy extends Entity {
             if (this.isChasing) {
                 if (distance > this.attackRange) {
                     // Move towards player if too far
-                    this.velocity.x += Math.cos(angle) * this.stats.speed;
-                    this.velocity.y += Math.sin(angle) * this.stats.speed;
+                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
+                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
                 } else if (distance < this.retreatRange) {
                     // Back away if too close
-                    this.velocity.x -= Math.cos(angle) * this.stats.speed * 1.2;
-                    this.velocity.y -= Math.sin(angle) * this.stats.speed * 1.2;
+                    this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
+                    this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
                 } else {
                     // In perfect range, slow down and attack
                     this.velocity.x *= 0.8;
@@ -164,10 +209,10 @@ export abstract class BaseEnemy extends Entity {
                     this.weapon.swing();
                 }
 
-                // Cap velocity
-                const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-                if (currentSpeed > this.stats.maxSpeed) {
-                    const scale = this.stats.maxSpeed / currentSpeed;
+                // Cap velocity (considering movement restriction)
+                const maxSpeed = this.stats.maxSpeed * movementMultiplier;
+                if (currentSpeed > maxSpeed) {
+                    const scale = maxSpeed / currentSpeed;
                     this.velocity.x *= scale;
                     this.velocity.y *= scale;
                 }

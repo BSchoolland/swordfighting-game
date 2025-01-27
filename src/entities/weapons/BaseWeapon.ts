@@ -33,6 +33,8 @@ export abstract class BaseWeapon extends PIXI.Container {
     protected debugId: string;
     protected windUpStartTime: number = 0;
     protected stats: WeaponStats;
+    protected swingDirection: number = 1; // 1 for right, -1 for left
+    private static readonly COMBO_WINDOW = 1500; // 800ms window for combo
 
     constructor(owner: Entity, stats: WeaponStats, isEnemy: boolean = false) {
         super();
@@ -83,7 +85,15 @@ export abstract class BaseWeapon extends PIXI.Container {
         if (this.isSwinging) {
             const prevAngle = this.rotation;
             this.swingAngle += this.stats.swingSpeed;
-            this.rotation = -this.stats.swingRange/2 + this.swingAngle;
+            
+            // Apply swing direction to the rotation
+            if (this.swingDirection === 1) {
+                // Swing right (original direction)
+                this.rotation = -this.stats.swingRange/2 + this.swingAngle;
+            } else {
+                // Swing left (opposite direction)
+                this.rotation = this.stats.swingRange/2 - this.swingAngle;
+            }
 
             if (this.swingAngle <= this.stats.swingRange) {
                 this.checkHits(targets, prevAngle);
@@ -95,6 +105,13 @@ export abstract class BaseWeapon extends PIXI.Container {
                 this.hitEntities.clear();
             }
         }
+
+        // Reset swing direction if outside combo window
+        const currentTime = Date.now();
+        if (!this.isSwinging && !this.isWindingUp && 
+            currentTime - this.lastSwingTime > BaseWeapon.COMBO_WINDOW) {
+            this.swingDirection = 1;
+        }
     }
 
     public swing(): void {
@@ -105,7 +122,21 @@ export abstract class BaseWeapon extends PIXI.Container {
             this.isWindingUp = true;
             this.windUpStartTime = currentTime;
             this.swingAngle = 0;
-            this.rotation = -this.stats.swingRange/2;
+            
+            // Only alternate direction if within combo window
+            if (timeSinceLastSwing <= BaseWeapon.COMBO_WINDOW) {
+                this.swingDirection *= -1;
+            } else {
+                this.swingDirection = 1; // Reset to default direction
+            }
+            
+            // Set initial rotation based on swing direction
+            if (this.swingDirection === 1) {
+                this.rotation = -this.stats.swingRange/2;
+            } else {
+                this.rotation = this.stats.swingRange/2;
+            }
+            
             this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
             this.hitEntities.clear();
@@ -114,6 +145,10 @@ export abstract class BaseWeapon extends PIXI.Container {
 
     public isInWindUp(): boolean {
         return this.isWindingUp;
+    }
+
+    public isInSwing(): boolean {
+        return this.isSwinging;
     }
 
     protected checkHits(targets: Entity[], prevAngle: number): void {

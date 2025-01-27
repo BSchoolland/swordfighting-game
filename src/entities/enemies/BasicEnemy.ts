@@ -8,10 +8,13 @@ export class BasicEnemy extends BaseEnemy {
         health: 40,
         speed: 0.5,
         maxSpeed: 2,
-        chaseRange: 250,
+        chaseRange: 350,
         color: 0xff0000,
-        canMoveWhileWindingUp: false,
-        chaseDuration: 2000 // 2 seconds
+        movementRestriction: 0.6, // Moderate movement restriction during swing
+        windupRestriction: 0, // More restricted during windup
+        chaseDuration: 2000, // 2 seconds
+        knockbackResistance: 0.1, // Small amount of knockback resistance
+        maxRotateSpeed: 4.0 // Medium turning speed (about 230 degrees per second)
     };
 
     constructor(bounds: { width: number; height: number }, player: Player, canMoveWhileWindingUp: boolean = false) {

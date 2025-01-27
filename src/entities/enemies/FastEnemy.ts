@@ -8,10 +8,11 @@ export class FastEnemy extends BaseEnemy {
         health: 25, // Low health
         speed: 1, 
         maxSpeed: 3,
-        chaseRange: 300, // Aggressive chase range
+        chaseRange: 400, // Aggressive chase range
         color: 0xFFAA00,
-        canMoveWhileWindingUp: true, // Can move while attacking
-        chaseDuration: 3000 // 3 seconds - more persistent chase for fast enemy
+        movementRestriction: 0.8, // High mobility even during attacks
+        chaseDuration: 3000, // 3 seconds - more persistent chase for fast enemy
+        maxRotateSpeed: 6.0 // Fast turning speed (about 340 degrees per second)
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {

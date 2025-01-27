@@ -4,6 +4,7 @@ import { BasicSword } from './weapons/BasicSword';
 import { BaseEnemy } from './enemies/BaseEnemy';
 import { Dash } from './abilities/Dash';
 import { SoundManager } from '../systems/SoundManager';
+import { InputManager } from '../systems/InputManager';
 
 export class Player extends Entity {
     private sprite: PIXI.Graphics;
@@ -15,10 +16,12 @@ export class Player extends Entity {
     private isCurrentlyAttacking: boolean = false;
     private dashIndicator: PIXI.Graphics;
     private swordIndicator: PIXI.Graphics;
+    private inputManager: InputManager;
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
         this.soundManager = SoundManager.getInstance();
+        this.inputManager = new InputManager();
         
         // Create cooldown indicators (behind player)
         this.dashIndicator = new PIXI.Graphics();
@@ -110,26 +113,12 @@ export class Player extends Entity {
         this.drawDashIndicator(this.dash.getCooldownProgress());
         this.drawSwordIndicator(this.sword.getCooldownProgress());
 
-        // Calculate movement vector
-        let dx = 0;
-        let dy = 0;
-
-        // Calculate movement from input
-        if (keys.has('KeyW')) dy -= 1;
-        if (keys.has('KeyS')) dy += 1;
-        if (keys.has('KeyA')) dx -= 1;
-        if (keys.has('KeyD')) dx += 1;
-
-        // Normalize diagonal movement
-        if (dx !== 0 && dy !== 0) {
-            const length = Math.sqrt(dx * dx + dy * dy);
-            dx = dx / length;
-            dy = dy / length;
-        }
-
+        // Get movement from input manager
+        const movement = this.inputManager.getMovementVector();
+        
         // Apply movement
-        this.velocity.x = dx * this.speed;
-        this.velocity.y = dy * this.speed;
+        this.velocity.x = movement.x * this.speed;
+        this.velocity.y = movement.y * this.speed;
 
         // Handle dash
         if (isDashing) {
@@ -141,7 +130,7 @@ export class Player extends Entity {
         // Apply velocity and knockback
         this.applyVelocity();
 
-        // Update rotation to face mouse
+        // Update rotation to face aim point
         const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
         this.rotation = angle;
 

@@ -10,8 +10,9 @@ export class RangedEnemy extends BaseEnemy {
         maxSpeed: 0.5,
         chaseRange: 400, // Longer range for archer
         color: 0x00AA00, // Green color
-        canMoveWhileWindingUp: true, // Can move while drawing bow
-        chaseDuration: 3000 // 3 seconds chase duration
+        movementRestriction: 0.7, // Good mobility but reduced during attacks
+        chaseDuration: 3000, // 3 seconds chase duration
+        maxRotateSpeed: 3.0 // Medium-slow turning speed (about 170 degrees per second)
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {

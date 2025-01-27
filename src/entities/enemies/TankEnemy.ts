@@ -7,15 +7,23 @@ export class TankEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
         health: 80, // High health
         speed: 0.3, // Slow movement
-        maxSpeed: 1.0,
-        chaseRange: 200, // Shorter chase range
+        maxSpeed: 1.2,
+        chaseRange: 300, // Shorter chase range
         color: 0x666666,
-        canMoveWhileWindingUp: false, // Can't move while winding up heavy attack
-        chaseDuration: 4000 // 4 seconds - very persistent once angered
+        movementRestriction: 0.3, // Very restricted movement, especially during attacks
+        chaseDuration: 4000, // 4 seconds - very persistent once angered
+        knockbackResistance: 0.6, // Significant knockback resistance
+        maxRotateSpeed: 1.8 // Very slow turning speed (about 100 degrees per second)
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {
         super(bounds, player, TankEnemy.STATS);
+    }
+
+    public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
+        // Apply knockback resistance
+        const reducedKnockback = knockbackForce * (1 - this.stats.knockbackResistance!);
+        super.takeDamage(amount, knockbackDir, reducedKnockback);
     }
 
     protected initializeWeapon(): void {

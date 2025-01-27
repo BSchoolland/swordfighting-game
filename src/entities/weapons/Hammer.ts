@@ -4,18 +4,18 @@ import { BaseWeapon, WeaponStats } from './BaseWeapon';
 
 export class Hammer extends BaseWeapon {
     private static readonly ENEMY_PARAMS: WeaponStats = {
-        swingSpeed: 0.1, // Slower swing
+        swingSpeed: 0.2, // Slower swing
         swingRange: Math.PI / 0.8, 
         damage: 25, // High damage
         knockback: 8, // Strong knockback
         attackSpeed: 2500, // Slow attack speed
-        bladeLength: 60,
+        bladeLength: 80,
         bladeWidth: 8, // Thicker weapon
         swingInfluence: 0.7, // Strong swing influence
         color: 0x666666,
         optimalRange: 0.8,
         retreatRange: 0.6,
-        windUpTime: 750, // Long wind-up
+        windUpTime: 500, // Long wind-up
         previewAlpha: 0.4,
         range: 45
     };
