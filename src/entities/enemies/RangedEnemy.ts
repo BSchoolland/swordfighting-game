@@ -8,7 +8,7 @@ export class RangedEnemy extends BaseEnemy {
         health: 30,
         speed: 0.2, // very slow
         maxSpeed: 0.5,
-        chaseRange: 400, // Longer range for archer
+        chaseRange: 600, // Longer range for archer
         color: 0x00AA00, // Green color
         movementRestriction: 0.7, // Good mobility but reduced during attacks
         chaseDuration: 3000, // 3 seconds chase duration

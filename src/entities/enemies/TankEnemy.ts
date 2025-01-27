@@ -8,7 +8,7 @@ export class TankEnemy extends BaseEnemy {
         health: 80, // High health
         speed: 0.3, // Slow movement
         maxSpeed: 1.2,
-        chaseRange: 300, // Shorter chase range
+        chaseRange: 500, // Shorter chase range
         color: 0x666666,
         movementRestriction: 0.3, // Very restricted movement, especially during attacks
         chaseDuration: 4000, // 4 seconds - very persistent once angered

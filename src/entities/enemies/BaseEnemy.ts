@@ -27,6 +27,7 @@ export abstract class BaseEnemy extends Entity {
     protected retreatRange: number;
     protected isChasing: boolean = false;
     protected outOfRangeTimer: number = 0;
+    public playerIsAttacking: boolean = false;
 
     private static readonly STUN_DURATION = 200;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
@@ -165,62 +166,59 @@ export abstract class BaseEnemy extends Entity {
             movementMultiplier = this.stats.movementRestriction;
         }
 
-        // Apply movement with restriction
-        if (!this.stunned) {
-            // Get absolute positions
-            const enemyGlobalPos = this.getGlobalPosition();
-            const playerGlobalPos = this.player.getGlobalPosition();
-            
-            const dx = playerGlobalPos.x - enemyGlobalPos.x;
-            const dy = playerGlobalPos.y - enemyGlobalPos.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const targetAngle = Math.atan2(dy, dx);
-            
-            console.log(`[${this.constructor.name}] Positions - Enemy: (${enemyGlobalPos.x.toFixed(1)}, ${enemyGlobalPos.y.toFixed(1)}), Player: (${playerGlobalPos.x.toFixed(1)}, ${playerGlobalPos.y.toFixed(1)})`);
-            console.log(`[${this.constructor.name}] Movement - Attacking: ${(this.weapon.isInWindUp() || this.weapon.isInSwing())}, Restriction: ${movementMultiplier.toFixed(2)}`);
-            
-            // Smoothly rotate towards the player with movement restriction
-            this.rotateTowards(targetAngle, delta, movementMultiplier);
+        // Get absolute positions
+        const enemyGlobalPos = this.getGlobalPosition();
+        const playerGlobalPos = this.player.getGlobalPosition();
+        
+        const dx = playerGlobalPos.x - enemyGlobalPos.x;
+        const dy = playerGlobalPos.y - enemyGlobalPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const targetAngle = Math.atan2(dy, dx);
+        
+        console.log(`[${this.constructor.name}] Positions - Enemy: (${enemyGlobalPos.x.toFixed(1)}, ${enemyGlobalPos.y.toFixed(1)}), Player: (${playerGlobalPos.x.toFixed(1)}, ${playerGlobalPos.y.toFixed(1)})`);
+        console.log(`[${this.constructor.name}] Movement - Attacking: ${(this.weapon.isInWindUp() || this.weapon.isInSwing())}, Restriction: ${movementMultiplier.toFixed(2)}`);
+        
+        // Smoothly rotate towards the player with movement restriction
+        this.rotateTowards(targetAngle, delta, movementMultiplier);
 
-            // Update chase state
-            if (distance < this.stats.chaseRange) {
-                this.isChasing = true;
-                this.outOfRangeTimer = 0;
-            } else if (this.isChasing) {
-                this.outOfRangeTimer += delta * 16.67;
-                if (this.outOfRangeTimer >= this.stats.chaseDuration) {
-                    this.isChasing = false;
-                }
+        // Update chase state
+        if (distance < this.stats.chaseRange) {
+            this.isChasing = true;
+            this.outOfRangeTimer = 0;
+        } else if (this.isChasing) {
+            this.outOfRangeTimer += delta * 16.67;
+            if (this.outOfRangeTimer >= this.stats.chaseDuration) {
+                this.isChasing = false;
             }
+        }
 
-            if (this.isChasing) {
-                if (distance > this.attackRange) {
-                    // Move towards player if too far
-                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
-                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
-                } else if (distance < this.retreatRange) {
-                    // Back away if too close
-                    this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
-                    this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
-                } else {
-                    // In perfect range, slow down and attack
-                    this.velocity.x *= 0.8;
-                    this.velocity.y *= 0.8;
-                    this.weapon.swing();
-                }
-
-                // Cap velocity (considering movement restriction)
-                const maxSpeed = this.stats.maxSpeed * movementMultiplier;
-                if (currentSpeed > maxSpeed) {
-                    const scale = maxSpeed / currentSpeed;
-                    this.velocity.x *= scale;
-                    this.velocity.y *= scale;
-                }
+        if (this.isChasing) {
+            if (distance > this.attackRange) {
+                // Move towards player if too far
+                this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
+                this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
+            } else if (distance < this.retreatRange) {
+                // Back away if too close
+                this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
+                this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
             } else {
-                // Outside chase range and not chasing, slow down
-                this.velocity.x *= 0.95;
-                this.velocity.y *= 0.95;
+                // In perfect range, slow down and attack
+                this.velocity.x *= 0.8;
+                this.velocity.y *= 0.8;
+                this.weapon.swing();
             }
+
+            // Cap velocity (considering movement restriction)
+            const maxSpeed = this.stats.maxSpeed * movementMultiplier;
+            if (currentSpeed > maxSpeed) {
+                const scale = maxSpeed / currentSpeed;
+                this.velocity.x *= scale;
+                this.velocity.y *= scale;
+            }
+        } else {
+            // Outside chase range and not chasing, slow down
+            this.velocity.x *= 0.95;
+            this.velocity.y *= 0.95;
         }
 
         // Apply velocity and knockback

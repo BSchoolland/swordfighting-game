@@ -45,17 +45,23 @@ export abstract class RangedWeapon extends BaseWeapon {
             y: this.owner.y
         };
 
-        // For enemies, find direction to nearest target
-        let direction = { x: 1, y: 0 }; // Default right direction
+        // Calculate direction based on owner's target or rotation
+        let direction = { x: 0, y: 0 };
+        
         if (this.isEnemy && this.owner.target) {
-            // Calculate direction from enemy to player
+            // For enemies, aim at their target (usually the player)
             const dx = this.owner.target.x - this.owner.x;
             const dy = this.owner.target.y - this.owner.y;
-            // Normalize the direction vector
             const length = Math.sqrt(dx * dx + dy * dy);
             direction = {
                 x: dx / length,
                 y: dy / length
+            };
+        } else {
+            // For players, use the owner's rotation to determine direction
+            direction = {
+                x: Math.cos(this.owner.rotation),
+                y: Math.sin(this.owner.rotation)
             };
         }
 

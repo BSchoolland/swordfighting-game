@@ -8,7 +8,7 @@ export class SpearEnemy extends BaseEnemy {
         health: 45,
         speed: 0.4, // Slower than basic enemy
         maxSpeed: 1.5,
-        chaseRange: 400, // Longer chase range due to spear
+        chaseRange: 600, // Longer chase range due to spear
         color: 0xaa4444,
         movementRestriction: 0, // Very restricted movement during thrust
         windupRestriction: 0.2, // Still quite restricted while winding up

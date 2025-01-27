@@ -8,7 +8,7 @@ export class BasicEnemy extends BaseEnemy {
         health: 40,
         speed: 0.5,
         maxSpeed: 2,
-        chaseRange: 350,
+        chaseRange: 550,
         color: 0xff0000,
         movementRestriction: 0.6, // Moderate movement restriction during swing
         windupRestriction: 0, // More restricted during windup
