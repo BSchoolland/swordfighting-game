@@ -58,7 +58,7 @@ export abstract class BaseEnemy extends Entity {
     protected abstract initializeWeapon(): void;
     protected abstract drawSprite(): void;
 
-    private distanceToPlayer(): number {
+    protected distanceToPlayer(): number {
         const dx = this.player.x - this.x;
         const dy = this.player.y - this.y;
         return Math.sqrt(dx * dx + dy * dy);
@@ -98,11 +98,11 @@ export abstract class BaseEnemy extends Entity {
         }
     }
 
-    public update(delta: number): void {
+    public update(delta: number, targets: Entity[] = []): void {
         if (!this.isAlive()) return;
 
         // Update weapon first
-        this.weapon.update(delta, [this.player]);
+        this.weapon.update(delta, [this.player, ...targets]);
 
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 

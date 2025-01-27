@@ -7,7 +7,7 @@ export class TankEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
         health: 80, // High health
         speed: 0.3, // Slow movement
-        maxSpeed: 1.2,
+        maxSpeed: 1.0,
         chaseRange: 200, // Shorter chase range
         color: 0x666666,
         canMoveWhileWindingUp: false, // Can't move while winding up heavy attack

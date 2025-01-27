@@ -1,15 +1,17 @@
 import * as PIXI from 'pixi.js';
 
 export abstract class Entity extends PIXI.Container {
-    protected health: number;
-    protected maxHealth: number;
-    protected bounds: { width: number; height: number };
-    protected velocity: { x: number; y: number } = { x: 0, y: 0 };
+    public velocity: { x: number; y: number } = { x: 0, y: 0 };
+    public radius: number = 10;  // Default radius for collision detection
+    public health: number;
+    public maxHealth: number;
+    public target: Entity | null = null;
+    protected bounds: PIXI.Rectangle;
     protected friction: number = 0.95;
 
     constructor(bounds: { width: number; height: number }, maxHealth: number) {
         super();
-        this.bounds = bounds;
+        this.bounds = new PIXI.Rectangle(0, 0, bounds.width, bounds.height);
         this.maxHealth = maxHealth;
         this.health = maxHealth;
     }
@@ -28,6 +30,10 @@ export abstract class Entity extends PIXI.Container {
         return this.health;
     }
 
+    public getRadius(): number {
+        return this.radius;
+    }
+
     protected applyVelocity(): void {
         this.x += this.velocity.x;
         this.y += this.velocity.y;
@@ -37,10 +43,9 @@ export abstract class Entity extends PIXI.Container {
         if (Math.abs(this.velocity.x) < 0.01) this.velocity.x = 0;
         if (Math.abs(this.velocity.y) < 0.01) this.velocity.y = 0;
 
-        const halfWidth = 10;
-        const halfHeight = 10;
-        this.x = Math.max(halfWidth, Math.min(this.bounds.width - halfWidth, this.x));
-        this.y = Math.max(halfHeight, Math.min(this.bounds.height - halfHeight, this.y));
+        // Use radius for boundary collision
+        this.x = Math.max(this.radius, Math.min(this.bounds.width - this.radius, this.x));
+        this.y = Math.max(this.radius, Math.min(this.bounds.height - this.radius, this.y));
     }
 
     public abstract update(...args: any[]): void;

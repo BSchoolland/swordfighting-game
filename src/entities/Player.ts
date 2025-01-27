@@ -5,7 +5,7 @@ import { BaseEnemy } from './enemies/BaseEnemy';
 
 export class Player extends Entity {
     private sprite: PIXI.Graphics;
-    private speed: number = 2.5;
+    private speed: number = 1.5;
     private dashSpeed: number = 10;
     private dashDirection: { dx: number, dy: number } | null = null;
     private sword: BasicSword;
@@ -44,7 +44,15 @@ export class Player extends Entity {
         return this.maxHealth;
     }
 
-    public update(delta: number, keys: Set<string>, mouseX: number, mouseY: number, isDashing: boolean, enemies: BaseEnemy[], isAttacking: boolean): void {
+    public update(
+        delta: number,
+        keys: Set<string>,
+        mouseX: number,
+        mouseY: number,
+        isDashing: boolean,
+        targets: Entity[],
+        isAttacking: boolean
+    ): void {
         if (!this.isAlive()) return;
 
         // Calculate movement vector
@@ -96,6 +104,6 @@ export class Player extends Entity {
         if (isAttacking) {
             this.sword.swing();
         }
-        this.sword.update(delta, enemies);
+        this.sword.update(delta, targets);
     }
 } 

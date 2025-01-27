@@ -5,7 +5,7 @@ import { BaseWeapon, WeaponStats } from './BaseWeapon';
 export class BasicSword extends BaseWeapon {
     private static readonly PLAYER_PARAMS: WeaponStats = {
         swingSpeed: 0.3,
-        swingRange: Math.PI / 1.5,
+        swingRange: Math.PI / 0.5,
         damage: 15,
         knockback: 5,
         attackSpeed: 1000,

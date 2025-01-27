@@ -6,8 +6,8 @@ import { Dagger } from '../weapons/Dagger';
 export class FastEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
         health: 25, // Low health
-        speed: 1.0, // Fast movement
-        maxSpeed: 3.5,
+        speed: 1, 
+        maxSpeed: 3,
         chaseRange: 300, // Aggressive chase range
         color: 0xFFAA00,
         canMoveWhileWindingUp: true, // Can move while attacking

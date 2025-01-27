@@ -4,14 +4,17 @@ import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { BasicEnemy } from '../entities/enemies/BasicEnemy';
 import { FastEnemy } from '../entities/enemies/FastEnemy';
 import { TankEnemy } from '../entities/enemies/TankEnemy';
+import { RangedEnemy } from '../entities/enemies/RangedEnemy';
 import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
 import { GameOverScreen } from './GameOverScreen';
+import { Projectile } from '../entities/projectiles/Projectile';
 
 interface WaveConfig {
     basicEnemyChance: number;
     fastEnemyChance: number;
     tankEnemyChance: number;
+    rangedEnemyChance: number;
     totalEnemies: number;
     spawnInterval: number;
 }
@@ -19,10 +22,11 @@ interface WaveConfig {
 export class GameScene extends PIXI.Container {
     private player: Player;
     private enemies: BaseEnemy[] = [];
+    private projectiles: Projectile[] = [];
     private targetCursor: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
-    private static readonly MAX_ENEMIES = 15;
+    private static readonly MAX_ENEMIES = 10;
     private spawnTimer: number = 0;
     private static readonly DEFAULT_SPAWN_INTERVAL = 2000;
     private dimensions: { width: number; height: number };
@@ -41,9 +45,10 @@ export class GameScene extends PIXI.Container {
     private getWaveConfig(wave: number): WaveConfig {
         // Base configuration
         const config: WaveConfig = {
-            basicEnemyChance: 0.5,
-            fastEnemyChance: 0.3,
-            tankEnemyChance: 0.2,
+            basicEnemyChance: 0.4,
+            fastEnemyChance: 0.25,
+            tankEnemyChance: 0.15,
+            rangedEnemyChance: 0.2, // 20% chance for ranged enemies
             totalEnemies: 10 + Math.floor(wave * 2), // Increases by 2 each wave
             spawnInterval: Math.max(500, 2000 - wave * 100) // Gets faster each wave, minimum 500ms
         };
@@ -51,9 +56,10 @@ export class GameScene extends PIXI.Container {
         // Adjust enemy distribution based on wave
         if (wave > 5) {
             // After wave 5, gradually increase harder enemies
-            config.basicEnemyChance = Math.max(0.3, 0.5 - (wave - 5) * 0.02);
-            config.fastEnemyChance = Math.min(0.4, 0.3 + (wave - 5) * 0.01);
-            config.tankEnemyChance = Math.min(0.3, 0.2 + (wave - 5) * 0.01);
+            config.basicEnemyChance = Math.max(0.25, 0.4 - (wave - 5) * 0.02);
+            config.fastEnemyChance = Math.min(0.3, 0.25 + (wave - 5) * 0.01);
+            config.tankEnemyChance = Math.min(0.2, 0.15 + (wave - 5) * 0.005);
+            config.rangedEnemyChance = Math.min(0.25, 0.2 + (wave - 5) * 0.005);
         }
 
         return config;
@@ -164,6 +170,8 @@ export class GameScene extends PIXI.Container {
                 enemy = new TankEnemy(this.dimensions, this.player);
             } else if (roll < config.tankEnemyChance + config.fastEnemyChance) {
                 enemy = new FastEnemy(this.dimensions, this.player);
+            } else if (roll < config.tankEnemyChance + config.fastEnemyChance + config.rangedEnemyChance) {
+                enemy = new RangedEnemy(this.dimensions, this.player);
             } else {
                 enemy = new BasicEnemy(this.dimensions, this.player);
             }
@@ -184,6 +192,11 @@ export class GameScene extends PIXI.Container {
             x: (screenX - globalPos.x) / this.worldToScreenScale,
             y: (screenY - globalPos.y) / this.worldToScreenScale
         };
+    }
+
+    public addProjectile(projectile: Projectile): void {
+        this.projectiles.push(projectile);
+        this.addChild(projectile);
     }
 
     public update(delta: number): void {
@@ -227,7 +240,7 @@ export class GameScene extends PIXI.Container {
             worldPos.x,
             worldPos.y,
             this.inputManager.isDashActive(),
-            this.enemies,
+            [...this.enemies, ...this.projectiles.filter(p => p.isAlive())],
             this.inputManager.isAttacking()
         );
 
@@ -243,7 +256,8 @@ export class GameScene extends PIXI.Container {
         // Update enemies and remove dead ones
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            enemy.update(delta);
+            // Pass projectiles to enemy's update for weapon targeting
+            enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
             if (!enemy.isAlive()) {
                 this.removeChild(enemy);
                 this.enemies.splice(i, 1);
@@ -280,6 +294,17 @@ export class GameScene extends PIXI.Container {
         if (!this.waveComplete && this.enemies.length === 0 && this.enemiesRemainingInWave === 0) {
             this.waveComplete = true;
             this.waveBreakTimer = 0;
+        }
+
+        // Update projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.projectiles[i];
+            if (projectile.isAlive()) {
+                projectile.update(delta, [this.player, ...this.enemies]);
+            } else {
+                this.removeChild(projectile);
+                this.projectiles.splice(i, 1);
+            }
         }
     }
 } 
