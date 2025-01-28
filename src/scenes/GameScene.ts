@@ -27,6 +27,9 @@ export class GameScene extends PIXI.Container {
     private waveSystem: WaveSystem;
     private bossHealthBar: HealthBar | null = null;
     private bossNameText: PIXI.Text | null = null;
+    private freezeFrameTimer: number = 0;
+    private static readonly FREEZE_FRAME_DURATION = 75; // 50ms freeze for regular enemy deaths
+    private static readonly BOSS_FREEZE_DURATION = 150; // 150ms freeze for boss deaths
 
     // Wave display
     private waveText: PIXI.Text;
@@ -223,6 +226,12 @@ export class GameScene extends PIXI.Container {
             delta = 1/60;
         }
 
+        // Handle freeze frames
+        if (this.freezeFrameTimer > 0) {
+            this.freezeFrameTimer -= delta * 1000;
+            return; // Skip update during freeze frame
+        }
+
         if (this.isGameOver) return;
 
         // Handle wave announcement fade out
@@ -303,13 +312,15 @@ export class GameScene extends PIXI.Container {
 
         // Update enemies and remove dead ones
         for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i] as BaseEnemy;
-            enemy.playerIsAttacking = this.inputManager.isAttacking();
-            enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
-            if (!enemy.isAlive()) {
-                this.handleEnemyDeath(enemy);
-                this.removeChild(enemy);
-                this.enemies.splice(i, 1);
+            const enemy = this.enemies[i];
+            if (enemy instanceof BaseEnemy) {
+                enemy.playerIsAttacking = this.inputManager.isAttacking();
+                enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
+                if (!enemy.isAlive()) {
+                    this.handleEnemyDeath(enemy);
+                    this.removeChild(enemy);
+                    this.enemies.splice(i, 1);
+                }
             }
         }
 
@@ -331,6 +342,13 @@ export class GameScene extends PIXI.Container {
     private handleEnemyDeath(enemy: BaseEnemy): void {
         // Create death effect before removing the enemy
         this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
+        
+        // Add freeze frame for enemy death
+        if (enemy instanceof BossEnemy) {
+            this.freezeFrameTimer = GameScene.BOSS_FREEZE_DURATION;
+        } else {
+            this.freezeFrameTimer = GameScene.FREEZE_FRAME_DURATION;
+        }
     }
 
     private handleHit(target: Entity, weapon: BaseWeapon): void {

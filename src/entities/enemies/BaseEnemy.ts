@@ -28,6 +28,7 @@ export abstract class BaseEnemy extends Entity {
     protected isChasing: boolean = false;
     protected outOfRangeTimer: number = 0;
     public playerIsAttacking: boolean = false;
+    protected isEnemy: boolean = true;  // Added isEnemy property
 
     private static readonly STUN_DURATION = 200;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
@@ -40,6 +41,7 @@ export abstract class BaseEnemy extends Entity {
         super(bounds, stats.health);
         this.player = player;
         this.stats = stats;
+        this.isEnemy = true;  // Set isEnemy to true for all enemies
 
         // Create sprite
         this.sprite = new PIXI.Graphics();

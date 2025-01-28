@@ -6,6 +6,7 @@ export abstract class Entity extends PIXI.Container {
     public health: number;
     public maxHealth: number;
     public target: Entity | null = null;
+    public isEnemy: boolean = false;  // Default to false, enemies will set this to true
     protected bounds: PIXI.Rectangle;
     protected friction: number = 0.95;
     protected speed: number = 2;  // Default movement speed

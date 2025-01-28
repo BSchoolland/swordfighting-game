@@ -55,7 +55,7 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     
     // Wave 2: Basic + Fast - Learning to deal with speed
     {
-        composition: { ...zeroComposition, basicEnemies: 5, fastEnemies: 2 },
+        composition: { ...zeroComposition, basicEnemies: 5, fastEnemies: 2, flankerEnemies: 1},
         spawnDelay: 1000,
         description: "Swift Attackers"
     },

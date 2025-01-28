@@ -137,6 +137,54 @@ export class ParticleSystem {
         fadeOut();
     }
 
+    public createAfterimage(entity: PIXI.Container, color: number = 0xFFFFFF): void {
+        // Create a copy of the entity's sprite
+        const afterimage = new PIXI.Graphics();
+        
+        // Get all Graphics children from the entity
+        const sprites = entity.children.filter(child => child instanceof PIXI.Graphics) as PIXI.Graphics[];
+        
+        // Copy each sprite's geometry with the afterimage color
+        sprites.forEach(sprite => {
+            const commands = sprite.geometry.graphicsData;
+            commands.forEach(data => {
+                const fill = data.fillStyle;
+                if (fill) {
+                    afterimage.beginFill(color, 0.3);
+                    afterimage.drawShape(data.shape);
+                    afterimage.endFill();
+                }
+                const line = data.lineStyle;
+                if (line) {
+                    afterimage.lineStyle({
+                        width: line.width,
+                        color: color,
+                        alpha: 0.3
+                    });
+                    afterimage.drawShape(data.shape);
+                }
+            });
+        });
+
+        // Position the afterimage at the entity's position
+        afterimage.x = entity.x;
+        afterimage.y = entity.y;
+        afterimage.rotation = entity.rotation;
+        
+        // Add fade out effect with faster fade for snappier effect
+        const fadeOut = () => {
+            afterimage.alpha -= 0.15; // Faster fade
+            if (afterimage.alpha <= 0) {
+                this.container.removeChild(afterimage);
+            } else {
+                requestAnimationFrame(fadeOut);
+            }
+        };
+        
+        this.container.addChild(afterimage);
+        fadeOut();
+    }
+
     public update(delta: number): void {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const particle = this.particles[i];

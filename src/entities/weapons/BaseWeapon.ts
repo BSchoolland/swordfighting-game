@@ -231,4 +231,8 @@ export abstract class BaseWeapon extends PIXI.Container {
     public getColor(): number {
         return this.stats.color;
     }
+
+    public getDamage(): number {
+        return this.stats.damage;
+    }
 } 
