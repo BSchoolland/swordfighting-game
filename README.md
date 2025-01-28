@@ -1,68 +1,83 @@
-# Labyrinth Crawler
+# Pixel Rage
 
-A web-based 2D dungeon crawler game featuring procedurally generated dungeons and classic action RPG gameplay. Built with TypeScript and modern web technologies.
+A fast-paced top-down action combat game where you face waves of enemies and epic boss battles. Master the art of sword combat, dodge enemy attacks, and upgrade your abilities to become the ultimate warrior.
+
+![Pixel Rage Gameplay](screenshot.png)
+
+## Loads of AI support
+A prime goal of this project was to familiarize myself with the limits of today's AI tools.  As such I used AI wherever possible, and probably wrote less than 5% of the code myself.  I also used Suno AI to generate the music.  This process sped up development significantly, and the whole game was made in about 2 days. 
 
 ## Features
 
-### Core Gameplay
-- Top-down 2D action combat
-- Room-based dungeon exploration
-- Multiple weapons and items
-- Enemy AI with various behavior patterns
-- Collectable items and upgrades
+### Combat System
+- **Dynamic Combat**: Fast-paced melee combat with precise hitboxes and timing
+- **Dash Ability**: Quick dodge maneuvers with upgradeable cooldown
+- **Advanced Melee System**: A system that allows for a wide variety of melee weapons with unique mechanics
+- **Combat Feedback**: Visual effects, particles and sound effects for impactful combat
 
-### Technical Features
-- Smooth 60 FPS gameplay
-- Pixel-perfect collision detection
-- Efficient sprite batching
-- Responsive controls
-- Cross-browser compatibility
+### Enemy Types
+- **Basic Enemies**: Standard sword-wielding foes
+- **Tank Enemies**: Heavy hitters with powerful hammer attacks
+- **Ranged Enemies**: Bow-wielding attackers that maintain distance
+- **Spear Enemies**: Long-range melee attackers
+- **Fast Enemies**: Quick, agile opponents with daggers
+- **Flanker Enemies**: Tactical enemies that dodge your attacks and try to flank you
+- **Boomerang Enemies**: Unique attackers with curving projectiles
 
-## Tech Stack
+### Boss Battles
+- **The Warrior**: A powerful tank boss with devastating hammer strikes
+- **The Berserker**: An aggressive boss that becomes more dangerous at low health
+- **The Hunter**: A tactical ranged boss with multi-arrow attacks
 
-### Core Technologies
-- TypeScript
-- HTML5 Canvas
-- WebGL
+### Progression System
+- **Wave-Based Combat**: Face increasingly difficult waves of enemies
+- **Upgrade System**: Choose from various upgrades after clearing boss waves:
+  - Movement Speed
+  - Dash Cooldown Reduction
+  - Weapon Range
 
-### Libraries
-- **Pixi.js** - High-performance 2D WebGL renderer
-- **Matter.js** - 2D physics engine
-- **Howler.js** - Audio management
+## Controls
 
-## Development Setup
+- **WASD**: Movement
+- **Mouse**: Aim
+- **Left Click**: Attack
+- **Space**: Dash
+- **F**: Toggle Fullscreen
 
-1. Install dependencies:
-```bash
-npm install
-```
+### Controller Support
 
-2. Start development server:
-```bash
-npm run dev
-```
+- **Left Stick**: Movement
+- **Right Stick**: Aim
+- **Right Trigger**: Attack
+- **Left Trigger**: Dash
 
-3. Build for production:
-```bash
-npm run build
-```
+## Technologies Used
+- **TypeScript**: For type-safe code and improved cursor AI support
+- **PixiJS**: 2D WebGL rendering
+- **Custom Physics**: Built-in collision detection and response
+- **Custom Sound System**: Optimized audio management using zzfx
+- **Suno AI**: Music created by Suno AI's v4 diffusion model
 
-## Project Structure
-```
-src/
-├── Game.ts              # Main game class
-├── scenes/             # Game scenes
-├── entities/           # Game objects
-├── systems/           # Core systems
-└── utils/             # Helper utilities
-```
+## Performance
+- Runs at 60 FPS on modern browsers
+- Optimized particle systems and visual effects
+- Efficient entity management and collision detection
+
+## Browser Support
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
 
 ## Contributing
-
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request
 
 ## License
+MIT License - See LICENSE file for details
 
-MIT License - See LICENSE file for details 
+## Credits
+- Game Design & Development: [Your Name]
+- Sound Effects: Custom synthesized audio
+- Art & Visual Design: Procedurally generated graphics
