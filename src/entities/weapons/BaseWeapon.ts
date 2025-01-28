@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Player } from '../Player';
+import { ParticleSystem } from '../../effects/ParticleSystem';
 
 export interface WeaponStats {
     damage: number;
@@ -35,6 +36,9 @@ export abstract class BaseWeapon extends PIXI.Container {
     protected stats: WeaponStats;
     protected swingDirection: number = 1; // 1 for right, -1 for left
     private static readonly COMBO_WINDOW = 1500; // 800ms window for combo
+    protected trailPoints: Array<{x: number, y: number}> = [];
+    protected lastTrailTime: number = 0;
+    protected readonly TRAIL_INTERVAL = 16; // Collect points every ~16ms
 
     constructor(owner: Entity, stats: WeaponStats, isEnemy: boolean = false) {
         super();
@@ -111,6 +115,30 @@ export abstract class BaseWeapon extends PIXI.Container {
         if (!this.isSwinging && !this.isWindingUp && 
             currentTime - this.lastSwingTime > BaseWeapon.COMBO_WINDOW) {
             this.swingDirection = 1;
+        }
+
+        // Track points for trail effect
+        if (this.isSwinging) {
+            if (currentTime - this.lastTrailTime >= this.TRAIL_INTERVAL) {
+                const totalRotation = this.rotation + this.owner.rotation;
+                
+                // Calculate blade tip position relative to owner's world coordinates
+                this.trailPoints.push({
+                    x: this.owner.x + Math.cos(totalRotation) * this.stats.bladeLength,
+                    y: this.owner.y + Math.sin(totalRotation) * this.stats.bladeLength
+                });
+                this.lastTrailTime = currentTime;
+
+                // Create trail effect when we have enough points
+                if (this.trailPoints.length >= 2) {
+                    const intensity = this.isWindingUp ? 0.5 : 1.0;
+                    ParticleSystem.getInstance().createWeaponTrail(this.trailPoints, this.stats.color, intensity);
+                    this.trailPoints = [this.trailPoints[this.trailPoints.length - 1]]; // Keep last point
+                }
+            }
+        } else {
+            // Clear trail points when not swinging
+            this.trailPoints = [];
         }
     }
 
@@ -189,8 +217,18 @@ export abstract class BaseWeapon extends PIXI.Container {
                     
                     target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
                     this.hitEntities.add(target);
+                    
+                    // Trigger hit effect
+                    const gameScene = this.parent?.parent as any;
+                    if (gameScene && gameScene.handleHit) {
+                        gameScene.handleHit(target, this);
+                    }
                 }
             }
         });
+    }
+
+    public getColor(): number {
+        return this.stats.color;
     }
 } 

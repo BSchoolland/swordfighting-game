@@ -248,4 +248,8 @@ export abstract class BaseEnemy extends Entity {
         // Apply velocity and knockback
         this.applyVelocity();
     }
+
+    public getColor(): number {
+        return this.stats.color;
+    }
 } 

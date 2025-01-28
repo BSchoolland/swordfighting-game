@@ -9,6 +9,8 @@ import { SoundManager } from '../systems/SoundManager';
 import { WaveSystem } from '../systems/WaveSystem';
 import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
+import { ParticleSystem } from '../effects/ParticleSystem';
+import { BaseWeapon } from '../entities/weapons/BaseWeapon';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
@@ -31,6 +33,8 @@ export class GameScene extends PIXI.Container {
     private waveAnnouncement: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
+
+    private particleSystem: ParticleSystem;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -109,6 +113,9 @@ export class GameScene extends PIXI.Container {
                 this.waveAnnouncementTimer = 0;
             }
         });
+
+        // Initialize particle system
+        this.particleSystem = ParticleSystem.getInstance(this);
     }
 
     private startWave(waveNumber: number): void {
@@ -300,6 +307,7 @@ export class GameScene extends PIXI.Container {
             enemy.playerIsAttacking = this.inputManager.isAttacking();
             enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
             if (!enemy.isAlive()) {
+                this.handleEnemyDeath(enemy);
                 this.removeChild(enemy);
                 this.enemies.splice(i, 1);
             }
@@ -315,5 +323,18 @@ export class GameScene extends PIXI.Container {
                 this.projectiles.splice(i, 1);
             }
         }
+
+        // Update particle effects
+        this.particleSystem.update(delta);
+    }
+
+    private handleEnemyDeath(enemy: BaseEnemy): void {
+        // Create death effect before removing the enemy
+        this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
+    }
+
+    private handleHit(target: Entity, weapon: BaseWeapon): void {
+        // Create hit sparks
+        this.particleSystem.createHitSparks(target.x, target.y, weapon.getColor());
     }
 } 
