@@ -44,6 +44,7 @@ export abstract class BaseEnemy extends Entity {
         // Create sprite
         this.sprite = new PIXI.Graphics();
         this.drawSprite();
+        this.updateRadiusFromSprite(); // Set radius after drawing
         this.addChild(this.sprite);
 
         // Initialize weapon (to be set by child class)
@@ -261,5 +262,13 @@ export abstract class BaseEnemy extends Entity {
         const range = this.weapon.getRange().retreatRange;
         console.log(`[${this.constructor.name}] Retreat range: ${range}`);
         return range;
+    }
+
+    protected updateRadiusFromSprite(): void {
+        // Calculate radius based on the sprite's bounds
+        const bounds = this.sprite.getBounds();
+        // Use the larger of width/height divided by 2 for the radius
+        this.radius = Math.max((Math.max(bounds.width, bounds.height) / 2) - 10, 0);
+        console.log(`[${this.constructor.name}] Set radius to ${this.radius}`);
     }
 } 

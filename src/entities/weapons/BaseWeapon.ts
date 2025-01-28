@@ -202,7 +202,10 @@ export abstract class BaseWeapon extends PIXI.Container {
             const dy = target.y - this.owner.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            if (distance < this.stats.bladeLength) {
+            // Consider target's radius when checking distance
+            const effectiveRange = this.stats.bladeLength + target.getRadius();
+            
+            if (distance < effectiveRange) {
                 const angleToTarget = Math.atan2(dy, dx);
                 const weaponWorldAngle = this.rotation + this.owner.rotation;
                 
@@ -214,7 +217,12 @@ export abstract class BaseWeapon extends PIXI.Container {
                     angleDiff = 2 * Math.PI - angleDiff;
                 }
 
-                if (angleDiff < Math.PI/6) {
+                // Adjust hit arc based on target size - larger enemies are easier to hit
+                const baseHitArc = Math.PI/6; // 30 degrees base arc
+                const sizeMultiplier = target.getRadius() / 10; // 10 is the default radius
+                const adjustedHitArc = baseHitArc * Math.min(2, Math.max(1, sizeMultiplier)); // Cap at 2x base arc
+
+                if (angleDiff < adjustedHitArc) {
                     const knockbackDir = {
                         x: dx / distance,
                         y: dy / distance
