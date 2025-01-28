@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Player } from '../Player';
 import { ParticleSystem } from '../../effects/ParticleSystem';
+import { SoundManager } from '../../systems/SoundManager';
 
 export interface WeaponStats {
     damage: number;
@@ -83,6 +84,11 @@ export abstract class BaseWeapon extends PIXI.Container {
                 this.previewSprite.visible = false;
                 this.sprite.visible = true;
                 this.swingAngle = 0;
+                
+                // Play swing sound when the actual swing starts
+                if (this.owner instanceof Player) {
+                    SoundManager.getInstance().playSwingSound();
+                }
             }
         }
 
@@ -186,30 +192,20 @@ export abstract class BaseWeapon extends PIXI.Container {
             const dx = target.x - this.owner.x;
             const dy = target.y - this.owner.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            // Check if target is in range
+            
             if (distance < this.stats.bladeLength) {
-                // Get angle to target relative to world coordinates
                 const angleToTarget = Math.atan2(dy, dx);
-                
-                // Get the weapon's world angle by adding owner's rotation
                 const weaponWorldAngle = this.rotation + this.owner.rotation;
                 
-                // Normalize angles to [-PI, PI] range
                 const normalizedWeaponAngle = ((weaponWorldAngle % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
                 const normalizedTargetAngle = ((angleToTarget % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
                 
-                // Calculate the absolute angular difference accounting for wrap-around
                 let angleDiff = Math.abs(normalizedWeaponAngle - normalizedTargetAngle);
                 if (angleDiff > Math.PI) {
                     angleDiff = 2 * Math.PI - angleDiff;
                 }
 
-                console.log(`[${this.debugId}] weaponAngle: ${normalizedWeaponAngle.toFixed(2)}, targetAngle: ${normalizedTargetAngle.toFixed(2)}, diff: ${angleDiff.toFixed(2)}`);
-
-                // Check if the weapon is pointing towards the target within the hit arc
-                if (angleDiff < Math.PI/6) {  // Increased hit arc slightly to 30 degrees
-                    console.log(`[${this.debugId}] Target hit`);
-                    // Knockback direction is directly away from player
+                if (angleDiff < Math.PI/6) {
                     const knockbackDir = {
                         x: dx / distance,
                         y: dy / distance
@@ -218,7 +214,17 @@ export abstract class BaseWeapon extends PIXI.Container {
                     target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
                     this.hitEntities.add(target);
                     
-                    // Trigger hit effect
+                    // Play hit sound and trigger hit effect
+                    if (this.owner instanceof Player) {
+                        // Check if it's a critical hit (you can define your own criteria)
+                        const isCriticalHit = this.swingAngle > this.stats.swingRange * 0.7; // Example: hits during the peak of the swing
+                        if (isCriticalHit) {
+                            SoundManager.getInstance().playHeavyDamageSound();
+                        } else {
+                            SoundManager.getInstance().playHitSound();
+                        }
+                    }
+                    
                     const gameScene = this.parent?.parent as any;
                     if (gameScene && gameScene.handleHit) {
                         gameScene.handleHit(target, this);

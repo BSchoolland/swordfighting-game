@@ -1,4 +1,6 @@
 import * as PIXI from 'pixi.js';
+import { HealthBar } from './HealthBar';
+import { SoundManager } from '../systems/SoundManager';
 
 export abstract class Entity extends PIXI.Container {
     public velocity: { x: number; y: number } = { x: 0, y: 0 };
@@ -10,6 +12,9 @@ export abstract class Entity extends PIXI.Container {
     protected bounds: PIXI.Rectangle;
     protected friction: number = 0.95;
     protected speed: number = 2;  // Default movement speed
+    public canBlock: boolean = false;
+    public isBlocking: boolean = false;
+    protected healthBar: HealthBar | null = null;
 
     constructor(bounds: { width: number; height: number }, maxHealth: number) {
         super();
@@ -18,10 +23,26 @@ export abstract class Entity extends PIXI.Container {
         this.health = maxHealth;
     }
 
-    public takeDamage(amount: number, knockbackDirection: { x: number, y: number }, knockbackForce: number): void {
+    public takeDamage(amount: number, knockbackDirection?: { x: number, y: number }, knockbackForce: number = 20): void {
+        // Check if entity can block/parry
+        if (this.canBlock && this.isBlocking) {
+            SoundManager.getInstance().playParrySound();
+            return;
+        }
+
+        const oldHealth = this.health;
         this.health = Math.max(0, this.health - amount);
-        this.velocity.x = knockbackDirection.x * knockbackForce;
-        this.velocity.y = knockbackDirection.y * knockbackForce;
+        
+        // Apply knockback if direction is provided
+        if (knockbackDirection) {
+            this.velocity.x = knockbackDirection.x * knockbackForce;
+            this.velocity.y = knockbackDirection.y * knockbackForce;
+        }
+
+        // Update health bar if it exists
+        if (this.healthBar) {
+            this.healthBar.update(this.health / this.maxHealth);
+        }
     }
 
     public isAlive(): boolean {

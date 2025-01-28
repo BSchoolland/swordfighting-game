@@ -26,6 +26,9 @@ export class HealthBar extends PIXI.Container {
         this.bar.drawRect(0, 0, width, height);
         this.bar.endFill();
         this.addChild(this.bar);
+
+        // Center the bar
+        this.pivot.x = width / 2;
     }
 
     public updateHealth(current: number, max: number): void {
@@ -43,5 +46,12 @@ export class HealthBar extends PIXI.Container {
         if (ratio > 0.6) return 0x00ff00; // Green
         if (ratio > 0.3) return 0xffff00; // Yellow
         return 0xff0000; // Red
+    }
+
+    public update(percentage: number): void {
+        this.bar.clear();
+        this.bar.beginFill(0xff0000);
+        this.bar.drawRect(0, 0, this.barWidth * Math.max(0, Math.min(1, percentage)), this.barHeight);
+        this.bar.endFill();
     }
 } 

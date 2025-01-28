@@ -107,6 +107,92 @@ export class ParticleSystem {
         }
     }
 
+    public createBossDeathEffect(x: number, y: number, color: number = 0xFF0000): void {
+        // Create expanding ring
+        const ring = new PIXI.Graphics();
+        ring.lineStyle(3, color, 0.8);
+        ring.drawCircle(x, y, 10);
+        ring.alpha = 1;
+        this.container.addChild(ring);
+
+        // Animate the ring
+        let ringRadius = 10;
+        const expandRing = () => {
+            ring.clear();
+            ring.lineStyle(3, color, ring.alpha);
+            ring.drawCircle(x, y, ringRadius);
+            ringRadius += 5;
+            ring.alpha -= 0.02;
+            
+            if (ring.alpha > 0) {
+                requestAnimationFrame(expandRing);
+            } else {
+                this.container.removeChild(ring);
+            }
+        };
+        expandRing();
+
+        // Create multiple waves of particles
+        const createParticleWave = (delay: number) => {
+            setTimeout(() => {
+                const numParticles = 24;
+                for (let i = 0; i < numParticles; i++) {
+                    const particle = new PIXI.Graphics() as Particle;
+                    
+                    // Larger, more dramatic particles
+                    particle.beginFill(color);
+                    particle.drawCircle(0, 0, 4 + Math.random() * 6);
+                    particle.endFill();
+                    
+                    // Start from random position within the boss
+                    const startRadius = 30;
+                    const startAngle = (i / numParticles) * Math.PI * 2;
+                    particle.x = x + Math.cos(startAngle) * startRadius * Math.random();
+                    particle.y = y + Math.sin(startAngle) * startRadius * Math.random();
+                    
+                    // Explode outward
+                    const speed = 300 + Math.random() * 400;
+                    particle.velocity = {
+                        x: Math.cos(startAngle) * speed,
+                        y: Math.sin(startAngle) * speed
+                    };
+                    
+                    // Longer lifetime for more dramatic effect
+                    particle.maxLifetime = 800 + Math.random() * 200;
+                    particle.lifetime = particle.maxLifetime;
+                    particle.alpha = 1;
+
+                    this.particles.push(particle);
+                    this.container.addChild(particle);
+                }
+            }, delay);
+        };
+
+        // Create three waves of particles
+        createParticleWave(0);    // Initial burst
+        createParticleWave(200);  // Second wave
+        createParticleWave(400);  // Final wave
+
+        // Create flash effect
+        const flash = new PIXI.Graphics();
+        flash.beginFill(0xFFFFFF);
+        flash.drawCircle(x, y, 100);
+        flash.endFill();
+        flash.alpha = 0.6;
+        this.container.addChild(flash);
+
+        // Fade out flash
+        const fadeOutFlash = () => {
+            flash.alpha -= 0.1;
+            if (flash.alpha <= 0) {
+                this.container.removeChild(flash);
+            } else {
+                requestAnimationFrame(fadeOutFlash);
+            }
+        };
+        fadeOutFlash();
+    }
+
     public createWeaponTrail(points: Array<{x: number, y: number}>, color: number, intensity: number = 1): void {
         const trail = new PIXI.Graphics();
         trail.lineStyle({

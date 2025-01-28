@@ -1,4 +1,6 @@
 import { Entity } from '../Entity';
+import { Player } from '../Player';
+import { SoundManager } from '../../systems/SoundManager';
 
 export interface AbilityStats {
     cooldown: number;
@@ -16,19 +18,32 @@ export abstract class BaseAbility {
         this.stats = stats;
     }
 
-    public activate(): void {
+    public tryActivate(): boolean {
         const currentTime = Date.now();
-        if (!this.isActive && currentTime - this.lastUseTime >= this.stats.cooldown) {
+        if (currentTime - this.lastUseTime >= this.stats.cooldown) {
             this.isActive = true;
             this.lastUseTime = currentTime;
             this.onActivate();
-            
-            // Automatically end ability after duration
-            setTimeout(() => {
-                this.isActive = false;
-                this.onDeactivate();
-            }, this.stats.duration);
+
+            // Play power-up sound for player abilities
+            if (this.owner instanceof Player) {
+                SoundManager.getInstance().playPowerUpSound();
+            }
+
+            return true;
         }
+        return false;
+    }
+
+    public deactivate(): void {
+        if (this.isActive) {
+            this.isActive = false;
+            this.onDeactivate();
+        }
+    }
+
+    public isCurrentlyActive(): boolean {
+        return this.isActive;
     }
 
     public getCooldownProgress(): number {
@@ -37,10 +52,7 @@ export abstract class BaseAbility {
         return Math.min(1, timeSinceLastUse / this.stats.cooldown);
     }
 
-    public isActiveNow(): boolean {
-        return this.isActive;
-    }
-
     protected abstract onActivate(): void;
     protected abstract onDeactivate(): void;
+    protected abstract getCooldown(): number;
 } 

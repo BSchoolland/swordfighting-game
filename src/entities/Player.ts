@@ -43,7 +43,7 @@ export class Player extends Entity {
         this.addChild(this.sword);
 
         // Initialize dash ability
-        this.dash = new Dash(this);
+        this.dash = new Dash(this, this.inputManager);
     }
 
     private drawSprite(): void {
@@ -139,7 +139,6 @@ export class Player extends Entity {
             if (isAttacking && !this.isCurrentlyAttacking) {
                 this.isCurrentlyAttacking = true;
                 this.sword.swing();
-                this.soundManager.playSwingSound();
             } else if (!isAttacking && this.isCurrentlyAttacking) {
                 this.isCurrentlyAttacking = false;
             }
@@ -173,7 +172,6 @@ export class Player extends Entity {
         if (isAttacking && !this.isCurrentlyAttacking) {
             this.isCurrentlyAttacking = true;
             this.sword.swing();
-            this.soundManager.playSwingSound();
         } else if (!isAttacking && this.isCurrentlyAttacking) {
             this.isCurrentlyAttacking = false;
         }
