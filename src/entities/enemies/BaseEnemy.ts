@@ -23,12 +23,10 @@ export abstract class BaseEnemy extends Entity {
     protected stats: EnemyStats;
     protected stunned: boolean = false;
     protected stunTimer: number = 0;
-    protected attackRange: number;
-    protected retreatRange: number;
     protected isChasing: boolean = false;
     protected outOfRangeTimer: number = 0;
     public playerIsAttacking: boolean = false;
-    protected isEnemy: boolean = true;  // Added isEnemy property
+    public isEnemy: boolean = true;  // Changed to public to match Entity class
 
     private static readonly STUN_DURATION = 200;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
@@ -50,11 +48,6 @@ export abstract class BaseEnemy extends Entity {
 
         // Initialize weapon (to be set by child class)
         this.initializeWeapon();
-
-        // Get weapon ranges
-        const ranges = this.weapon.getRange();
-        this.attackRange = ranges.attackRange;
-        this.retreatRange = ranges.retreatRange;
 
         // Random spawn position away from player
         do {
@@ -201,8 +194,7 @@ export abstract class BaseEnemy extends Entity {
         const distance = Math.sqrt(dx * dx + dy * dy);
         const targetAngle = Math.atan2(dy, dx);
         
-        console.log(`[${this.constructor.name}] Positions - Enemy: (${enemyGlobalPos.x.toFixed(1)}, ${enemyGlobalPos.y.toFixed(1)}), Player: (${playerGlobalPos.x.toFixed(1)}, ${playerGlobalPos.y.toFixed(1)})`);
-        console.log(`[${this.constructor.name}] Movement - Attacking: ${(this.weapon.isInWindUp() || this.weapon.isInSwing())}, Restriction: ${movementMultiplier.toFixed(2)}`);
+        console.log(`[${this.constructor.name}] Distance to player: ${distance}, Attack range: ${this.attackRange}, Retreat range: ${this.retreatRange}`);
         
         // Smoothly rotate towards the player with movement restriction
         this.rotateTowards(targetAngle, delta, movementMultiplier);
@@ -221,14 +213,17 @@ export abstract class BaseEnemy extends Entity {
         if (this.isChasing) {
             if (distance > this.attackRange) {
                 // Move towards player if too far
+                console.log(`[${this.constructor.name}] Moving towards player - too far`);
                 this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
                 this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
             } else if (distance < this.retreatRange) {
                 // Back away if too close
+                console.log(`[${this.constructor.name}] Moving away from player - too close`);
                 this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
                 this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
             } else {
                 // In perfect range, slow down and attack
+                console.log(`[${this.constructor.name}] In perfect range - attacking`);
                 this.velocity.x *= 0.8;
                 this.velocity.y *= 0.8;
                 this.weapon.swing();
@@ -253,5 +248,18 @@ export abstract class BaseEnemy extends Entity {
 
     public getColor(): number {
         return this.stats.color;
+    }
+
+    // Helper methods to get current weapon ranges
+    protected get attackRange(): number {
+        const range = this.weapon.getRange().attackRange;
+        console.log(`[${this.constructor.name}] Attack range: ${range}`);
+        return range;
+    }
+
+    protected get retreatRange(): number {
+        const range = this.weapon.getRange().retreatRange;
+        console.log(`[${this.constructor.name}] Retreat range: ${range}`);
+        return range;
     }
 } 

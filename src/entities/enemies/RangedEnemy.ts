@@ -41,14 +41,12 @@ export class RangedEnemy extends BaseEnemy {
 
         if (!this.stunned && !this.weapon.isInWindUp()) {
             const distance = this.distanceToPlayer();
-            console.log(`[RangedEnemy] Distance to player: ${distance}, Attack Range: ${this.attackRange}, Chase Range: ${this.stats.chaseRange}`);
             
             // Try to maintain optimal range
             if (distance < this.attackRange * 0.8) {
                 // Too close, back away faster
                 this.velocity.x *= 1.2;
                 this.velocity.y *= 1.2;
-                console.log('[RangedEnemy] Too close, backing away');
             } else if (distance > this.attackRange * 1.2) {
                 // Too far, move in
                 const dx = this.player.x - this.x;
@@ -56,16 +54,12 @@ export class RangedEnemy extends BaseEnemy {
                 const angle = Math.atan2(dy, dx);
                 this.velocity.x += Math.cos(angle) * this.stats.speed;
                 this.velocity.y += Math.sin(angle) * this.stats.speed;
-                console.log('[RangedEnemy] Too far, moving closer');
             }
 
             // Attack if in good range and facing player
             if (distance < this.stats.chaseRange && distance > this.attackRange * 0.6) {
-                console.log('[RangedEnemy] In attack range, attempting to fire');
                 this.weapon.swing();
             }
-        } else {
-            console.log(`[RangedEnemy] Not attacking - Stunned: ${this.stunned}, WindingUp: ${this.weapon.isInWindUp()}`);
-        }
+        } 
     }
 } 

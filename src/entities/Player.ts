@@ -21,6 +21,10 @@ export class Player extends Entity {
     private stunTimer: number = 0;
     private static readonly STUN_DURATION: number = 100; // Reduced from 200ms to 100ms
     private static readonly KNOCKBACK_THRESHOLD: number = 1.0; // Increased from 0.5 to make recovery faster
+    private static readonly BASE_SPEED = 1.75;
+    private baseSpeed: number = Player.BASE_SPEED;
+    private speedMultiplier: number = 1;
+    private swordLengthMultiplier: number = 1;
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -150,9 +154,9 @@ export class Player extends Entity {
         // Get movement from input manager
         const movement = this.inputManager.getMovementVector();
         
-        // Apply movement
-        this.velocity.x = movement.x * this.speed;
-        this.velocity.y = movement.y * this.speed;
+        // Apply movement using getSpeed() to include the multiplier
+        this.velocity.x = movement.x * this.getSpeed();
+        this.velocity.y = movement.y * this.getSpeed();
 
         // Handle dash
         if (isDashing) {
@@ -198,5 +202,33 @@ export class Player extends Entity {
             this.stunned = true;
             this.stunTimer = Player.STUN_DURATION;
         }
+    }
+
+    public increaseSpeed(percentage: number): void {
+        this.speedMultiplier *= (1 + percentage);
+        console.log(`Speed increased by ${percentage * 100}%. New multiplier: ${this.speedMultiplier}`);
+    }
+
+    public getSpeed(): number {
+        return this.baseSpeed * this.speedMultiplier;
+    }
+
+    public setSpeed(speed: number): void {
+        this.baseSpeed = speed;
+    }
+
+    public resetSpeed(): void {
+        this.baseSpeed = Player.BASE_SPEED;
+    }
+
+    public getDash(): Dash {
+        return this.dash;
+    }
+
+    public increaseSwordLength(percentage: number): void {
+        this.swordLengthMultiplier *= (1 + percentage);
+        const newLength = 60 * this.swordLengthMultiplier; // 60 is the default blade length
+        this.sword.setBladeLength(newLength);
+        console.log(`Sword length increased by ${percentage * 100}%. New multiplier: ${this.swordLengthMultiplier}`);
     }
 } 

@@ -20,7 +20,7 @@ export abstract class BaseAbility {
 
     public tryActivate(): boolean {
         const currentTime = Date.now();
-        if (currentTime - this.lastUseTime >= this.stats.cooldown) {
+        if (currentTime - this.lastUseTime >= this.getCooldown()) {
             this.isActive = true;
             this.lastUseTime = currentTime;
             this.onActivate();
@@ -49,7 +49,7 @@ export abstract class BaseAbility {
     public getCooldownProgress(): number {
         const currentTime = Date.now();
         const timeSinceLastUse = currentTime - this.lastUseTime;
-        return Math.min(1, timeSinceLastUse / this.stats.cooldown);
+        return Math.min(1, timeSinceLastUse / this.getCooldown());
     }
 
     protected abstract onActivate(): void;

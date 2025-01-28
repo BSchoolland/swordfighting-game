@@ -273,7 +273,7 @@ export class SoundManager {
         // Rising pitch with sparkly effect
     }
 
-    public playGameOverSound(): void {  
+    public playGameOverSound(): void {
         if (!this.canPlaySound('ambient')) return;
         // Dramatic descending tone
         zzfx(2, .05, 240, .3, .5, .3, 1, -4, -0.5);

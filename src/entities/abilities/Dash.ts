@@ -10,15 +10,15 @@ interface DashStats extends AbilityStats {
 }
 
 export class Dash extends BaseAbility {
-    private originalSpeed: number = 0;
     private dashSpeed: number;
     private dashForce: number;
     private dashDirection: { x: number, y: number } = { x: 0, y: 0 };
     private inputManager: InputManager;
+    private cooldownMultiplier: number = 1;
 
     constructor(owner: Player, inputManager: InputManager) {
         const stats: DashStats = {
-            cooldown: 1000,
+            cooldown: 2000,
             duration: 200,
             dashSpeed: 8,
             dashForce: 20
@@ -31,7 +31,6 @@ export class Dash extends BaseAbility {
 
     public tryActivate(): boolean {
         if (super.tryActivate()) {
-            this.originalSpeed = this.owner.getSpeed();
             this.owner.setSpeed(this.dashSpeed);
             this.dashDirection = this.calculateDashDirection();
             
@@ -56,14 +55,19 @@ export class Dash extends BaseAbility {
     }
 
     protected onDeactivate(): void {
-        if (this.owner) {
-            this.owner.setSpeed(this.originalSpeed);
+        if (this.owner instanceof Player) {
+            this.owner.resetSpeed();
             this.dashDirection = { x: 0, y: 0 };
         }
     }
 
     protected getCooldown(): number {
-        return this.stats.cooldown;
+        return this.stats.cooldown * this.cooldownMultiplier;
+    }
+
+    public reduceCooldown(percentage: number): void {
+        this.cooldownMultiplier *= (1 - percentage);
+        console.log(`Dash cooldown reduced by ${percentage * 100}%. New multiplier: ${this.cooldownMultiplier}`);
     }
 
     private calculateDashDirection(): { x: number, y: number } {

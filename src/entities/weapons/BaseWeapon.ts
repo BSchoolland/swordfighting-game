@@ -63,9 +63,18 @@ export abstract class BaseWeapon extends PIXI.Container {
     }
 
     public getRange(): { attackRange: number, retreatRange: number } {
+        // Use the explicit range parameter instead of calculating from bladeLength
+        const attackRange = this.stats.range;
+        const retreatRange = this.stats.range * (this.stats.retreatRange / this.stats.optimalRange);
+        console.log(`[${this.constructor.name}] Calculating ranges:
+            range: ${this.stats.range}
+            optimalRange: ${this.stats.optimalRange}
+            retreatRange: ${this.stats.retreatRange}
+            => attackRange: ${attackRange}
+            => retreatRange: ${retreatRange}`);
         return {
-            attackRange: this.stats.bladeLength * this.stats.optimalRange,
-            retreatRange: this.stats.bladeLength * this.stats.retreatRange
+            attackRange,
+            retreatRange
         };
     }
 

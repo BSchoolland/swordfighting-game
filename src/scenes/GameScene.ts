@@ -11,6 +11,7 @@ import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import { BaseWeapon } from '../entities/weapons/BaseWeapon';
+import { UpgradeSystem } from '../systems/UpgradeSystem';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
@@ -38,6 +39,7 @@ export class GameScene extends PIXI.Container {
     private waveAnnouncementTimer: number = 0;
 
     private particleSystem: ParticleSystem;
+    private upgradeSystem: UpgradeSystem;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -88,6 +90,10 @@ export class GameScene extends PIXI.Container {
 
         // Initialize wave system
         this.waveSystem = new WaveSystem(dimensions, this.player, this.enemies);
+
+        // Initialize upgrade system
+        this.upgradeSystem = new UpgradeSystem(dimensions, this.player);
+        this.addChild(this.upgradeSystem);
 
         // Start first wave
         this.startWave(1);
@@ -242,6 +248,11 @@ export class GameScene extends PIXI.Container {
             delta = 1/60;
         }
 
+        // Skip updates if upgrade screen is visible
+        if (this.upgradeSystem.isUpgradeScreenVisible()) {
+            return;
+        }
+
         // Handle freeze frames
         if (this.freezeFrameTimer > 0) {
             this.freezeFrameTimer -= delta * 1000;
@@ -333,9 +344,17 @@ export class GameScene extends PIXI.Container {
                 enemy.playerIsAttacking = this.inputManager.isAttacking();
                 enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
                 if (!enemy.isAlive()) {
+                    const wasBoss = enemy instanceof BossEnemy;
                     this.handleEnemyDeath(enemy);
                     this.removeChild(enemy);
                     this.enemies.splice(i, 1);
+
+                    // Show upgrade screen after boss death
+                    if (wasBoss) {
+                        setTimeout(() => {
+                            this.upgradeSystem.showUpgradeSelection();
+                        }, 1000); // Show after 1 second delay
+                    }
                 }
             }
         }

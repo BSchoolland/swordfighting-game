@@ -6,13 +6,13 @@ import { Entity } from '../Entity';
 
 export class BlitzerEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
-        health: 35,
+        health: 50,
         speed: 0.15, // Slower base speed
         maxSpeed: 3, // But higher max speed
         chaseRange: 600, // Increased chase range
         color: 0xff00ff, // Magenta color
         movementRestriction: 1.5, // Speeds up during attack
-        windupRestriction: 0.1, // Bad mobility during windup
+        windupRestriction: 0.3, // Bad mobility during windup
         chaseDuration: 3000, // 3 seconds
         knockbackResistance: 0.2,
         maxRotateSpeed: 6.0 // Quick turning speed

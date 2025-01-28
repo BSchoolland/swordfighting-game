@@ -3,25 +3,48 @@ import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
 
 export class Hammer extends BaseWeapon {
-    private static readonly ENEMY_PARAMS: WeaponStats = {
-        swingSpeed: 0.2, // Slower swing
-        swingRange: Math.PI / 0.8, 
-        damage: 25, // High damage
-        knockback: 8, // Strong knockback
-        attackSpeed: 2500, // Slow attack speed
-        bladeLength: 80,
-        bladeWidth: 8, // Thicker weapon
-        swingInfluence: 0.7, // Strong swing influence
+    private static readonly PLAYER_PARAMS: WeaponStats = {
+        damage: 30,
+        knockback: 15,
+        attackSpeed: 1500, // Slower than sword
+        range: 120, // Increased range for hammer
+        swingSpeed: 0.15,
+        swingRange: Math.PI * 1.2, // Wider swing
+        bladeLength: 75, // Longer than sword
+        bladeWidth: 8, // Thicker than sword
+        swingInfluence: 0.8,
         color: 0x666666,
         optimalRange: 0.8,
         retreatRange: 0.6,
-        windUpTime: 500, // Long wind-up
-        previewAlpha: 0.4,
-        range: 45
+        windUpTime: 500, // Longer windup for telegraphing
+        previewAlpha: 0.3
     };
 
-    constructor(owner: Entity, isEnemy: boolean = true) {
-        super(owner, Hammer.ENEMY_PARAMS, isEnemy);
+    private static readonly ENEMY_PARAMS: WeaponStats = {
+        damage: 20,
+        knockback: 12,
+        attackSpeed: 2000, // Even slower for enemies
+        range: 100, 
+        swingSpeed: 0.12,
+        swingRange: Math.PI * 1.2,
+        bladeLength: 75,
+        bladeWidth: 8,
+        swingInfluence: 0.8,
+        color: 0x444444,
+        optimalRange: 1.5,
+        retreatRange: 0.6,
+        windUpTime: 800, // Even longer windup for enemies
+        previewAlpha: 0.3
+    };
+
+    constructor(owner: Entity, isEnemy: boolean = false) {
+        const params = isEnemy ? Hammer.ENEMY_PARAMS : Hammer.PLAYER_PARAMS;
+        console.log(`[Hammer] Initializing with params:
+            isEnemy: ${isEnemy}
+            bladeLength: ${params.bladeLength}
+            optimalRange: ${params.optimalRange}
+            retreatRange: ${params.retreatRange}`);
+        super(owner, params, isEnemy);
     }
 
     protected drawWeapon(): void {

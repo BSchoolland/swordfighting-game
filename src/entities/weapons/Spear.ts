@@ -22,9 +22,9 @@ export class Spear extends BaseWeapon {
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
         damage: 15,
-        knockback: 12,
+        knockback: 4,
         attackSpeed: 1200, // Slower than sword
-        range: 70,
+        range: 150,
         swingSpeed: 0.25,
         swingRange: Math.PI * 0, // no variance
         bladeLength: 90,

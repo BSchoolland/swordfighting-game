@@ -34,7 +34,7 @@ export class HunterBow extends Bow {
     };
 
     private static readonly SPREAD_ANGLE = Math.PI / 8; // 22.5 degrees spread
-    private static readonly ARROWS_PER_SHOT = 3;
+    private static readonly ARROWS_PER_SHOT = 5;
 
     constructor(owner: Entity, isEnemy: boolean = false) {
         super(owner, isEnemy);

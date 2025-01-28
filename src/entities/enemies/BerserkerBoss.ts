@@ -6,21 +6,21 @@ import { BerserkerSword } from '../weapons/BerserkerSword';
 
 export class BerserkerBoss extends BossEnemy {
     private static readonly STATS = {
-        health: 300,
+        health: 400,
         speed: 0.5,
-        maxSpeed: 2,
+        maxSpeed: 2.75,
         chaseRange: 500,
         color: 0xff4400,
         movementRestriction: 0.7,
-        windupRestriction: 0.4,
+        windupRestriction: 0.6,
         chaseDuration: 4000,
-        knockbackResistance: 0.5,
+        knockbackResistance: 0.6,
         maxRotateSpeed: 3.0
     };
 
     private baseSpeed: number;
     private baseMaxSpeed: number;
-    private static readonly RAGE_THRESHOLD = 0.4; // 40% health
+    private static readonly RAGE_THRESHOLD = 0.7; // 40% health
     private static readonly RAGE_SPEED_MULTIPLIER = 2;
     private isEnraged: boolean = false;
     private rageTransitionTime: number = 0;
@@ -68,6 +68,12 @@ export class BerserkerBoss extends BossEnemy {
         this.sprite.lineTo(0, 8);
     }
 
+    public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
+        // Apply knockback resistance
+        const reducedKnockback = knockbackForce * (1 - this.stats.knockbackResistance!);
+        super.takeDamage(amount, knockbackDir, reducedKnockback);
+    }
+
     private drawRageEffects(rageIntensity: number): void {
         // Clear previous effects
         this.rageGlow.clear();
@@ -100,7 +106,7 @@ export class BerserkerBoss extends BossEnemy {
         super.update(delta, targets);
 
         if (!this.stunned) {
-            const healthRatio = this.health / this.maxHealth;
+            const healthRatio = this.health / 400;
             const shouldBeEnraged = healthRatio <= BerserkerBoss.RAGE_THRESHOLD;
 
             // Handle rage transition

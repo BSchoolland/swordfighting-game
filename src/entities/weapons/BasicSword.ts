@@ -59,6 +59,12 @@ export class BasicSword extends BaseWeapon {
         BasicSword.PLAYER_PARAMS[param] = value;
     }
 
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
+
     public getCooldownProgress(): number {
         const currentTime = Date.now();
         const timeSinceLastSwing = currentTime - this.lastSwingTime;

@@ -22,7 +22,6 @@ export abstract class RangedWeapon extends BaseWeapon {
             const remainingWindUp = this.stats.windUpTime - elapsedWindUpTime;
             
             if (remainingWindUp <= 0) {
-                console.log('[RangedWeapon] Wind-up complete, firing projectile');
                 this.isWindingUp = false;
                 this.previewSprite.visible = false;
                 // Fire projectile immediately instead of entering swing phase
@@ -84,7 +83,6 @@ export abstract class RangedWeapon extends BaseWeapon {
         const timeSinceLastSwing = currentTime - this.lastSwingTime;
 
         if (!this.isWindingUp && !this.isSwinging && timeSinceLastSwing >= this.stats.attackSpeed) {
-            console.log('[RangedWeapon] Starting firing sequence');
             this.isWindingUp = true;
             this.windUpStartTime = currentTime;
             this.swingAngle = 0;
@@ -92,7 +90,6 @@ export abstract class RangedWeapon extends BaseWeapon {
             this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
         } else {
-            console.log(`[RangedWeapon] Cannot fire - WindingUp: ${this.isWindingUp}, Swinging: ${this.isSwinging}, CooldownRemaining: ${this.stats.attackSpeed - timeSinceLastSwing}ms`);
         }
     }
 } 

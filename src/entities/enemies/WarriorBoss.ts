@@ -6,7 +6,7 @@ import { Hammer } from '../weapons/Hammer';
 
 export class WarriorBoss extends BossEnemy {
     private static readonly STATS = {
-        health: 200,
+        health: 2, // low health for testing
         speed: 0.4,
         maxSpeed: 2.5,
         chaseRange: 600,
