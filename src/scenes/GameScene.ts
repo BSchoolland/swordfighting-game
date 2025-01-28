@@ -216,6 +216,22 @@ export class GameScene extends PIXI.Container {
             // Add boss UI elements
             this.bossHealthBar = boss.getHealthBar();
             this.bossNameText = boss.getNameText();
+            
+            // Ensure health bar is centered
+            if (this.bossHealthBar) {
+                const healthBarWidth = 300; // Same width as BossEnemy.BOSS_HEALTH_BAR_WIDTH
+                this.bossHealthBar.position.x = (this.dimensions.width - healthBarWidth) / 2;
+                this.bossHealthBar.position.y = 40; // Moved down from 20 to 40
+            }
+            
+            // Ensure name text is centered above health bar
+            if (this.bossNameText) {
+                this.bossNameText.position.set(
+                    this.dimensions.width / 2,
+                    35 // Moved down from 15 to 35
+                );
+            }
+            
             this.addChild(this.bossHealthBar);
             this.addChild(this.bossNameText);
         }

@@ -26,9 +26,6 @@ export class HealthBar extends PIXI.Container {
         this.bar.drawRect(0, 0, width, height);
         this.bar.endFill();
         this.addChild(this.bar);
-
-        // Center the bar
-        this.pivot.x = width / 2;
     }
 
     public updateHealth(current: number, max: number): void {

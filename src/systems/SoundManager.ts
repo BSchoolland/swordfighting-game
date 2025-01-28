@@ -137,6 +137,8 @@ const sign = (value: number) => value > 0 ? 1 : -1;              // Math.sign no
 export class SoundManager {
     private static instance: SoundManager;
     private initialized: boolean = false;
+    private backgroundMusic: HTMLAudioElement | null = null;
+    private musicVolume: number = 0.5; // 50% volume by default
     private lastPlayTimes: {
         combat: number;    // For hit, heavy hit, parry
         movement: number;  // For dash, swing
@@ -165,7 +167,44 @@ export class SoundManager {
 
     public async initialize(): Promise<void> {
         if (!this.initialized) {
-                this.initialized = true;
+            // Initialize background music
+            this.backgroundMusic = new Audio('/audio/background_music.mp3');
+            this.backgroundMusic.loop = true;
+            this.backgroundMusic.volume = this.musicVolume;
+            
+            // Add error handling
+            this.backgroundMusic.onerror = (e) => {
+                console.error('Error loading background music:', e);
+            };
+
+            this.initialized = true;
+        }
+    }
+
+    public startBackgroundMusic(): void {
+        if (this.backgroundMusic) {
+            // Some browsers require user interaction before playing audio
+            try {
+                this.backgroundMusic.play().catch(error => {
+                    console.warn('Could not autoplay background music:', error);
+                });
+            } catch (error) {
+                console.warn('Error playing background music:', error);
+            }
+        }
+    }
+
+    public stopBackgroundMusic(): void {
+        if (this.backgroundMusic) {
+            this.backgroundMusic.pause();
+            this.backgroundMusic.currentTime = 0;
+        }
+    }
+
+    public setMusicVolume(volume: number): void {
+        this.musicVolume = Math.max(0, Math.min(1, volume));
+        if (this.backgroundMusic) {
+            this.backgroundMusic.volume = this.musicVolume;
         }
     }
 

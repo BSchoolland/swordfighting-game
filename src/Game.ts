@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameScene } from './scenes/GameScene';
+import { SoundManager } from './systems/SoundManager';
 
 export class Game {
     private app: PIXI.Application;
@@ -61,6 +62,16 @@ export class Game {
         this.app.ticker.add(() => {
             this.update();
         });
+
+        // Start background music on first user interaction
+        const startMusic = async () => {
+            await SoundManager.getInstance().initialize();
+            SoundManager.getInstance().startBackgroundMusic();
+            window.removeEventListener('click', startMusic);
+            window.removeEventListener('keydown', startMusic);
+        };
+        window.addEventListener('click', startMusic);
+        window.addEventListener('keydown', startMusic);
     }
 
     private async toggleFullscreen(): Promise<void> {
