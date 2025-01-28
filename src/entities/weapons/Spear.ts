@@ -146,7 +146,7 @@ export class Spear extends BaseWeapon {
                 }
 
                 // Much narrower hit arc for stabbing
-                if (angleDiff < Math.PI/8) {  // 22.5 degree arc
+                if (angleDiff < Math.PI/16) {  // 22.5 degree arc
                     const knockbackDir = {
                         x: dx / distance,
                         y: dy / distance

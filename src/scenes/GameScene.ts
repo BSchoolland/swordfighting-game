@@ -375,15 +375,33 @@ export class GameScene extends PIXI.Container {
     }
 
     private handleEnemyDeath(enemy: BaseEnemy): void {
-        // Create death effect before removing the enemy
+        // Check if the enemy is a boss
         if (enemy instanceof BossEnemy) {
-            this.particleSystem.createBossDeathEffect(enemy.x, enemy.y, enemy.getColor());
+            // Kill all other enemies
+            this.enemies.forEach(e => {
+                if (e !== enemy && e.isAlive()) {
+                    e.takeDamage(99999, { x: 0, y: 0 }, 0); // Large damage with no knockback
+                }
+            });
+            
+            // Trigger boss death effects
             this.freezeFrameTimer = GameScene.BOSS_FREEZE_DURATION;
-            // Play boss death sound if available
-            this.soundManager.playBossDeathSound?.();
+            this.soundManager.playBossDeathSound();
+            this.particleSystem.createBossDeathEffect(enemy.x, enemy.y, enemy.getColor());
+            
+            // Clear boss UI
+            if (this.bossHealthBar) {
+                this.removeChild(this.bossHealthBar);
+                this.bossHealthBar = null;
+            }
+            if (this.bossNameText) {
+                this.removeChild(this.bossNameText);
+                this.bossNameText = null;
+            }
         } else {
-            this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
+            // Regular enemy death
             this.freezeFrameTimer = GameScene.FREEZE_FRAME_DURATION;
+            this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
         }
     }
 

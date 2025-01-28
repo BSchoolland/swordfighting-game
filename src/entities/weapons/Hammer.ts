@@ -25,7 +25,7 @@ export class Hammer extends BaseWeapon {
         knockback: 12,
         attackSpeed: 2000, // Even slower for enemies
         range: 100, 
-        swingSpeed: 0.12,
+        swingSpeed: 0.2,
         swingRange: Math.PI * 1.2,
         bladeLength: 75,
         bladeWidth: 8,

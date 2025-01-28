@@ -8,7 +8,7 @@ export class BerserkerBoss extends BossEnemy {
     private static readonly STATS = {
         health: 400,
         speed: 0.5,
-        maxSpeed: 2.75,
+        maxSpeed: 2,
         chaseRange: 500,
         color: 0xff4400,
         movementRestriction: 0.7,
