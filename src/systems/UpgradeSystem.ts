@@ -3,18 +3,57 @@ import { Player } from '../entities/Player';
 import { SoundManager } from './SoundManager';
 import { BasicSword } from '../entities/weapons/BasicSword';
 
+export enum UpgradeRarity {
+    COMMON = 'Common',
+    RARE = 'Rare',
+    EPIC = 'Epic',
+    LEGENDARY = 'Legendary'
+}
+
+export enum UpgradeType {
+    SPEED = 'Speed',
+    DASH = 'Dash',
+    SWORD = 'Sword',
+    SWING_SPEED = 'Swing Speed',
+    MAX_HEALTH = 'Max Health'
+}
+
 export interface Upgrade {
     id: string;
     name: string;
     description: string;
+    rarity: UpgradeRarity;
+    type: UpgradeType;
     apply: (player: Player) => void;
+    isHealing?: boolean;
 }
 
 export class UpgradeSystem extends PIXI.Container {
-    private static readonly CARD_WIDTH = 200;
-    private static readonly CARD_HEIGHT = 300;
+    private static readonly CARD_WIDTH = 250;
+    private static readonly CARD_HEIGHT = 350;
     private static readonly CARD_SPACING = 40;
-    private static readonly BACKGROUND_ALPHA = 0.8;
+    private static readonly BACKGROUND_ALPHA = 0.85;
+    
+    private static readonly RARITY_COLORS = {
+        [UpgradeRarity.COMMON]: 0x666666,
+        [UpgradeRarity.RARE]: 0x0088ff,
+        [UpgradeRarity.EPIC]: 0xaa00ff,
+        [UpgradeRarity.LEGENDARY]: 0xffaa00
+    };
+
+    private static readonly RARITY_WEIGHTS = {
+        [UpgradeRarity.COMMON]: 55,
+        [UpgradeRarity.RARE]: 25,
+        [UpgradeRarity.EPIC]: 15,
+        [UpgradeRarity.LEGENDARY]: 5
+    };
+
+    private static readonly BOSS_RARITY_WEIGHTS = {
+        [UpgradeRarity.COMMON]: 0,    // No common upgrades after boss
+        [UpgradeRarity.RARE]: 25,      // No rare upgrades after boss
+        [UpgradeRarity.EPIC]: 62,     // Higher chance for epic
+        [UpgradeRarity.LEGENDARY]: 13  // Good chance for legendary
+    };
     
     private upgrades: Upgrade[] = [];
     private player: Player;
@@ -23,6 +62,12 @@ export class UpgradeSystem extends PIXI.Container {
     private soundManager: SoundManager;
     private background: PIXI.Graphics;
     private cards: PIXI.Container[] = [];
+    private particleContainers: PIXI.Container[] = [];
+    
+    // Track chosen upgrades
+    private chosenUpgrades: Map<UpgradeType, Upgrade> = new Map();
+    private static readonly MAX_REROLL_ATTEMPTS = 5;
+    private onUpgradeSelected: (() => void) | null = null;
 
     constructor(dimensions: { width: number; height: number }, player: Player) {
         super();
@@ -30,158 +75,365 @@ export class UpgradeSystem extends PIXI.Container {
         this.player = player;
         this.soundManager = SoundManager.getInstance();
         
-        // Initialize available upgrades
         this.initializeUpgrades();
         
-        // Create semi-transparent background
         this.background = new PIXI.Graphics();
         this.background.beginFill(0x000000, UpgradeSystem.BACKGROUND_ALPHA);
         this.background.drawRect(0, 0, dimensions.width, dimensions.height);
         this.background.endFill();
         this.addChild(this.background);
         
-        // Hide initially
         this.visible = false;
     }
 
     private initializeUpgrades(): void {
-        // Add all possible upgrades here
+        const healingUpgrade: Upgrade = {
+            id: 'healing',
+            name: 'Divine Healing',
+            description: 'Restore 100% of your health',
+            rarity: UpgradeRarity.EPIC,
+            type: UpgradeType.MAX_HEALTH,
+            apply: (player: Player) => player.heal(player.getMaxHealth()),
+            isHealing: true
+        };
+
         this.upgrades = [
+            // Speed Upgrades
             {
-                id: 'speed_1',
+                id: 'speed_common',
                 name: 'Swift Feet',
-                description: 'Increase movement speed by 20%',
-                apply: (player: Player) => {
-                    player.increaseSpeed(0.2);
-                }
+                description: 'Increase movement speed by 15%',
+                rarity: UpgradeRarity.COMMON,
+                type: UpgradeType.SPEED,
+                apply: (player: Player) => player.increaseSpeed(0.15)
             },
             {
-                id: 'speed_2',
+                id: 'speed_rare',
                 name: 'Fleet Foot',
                 description: 'Increase movement speed by 30%',
-                apply: (player: Player) => {
-                    player.increaseSpeed(0.3);
-                }
+                rarity: UpgradeRarity.RARE,
+                type: UpgradeType.SPEED,
+                apply: (player: Player) => player.increaseSpeed(0.3)
             },
             {
-                id: 'speed_3',
-                name: 'Lightning Legs',
-                description: 'Increase movement speed by 40%',
-                apply: (player: Player) => {
-                    player.increaseSpeed(0.4);
-                }
+                id: 'speed_epic',
+                name: 'Wind Walker',
+                description: 'Increase movement speed by 50%',
+                rarity: UpgradeRarity.EPIC,
+                type: UpgradeType.SPEED,
+                apply: (player: Player) => player.increaseSpeed(0.5)
             },
             {
-                id: 'dash_cooldown_1',
+                id: 'speed_legendary',
+                name: 'Avatar of Mercury',
+                description: 'Increase movement speed by 100%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.SPEED,
+                apply: (player: Player) => player.increaseSpeed(1)
+            },
+            
+            // Dash Upgrades
+            {
+                id: 'dash_common',
                 name: 'Quick Recovery',
                 description: 'Reduce dash cooldown by 15%',
-                apply: (player: Player) => {
-                    player.getDash().reduceCooldown(0.15);
-                }
+                rarity: UpgradeRarity.COMMON,
+                type: UpgradeType.DASH,
+                apply: (player: Player) => player.getDash().reduceCooldown(0.15)
             },
             {
-                id: 'dash_cooldown_2',
+                id: 'dash_rare',
                 name: 'Swift Recovery',
                 description: 'Reduce dash cooldown by 30%',
-                apply: (player: Player) => {
-                    player.getDash().reduceCooldown(0.3);
-                }
+                rarity: UpgradeRarity.RARE,
+                type: UpgradeType.DASH,
+                apply: (player: Player) => player.getDash().reduceCooldown(0.3)
             },
             {
-                id: 'dash_cooldown_3',
-                name: 'Master Recovery',
-                description: 'Reduce dash cooldown by 50%',
-                apply: (player: Player) => {
-                    player.getDash().reduceCooldown(0.5);
-                }
+                id: 'dash_epic',
+                name: 'Shadow Step',
+                description: 'Reduce dash cooldown by 45%',
+                rarity: UpgradeRarity.EPIC,
+                type: UpgradeType.DASH,
+                apply: (player: Player) => player.getDash().reduceCooldown(0.45)
             },
             {
-                id: 'sword_reach_1',
+                id: 'dash_legendary',
+                name: 'Time Weaver',
+                description: 'Reduce dash cooldown by 65%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.DASH,
+                apply: (player: Player) => player.getDash().reduceCooldown(0.65)
+            },
+            
+            // Sword Upgrades
+            {
+                id: 'sword_common',
                 name: 'Extended Reach',
-                description: 'Increase sword length by 5%',
-                apply: (player: Player) => {
-                    player.increaseSwordLength(0.05);
-                }
-            },
-            {
-                id: 'sword_reach_2',
-                name: 'Long Reach',
                 description: 'Increase sword length by 10%',
-                apply: (player: Player) => {
-                    player.increaseSwordLength(0.1);
-                }
+                rarity: UpgradeRarity.COMMON,
+                type: UpgradeType.SWORD,
+                apply: (player: Player) => player.increaseSwordLength(0.1)
             },
             {
-                id: 'sword_reach_3',
+                id: 'sword_rare',
                 name: 'Master\'s Reach',
-                description: 'Increase sword length by 20%',
-                apply: (player: Player) => {
-                    player.increaseSwordLength(0.15);
-                }
+                description: 'Increase sword length by 15%',
+                rarity: UpgradeRarity.RARE,
+                type: UpgradeType.SWORD,
+                apply: (player: Player) => player.increaseSwordLength(0.15)
+            },
+            {
+                id: 'sword_epic',
+                name: 'Blade of the Giant',
+                description: 'Increase sword length by 25%',
+                rarity: UpgradeRarity.EPIC,
+                type: UpgradeType.SWORD,
+                apply: (player: Player) => player.increaseSwordLength(0.25)
+            },
+            {
+                id: 'sword_legendary',
+                name: 'Cosmic Blade',
+                description: 'Increase sword length by 40%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.SWORD,
+                apply: (player: Player) => player.increaseSwordLength(0.4)
+            },
+
+            // Swing Speed Upgrades
+            {
+                id: 'swing_common',
+                name: 'Quick Strikes',
+                description: 'Increase attack speed by 15%',
+                rarity: UpgradeRarity.COMMON,
+                type: UpgradeType.SWING_SPEED,
+                apply: (player: Player) => player.increaseSwingSpeed(0.15)
+            },
+            {
+                id: 'swing_rare',
+                name: 'Swift Blade',
+                description: 'Increase attack speed by 25%',
+                rarity: UpgradeRarity.RARE,
+                type: UpgradeType.SWING_SPEED,
+                apply: (player: Player) => player.increaseSwingSpeed(0.25)
+            },
+            {
+                id: 'swing_epic',
+                name: 'Blade Dance',
+                description: 'Increase attack speed by 40%',
+                rarity: UpgradeRarity.EPIC,
+                type: UpgradeType.SWING_SPEED,
+                apply: (player: Player) => player.increaseSwingSpeed(0.4)
+            },
+            {
+                id: 'swing_legendary',
+                name: 'Time Distortion',
+                description: 'Increase attack speed by 60%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.SWING_SPEED,
+                apply: (player: Player) => player.increaseSwingSpeed(0.6)
+            },
+
+            // Max Health Upgrades
+            {
+                id: 'health_common',
+                name: 'Tough Skin',
+                description: 'Increase max health by 25%',
+                rarity: UpgradeRarity.COMMON,
+                type: UpgradeType.MAX_HEALTH,
+                apply: (player: Player) => player.increaseMaxHealth(0.25)
+            },
+            {
+                id: 'health_rare',
+                name: 'Iron Body',
+                description: 'Increase max health by 50%',
+                rarity: UpgradeRarity.RARE,
+                type: UpgradeType.MAX_HEALTH,
+                apply: (player: Player) => player.increaseMaxHealth(0.5)
+            },
+            {
+                id: 'health_epic',
+                name: 'Titan\'s Endurance',
+                description: 'Increase max health by 100%',
+                rarity: UpgradeRarity.EPIC,
+                type: UpgradeType.MAX_HEALTH,
+                apply: (player: Player) => player.increaseMaxHealth(1)
+            },
+            {
+                id: 'health_legendary',
+                name: 'Immortal Vessel',
+                description: 'Increase max health by 200%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.MAX_HEALTH,
+                apply: (player: Player) => player.increaseMaxHealth(2)
             }
         ];
+
+        // Add healing upgrade
+        this.upgrades.push(healingUpgrade);
     }
 
-    public showUpgradeSelection(): void {
+    private createParticleEffect(rarity: UpgradeRarity): PIXI.Container {
+        const container = new PIXI.Container();
+        const color = UpgradeSystem.RARITY_COLORS[rarity];
+        
+        // Create different particle effects based on rarity
+        for (let i = 0; i < (rarity === UpgradeRarity.LEGENDARY ? 20 : 10); i++) {
+            const particle = new PIXI.Graphics();
+            particle.beginFill(color);
+            
+            if (rarity === UpgradeRarity.LEGENDARY) {
+                // Create a star-like shape using polygon
+                const points: number[] = [];
+                const spikes = 5;
+                const outerRadius = 4;
+                const innerRadius = 2;
+                
+                for (let i = 0; i < spikes * 2; i++) {
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (i * Math.PI) / spikes;
+                    points.push(
+                        Math.cos(angle) * radius,
+                        Math.sin(angle) * radius
+                    );
+                }
+                
+                particle.drawPolygon(points);
+            } else {
+                particle.drawCircle(0, 0, 2);
+            }
+            
+            particle.endFill();
+            particle.alpha = 0.6;
+            
+            // Random starting position
+            particle.x = Math.random() * UpgradeSystem.CARD_WIDTH;
+            particle.y = Math.random() * UpgradeSystem.CARD_HEIGHT;
+            
+            container.addChild(particle);
+            
+            // Animate particles
+            const animate = () => {
+                particle.y -= 0.5;
+                particle.alpha -= 0.005;
+                
+                if (particle.alpha <= 0) {
+                    particle.y = UpgradeSystem.CARD_HEIGHT;
+                    particle.alpha = 0.6;
+                }
+                
+                requestAnimationFrame(animate);
+            };
+            
+            animate();
+        }
+        
+        return container;
+    }
+
+    public showUpgradeSelection(isBossWave: boolean = false, onSelected?: () => void): void {
         this.visible = true;
         this.isVisible = true;
+        this.onUpgradeSelected = onSelected || null;
         
-        // Clear existing cards
+        // Clear existing cards and particles
         this.cards.forEach(card => card.destroy());
         this.cards = [];
+        this.particleContainers.forEach(container => container.destroy());
+        this.particleContainers = [];
 
-        // Get three random upgrades
-        const selectedUpgrades = this.getRandomUpgrades(3);
+        // Get three random upgrades of different types
+        const selectedUpgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
         
-        // Calculate starting X position to center the cards
         const totalWidth = (UpgradeSystem.CARD_WIDTH * 3) + (UpgradeSystem.CARD_SPACING * 2);
         let startX = (this.dimensions.width - totalWidth) / 2;
         
-        // Create a card for each upgrade
         selectedUpgrades.forEach((upgrade, index) => {
             const card = this.createUpgradeCard(upgrade);
             card.x = startX + (UpgradeSystem.CARD_WIDTH + UpgradeSystem.CARD_SPACING) * index;
             card.y = (this.dimensions.height - UpgradeSystem.CARD_HEIGHT) / 2;
+            
+            // Add particle effects
+            const particles = this.createParticleEffect(upgrade.rarity);
+            particles.x = card.x;
+            particles.y = card.y;
+            this.particleContainers.push(particles);
+            
+            this.addChild(particles);
             this.addChild(card);
             this.cards.push(card);
         });
     }
 
+    private getReplacementMessage(newUpgrade: Upgrade, existingUpgrade: Upgrade): string {
+        if (newUpgrade.rarity === existingUpgrade.rarity) {
+            return '(Replaces existing upgrade)';
+        }
+        return `(Replaces ${existingUpgrade.rarity} ${existingUpgrade.name})`;
+    }
+
     private createUpgradeCard(upgrade: Upgrade): PIXI.Container {
         const card = new PIXI.Container();
         
-        // Card background
+        // Card background with rarity-based styling
         const background = new PIXI.Graphics();
-        background.lineStyle(2, 0xffffff);
-        background.beginFill(0x333333);
-        background.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 10);
+        const rarityColor = UpgradeSystem.RARITY_COLORS[upgrade.rarity];
+        
+        // Outer glow
+        background.lineStyle(4, rarityColor, 0.8);
+        background.beginFill(0x222222, 0.9);
+        background.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 15);
         background.endFill();
+        
+        // Inner border
+        background.lineStyle(2, rarityColor, 0.6);
+        background.drawRoundedRect(5, 5, UpgradeSystem.CARD_WIDTH - 10, UpgradeSystem.CARD_HEIGHT - 10, 12);
+        
         card.addChild(background);
         
-        // Upgrade name
-        const nameText = new PIXI.Text(upgrade.name, {
-            fontFamily: 'Arial',
-            fontSize: 24,
-            fill: 0xffffff,
-            align: 'center',
-            wordWrap: true,
-            wordWrapWidth: UpgradeSystem.CARD_WIDTH - 20
-        });
-        nameText.x = (UpgradeSystem.CARD_WIDTH - nameText.width) / 2;
-        nameText.y = 20;
-        card.addChild(nameText);
-        
-        // Upgrade description
-        const descText = new PIXI.Text(upgrade.description, {
+        // Rarity text
+        const rarityText = new PIXI.Text(upgrade.rarity.toUpperCase(), {
             fontFamily: 'Arial',
             fontSize: 16,
-            fill: 0xcccccc,
+            fill: rarityColor,
+            fontWeight: 'bold'
+        });
+        rarityText.x = (UpgradeSystem.CARD_WIDTH - rarityText.width) / 2;
+        rarityText.y = 20;
+        card.addChild(rarityText);
+        
+        // Upgrade name with rarity-based styling
+        const nameText = new PIXI.Text(upgrade.name, {
+            fontFamily: 'Arial',
+            fontSize: 28,
+            fill: rarityColor,
+            align: 'center',
+            fontWeight: 'bold',
+            wordWrap: true,
+            wordWrapWidth: UpgradeSystem.CARD_WIDTH - 40
+        });
+        nameText.x = (UpgradeSystem.CARD_WIDTH - nameText.width) / 2;
+        nameText.y = 50;
+        card.addChild(nameText);
+        
+        // Add replacement message if applicable
+        const existingUpgrade = this.chosenUpgrades.get(upgrade.type);
+        let description = upgrade.description;
+        if (existingUpgrade && !upgrade.isHealing) {
+            description += '\n\n' + this.getReplacementMessage(upgrade, existingUpgrade);
+        }
+        
+        // Upgrade description
+        const descText = new PIXI.Text(description, {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            fill: 0xffffff,
             align: 'center',
             wordWrap: true,
             wordWrapWidth: UpgradeSystem.CARD_WIDTH - 40
         });
         descText.x = (UpgradeSystem.CARD_WIDTH - descText.width) / 2;
-        descText.y = 80;
+        descText.y = 120;
         card.addChild(descText);
         
         // Make card interactive
@@ -190,14 +442,15 @@ export class UpgradeSystem extends PIXI.Container {
         
         // Hover effects
         background.on('mouseover', () => {
-            background.tint = 0x666666;
+            card.scale.set(1.05);
+            background.tint = 0xdddddd;
         });
         
         background.on('mouseout', () => {
+            card.scale.set(1);
             background.tint = 0xffffff;
         });
         
-        // Click handler
         background.on('click', () => {
             this.selectUpgrade(upgrade);
         });
@@ -205,32 +458,121 @@ export class UpgradeSystem extends PIXI.Container {
         return card;
     }
 
+    private getRandomUpgradesOfDifferentTypes(count: number, isBossWave: boolean = false): Upgrade[] {
+        const upgradesByType = new Map<UpgradeType, Upgrade[]>();
+        
+        // Group upgrades by type
+        this.upgrades.forEach(upgrade => {
+            if (!upgrade.isHealing) { // Don't group healing upgrades
+                if (!upgradesByType.has(upgrade.type)) {
+                    upgradesByType.set(upgrade.type, []);
+                }
+                upgradesByType.get(upgrade.type)!.push(upgrade);
+            }
+        });
+        
+        const types = Array.from(upgradesByType.keys());
+        const selectedTypes = new Set<UpgradeType>();
+        const selected: Upgrade[] = [];
+        
+        while (selected.length < count && types.length > 0) {
+            const typeIndex = Math.floor(Math.random() * types.length);
+            const type = types[typeIndex];
+            
+            if (!selectedTypes.has(type)) {
+                selectedTypes.add(type);
+                
+                let upgrade = this.selectValidUpgrade(upgradesByType.get(type)!, isBossWave);
+                let attempts = 0;
+                
+                // If we can't find a valid upgrade after several attempts, offer healing
+                if (!upgrade && attempts >= UpgradeSystem.MAX_REROLL_ATTEMPTS) {
+                    upgrade = this.upgrades.find(u => u.isHealing);
+                }
+                
+                if (upgrade) {
+                    selected.push(upgrade);
+                }
+            }
+            
+            types.splice(typeIndex, 1);
+        }
+        
+        return selected;
+    }
+
+    private selectValidUpgrade(upgrades: Upgrade[], isBossWave: boolean): Upgrade | undefined {
+        let attempts = 0;
+        while (attempts < UpgradeSystem.MAX_REROLL_ATTEMPTS) {
+            const upgrade = this.selectUpgradeByRarityWeight(upgrades, isBossWave);
+            const existingUpgrade = this.chosenUpgrades.get(upgrade.type);
+            
+            // For boss waves, only accept epic or legendary upgrades
+            if (isBossWave && upgrade.rarity < UpgradeRarity.EPIC) {
+                attempts++;
+                continue;
+            }
+            
+            // Accept if no existing upgrade or higher rarity
+            if (!existingUpgrade || upgrade.rarity > existingUpgrade.rarity) {
+                return upgrade;
+            }
+            
+            attempts++;
+        }
+        return undefined;
+    }
+
+    private selectUpgradeByRarityWeight(upgrades: Upgrade[], isBossWave: boolean): Upgrade {
+        const weights = isBossWave ? UpgradeSystem.BOSS_RARITY_WEIGHTS : UpgradeSystem.RARITY_WEIGHTS;
+        const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+        let random = Math.random() * totalWeight;
+        
+        // Filter upgrades based on boss wave requirements
+        const validUpgrades = isBossWave 
+            ? upgrades.filter(u => u.rarity >= UpgradeRarity.EPIC)
+            : upgrades;
+        
+        if (validUpgrades.length === 0) {
+            return upgrades[0]; // Fallback to first upgrade if no valid ones found
+        }
+        
+        for (const upgrade of validUpgrades) {
+            const weight = weights[upgrade.rarity];
+            if (random <= weight) {
+                return upgrade;
+            }
+            random -= weight;
+        }
+        
+        return validUpgrades[0]; // Fallback to first valid upgrade
+    }
+
     private selectUpgrade(upgrade: Upgrade): void {
-        // Apply the upgrade
         upgrade.apply(this.player);
         
-        // Play sound
-        this.soundManager.playPowerUpSound();
+        // Only track non-healing upgrades
+        if (!upgrade.isHealing) {
+            this.chosenUpgrades.set(upgrade.type, upgrade);
+        }
         
-        // Hide the upgrade selection
+        this.soundManager.playPowerUpSound();
         this.hideUpgradeSelection();
+
+        // Call the callback if it exists
+        if (this.onUpgradeSelected) {
+            this.onUpgradeSelected();
+            this.onUpgradeSelected = null;
+        }
     }
 
     private hideUpgradeSelection(): void {
         this.visible = false;
         this.isVisible = false;
-    }
-
-    private getRandomUpgrades(count: number): Upgrade[] {
-        const availableUpgrades = [...this.upgrades];
-        const selected: Upgrade[] = [];
         
-        for (let i = 0; i < count && availableUpgrades.length > 0; i++) {
-            const index = Math.floor(Math.random() * availableUpgrades.length);
-            selected.push(availableUpgrades.splice(index, 1)[0]);
-        }
-        
-        return selected;
+        // Clean up particle effects
+        this.particleContainers.forEach(container => container.destroy());
+        this.particleContainers = [];
     }
 
     public isUpgradeScreenVisible(): boolean {

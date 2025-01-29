@@ -5,6 +5,7 @@ import { BaseEnemy } from './enemies/BaseEnemy';
 import { Dash } from './abilities/Dash';
 import { SoundManager } from '../systems/SoundManager';
 import { InputManager } from '../systems/InputManager';
+import { BaseWeapon } from './weapons/BaseWeapon';
 
 export class Player extends Entity {
     private sprite: PIXI.Graphics;
@@ -25,6 +26,13 @@ export class Player extends Entity {
     private baseSpeed: number = Player.BASE_SPEED;
     private speedMultiplier: number = 1;
     private swordLengthMultiplier: number = 1;
+    private swingSpeedMultiplier: number = 1;
+    private speed: number = 5;
+    protected maxHealth: number = 100;
+    private baseMaxHealth: number = 100;
+    private baseDamage: number = 1;
+    private damageMultiplier: number = 1;
+    private weapon: BaseWeapon | null = null;
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -230,5 +238,29 @@ export class Player extends Entity {
         const newLength = 60 * this.swordLengthMultiplier; // 60 is the default blade length
         this.sword.setBladeLength(newLength);
         console.log(`Sword length increased by ${percentage * 100}%. New multiplier: ${this.swordLengthMultiplier}`);
+    }
+
+    public increaseDamage(percentage: number): void {
+        this.damageMultiplier *= (1 + percentage);
+        // Update weapon damage
+        if (this.weapon) {
+            this.weapon.setDamageMultiplier(this.damageMultiplier);
+        }
+    }
+
+    public increaseMaxHealth(percentage: number): void {
+        const oldMaxHealth = this.maxHealth;
+        this.maxHealth = this.baseMaxHealth * (1 + percentage);
+        // Heal the difference so it feels like an immediate buff
+        const healthDiff = this.maxHealth - oldMaxHealth;
+        this.heal(healthDiff);
+    }
+
+    public increaseSwingSpeed(percentage: number): void {
+        this.swingSpeedMultiplier *= (1 + percentage);
+        if (this.sword) {
+            this.sword.setSwingSpeedMultiplier(this.swingSpeedMultiplier);
+        }
+        console.log(`Swing speed increased by ${percentage * 100}%. New multiplier: ${this.swingSpeedMultiplier}`);
     }
 } 

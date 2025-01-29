@@ -19,6 +19,8 @@ export interface WeaponStats {
     retreatRange: number;
     windUpTime: number;
     previewAlpha: number;
+    originalAttackSpeed?: number;
+    originalWindUpTime?: number;
 }
 
 export abstract class BaseWeapon extends PIXI.Container {
@@ -42,12 +44,19 @@ export abstract class BaseWeapon extends PIXI.Container {
     protected readonly TRAIL_INTERVAL = 16; // Collect points every ~16ms
     protected swingProgress: number = 0;
     protected windupTimer: number = 0;
+    protected baseDamage: number;
+    protected damageMultiplier: number = 1;
+    protected swingSpeedMultiplier: number = 1;
 
     constructor(owner: Entity, stats: WeaponStats, isEnemy: boolean = false) {
         super();
         this.owner = owner;
         this.stats = stats;
+        // Store original timing values
+        this.stats.originalAttackSpeed = stats.attackSpeed;
+        this.stats.originalWindUpTime = stats.windUpTime;
         this.isEnemy = isEnemy;
+        this.baseDamage = stats.damage;
         this.debugId = isEnemy ? `Enemy_${Math.floor(Math.random() * 1000)}` : 'Player';
         console.log(`[${this.debugId}] Weapon created`);
 
@@ -100,7 +109,8 @@ export abstract class BaseWeapon extends PIXI.Container {
 
         if (this.isSwinging) {
             const prevAngle = this.rotation;
-            this.swingAngle += this.stats.swingSpeed;
+            // Apply swing speed multiplier to the swing speed
+            this.swingAngle += this.stats.swingSpeed * this.swingSpeedMultiplier;
             
             // Apply swing direction to the rotation
             if (this.swingDirection === 1) {
@@ -215,7 +225,7 @@ export abstract class BaseWeapon extends PIXI.Container {
                 }
 
                 // Adjust hit arc based on target size - larger enemies are easier to hit
-                const baseHitArc = Math.PI/6; // 30 degrees base arc
+                const baseHitArc = Math.PI/3; // 
                 const sizeMultiplier = target.getRadius() / 10; // 10 is the default radius
                 const adjustedHitArc = baseHitArc * Math.min(2, Math.max(1, sizeMultiplier)); // Cap at 2x base arc
 
@@ -253,6 +263,17 @@ export abstract class BaseWeapon extends PIXI.Container {
     }
 
     public getDamage(): number {
-        return this.stats.damage;
+        return this.baseDamage * this.damageMultiplier;
+    }
+
+    public setDamageMultiplier(multiplier: number): void {
+        this.damageMultiplier = multiplier;
+    }
+
+    public setSwingSpeedMultiplier(multiplier: number): void {
+        this.swingSpeedMultiplier = multiplier;
+        // Update attack speed (cooldown) based on the same multiplier
+        this.stats.attackSpeed = this.stats.originalAttackSpeed! / multiplier;
+        this.stats.windUpTime = this.stats.originalWindUpTime! / multiplier;
     }
 } 
