@@ -195,7 +195,6 @@ export abstract class BaseEnemy extends Entity {
         const distance = Math.sqrt(dx * dx + dy * dy);
         const targetAngle = Math.atan2(dy, dx);
         
-        console.log(`[${this.constructor.name}] Distance to player: ${distance}, Attack range: ${this.attackRange}, Retreat range: ${this.retreatRange}`);
         
         // Smoothly rotate towards the player with movement restriction
         this.rotateTowards(targetAngle, delta, movementMultiplier);
@@ -214,17 +213,14 @@ export abstract class BaseEnemy extends Entity {
         if (this.isChasing) {
             if (distance > this.attackRange) {
                 // Move towards player if too far
-                console.log(`[${this.constructor.name}] Moving towards player - too far`);
                 this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
                 this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
             } else if (distance < this.retreatRange) {
                 // Back away if too close
-                console.log(`[${this.constructor.name}] Moving away from player - too close`);
                 this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
                 this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
             } else {
                 // In perfect range, slow down and attack
-                console.log(`[${this.constructor.name}] In perfect range - attacking`);
                 this.velocity.x *= 0.8;
                 this.velocity.y *= 0.8;
                 this.weapon.swing();
@@ -254,13 +250,11 @@ export abstract class BaseEnemy extends Entity {
     // Helper methods to get current weapon ranges
     protected get attackRange(): number {
         const range = this.weapon.getRange().attackRange;
-        console.log(`[${this.constructor.name}] Attack range: ${range}`);
         return range;
     }
 
     protected get retreatRange(): number {
         const range = this.weapon.getRange().retreatRange;
-        console.log(`[${this.constructor.name}] Retreat range: ${range}`);
         return range;
     }
 
@@ -269,6 +263,5 @@ export abstract class BaseEnemy extends Entity {
         const bounds = this.sprite.getBounds();
         // Use the larger of width/height divided by 2 for the radius
         this.radius = Math.max((Math.max(bounds.width, bounds.height) / 2) - 10, 0);
-        console.log(`[${this.constructor.name}] Set radius to ${this.radius}`);
     }
 } 

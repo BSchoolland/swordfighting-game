@@ -24,8 +24,8 @@ export interface WeaponStats {
 export abstract class BaseWeapon extends PIXI.Container {
     protected sprite: PIXI.Graphics;
     protected previewSprite: PIXI.Graphics;
-    protected isSwinging: boolean = false;
-    protected isWindingUp: boolean = false;
+    public isSwinging: boolean = false;
+    public isWindingUp: boolean = false;
     protected swingAngle: number = 0;
     protected lastSwingTime: number = 0;
     protected windUpTimer: number = 0;
@@ -40,6 +40,8 @@ export abstract class BaseWeapon extends PIXI.Container {
     protected trailPoints: Array<{x: number, y: number}> = [];
     protected lastTrailTime: number = 0;
     protected readonly TRAIL_INTERVAL = 16; // Collect points every ~16ms
+    protected swingProgress: number = 0;
+    protected windupTimer: number = 0;
 
     constructor(owner: Entity, stats: WeaponStats, isEnemy: boolean = false) {
         super();
@@ -66,12 +68,7 @@ export abstract class BaseWeapon extends PIXI.Container {
         // Use the explicit range parameter instead of calculating from bladeLength
         const attackRange = this.stats.range;
         const retreatRange = this.stats.range * (this.stats.retreatRange / this.stats.optimalRange);
-        console.log(`[${this.constructor.name}] Calculating ranges:
-            range: ${this.stats.range}
-            optimalRange: ${this.stats.optimalRange}
-            retreatRange: ${this.stats.retreatRange}
-            => attackRange: ${attackRange}
-            => retreatRange: ${retreatRange}`);
+        
         return {
             attackRange,
             retreatRange

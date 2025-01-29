@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from '../entities/Entity';
+import { Player } from '../entities/Player';
 import { BasicEnemy } from '../entities/enemies/BasicEnemy';
 import { FastEnemy } from '../entities/enemies/FastEnemy';
 import { TankEnemy } from '../entities/enemies/TankEnemy';
@@ -8,10 +9,10 @@ import { SpearEnemy } from '../entities/enemies/SpearEnemy';
 import { BlitzerEnemy } from '../entities/enemies/BlitzerEnemy';
 import { FlankerEnemy } from '../entities/enemies/FlankerEnemy';
 import { BoomerangEnemy } from '../entities/enemies/BoomerangEnemy';
-import { Player } from '../entities/Player';
 import { WarriorBoss } from '../entities/enemies/WarriorBoss';
 import { BerserkerBoss } from '../entities/enemies/BerserkerBoss';
 import { HunterBoss } from '../entities/enemies/HunterBoss';
+import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
 
 interface WaveComposition {
     basicEnemies: number;
@@ -30,7 +31,7 @@ interface WaveDefinition {
     description: string; // For wave announcements
     isBossWave?: boolean;
     bossType?: string;
-    minionsPerMinute?: number; // For boss waves, how many minions spawn per minute
+    minionInterval?: number; // For boss waves, how many minions spawn per minute
     minionTypes?: Array<keyof WaveComposition>; // Types of minions that can spawn during boss fight
 }
 
@@ -55,7 +56,7 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     
     // Wave 2: Basic + Fast - Learning to deal with speed
     {
-        composition: { ...zeroComposition, basicEnemies: 5, fastEnemies: 2, flankerEnemies: 1},
+        composition: { ...zeroComposition, basicEnemies: 5, fastEnemies: 2},
         spawnDelay: 1000,
         description: "Swift Attackers"
     },
@@ -71,10 +72,10 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: { ...zeroComposition, basicEnemies: 1, fastEnemies: 1 }, // Minion composition
         spawnDelay: 5000, // Slow minion spawn rate
-        description: "The Warrior",
+        description: "",
         isBossWave: true,
         bossType: "warrior",
-        minionsPerMinute: 15, // 15 minions per minute
+        minionInterval: 4, // every 4 seconds
         minionTypes: ['basicEnemies', 'fastEnemies'] // Can spawn both basic and fast enemies as minions
     },
     
@@ -121,11 +122,11 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: { ...zeroComposition, rangedEnemies: 4, blitzerEnemies: 3 },
         spawnDelay: 4000,
-        description: "The Berserker",
+        description: "He has no chill",
         isBossWave: true,
         bossType: "berserker",
-        minionsPerMinute: 12,
-        minionTypes: ['rangedEnemies']
+        minionInterval: 5,
+        minionTypes: ['rangedEnemies', 'blitzerEnemies']
     },
     // Wave 7: Ranged Masters
     {
@@ -165,13 +166,13 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: { ...zeroComposition, rangedEnemies: 2, flankerEnemies: 2, tankEnemies: 2 },
         spawnDelay: 4000,
-        description: "The Hunter",
+        description: "pew pew",
         isBossWave: true,
         bossType: "hunter",
-        minionsPerMinute: 10,
-        minionTypes: ['rangedEnemies', 'flankerEnemies']
+        minionInterval: 5, // every 5 seconds
+        minionTypes: ['rangedEnemies', 'flankerEnemies', 'tankEnemies']
     },
-    // Wave 10: Elite Army
+    // Wave 11: Elite Army
     {
         composition: {
             ...zeroComposition,
@@ -185,6 +186,46 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         spawnDelay: 700,
         description: "Elite Army"
     },
+    // Wave 12: Ironclad Invasion
+    {
+        composition: {
+            ...zeroComposition,
+            tankEnemies: 8,
+            basicEnemies: 10,
+            fastEnemies: 6,
+            spearEnemies: 6,
+        },
+        spawnDelay: 700,
+        description: "Ironclad Invasion"
+    },
+
+    // Wave 13: The last wave
+    {
+        composition: {
+            ...zeroComposition,
+            rangedEnemies: 5,
+            flankerEnemies: 5,
+            boomerangEnemies: 5,
+            tankEnemies: 5,
+            basicEnemies: 5,
+            fastEnemies: 5,
+            spearEnemies: 5,
+            blitzerEnemies: 5,
+        },
+        spawnDelay: 700,
+        description: "The last wave"
+    },
+
+    // Final Boss: Master of Arms
+    {
+        composition: { ...zeroComposition, rangedEnemies: 4, flankerEnemies: 4, tankEnemies: 4, basicEnemies: 4, fastEnemies: 4, spearEnemies: 4, blitzerEnemies: 4, boomerangEnemies: 4 },
+        spawnDelay: 4000,
+        description: "",
+        isBossWave: true,
+        bossType: "master",
+        minionInterval: 4, // every 4 seconds
+        minionTypes: ['rangedEnemies', 'flankerEnemies', 'tankEnemies', 'basicEnemies', 'fastEnemies', 'spearEnemies', 'blitzerEnemies', 'boomerangEnemies']
+    }
 ];
 
 export class WaveSystem {
@@ -254,6 +295,75 @@ export class WaveSystem {
     }
 
     public getCurrentWaveDefinition(): WaveDefinition {
+        // Final boss wave
+        if (this.currentWave === 12) {
+            return {
+                composition: {
+                    basicEnemies: 0,
+                    fastEnemies: 0,
+                    tankEnemies: 0,
+                    rangedEnemies: 0,
+                    spearEnemies: 0,
+                    blitzerEnemies: 0,
+                    flankerEnemies: 0,
+                    boomerangEnemies: 0
+                },
+                spawnDelay: 0,
+                description: "The Master of Arms Appears!",
+                isBossWave: true,
+                bossType: 'master',
+                minionInterval: 0
+            };
+        }
+        
+        // Regular boss waves
+        if (this.currentWave % 4 === 0) {
+            const bossWaves = [
+                {
+                    bossType: 'warrior',
+                    description: "Big boi",
+                    minions: ['basicEnemies', 'fastEnemies']
+                },
+                {
+                    bossType: 'berserker',
+                    description: "He has no chill",
+                    minions: ['rangedEnemies', 'blitzerEnemies']
+                },
+                {
+                    bossType: 'hunter',
+                    description: "Pew pew!",
+                    minions: ['rangedEnemies', 'flankerEnemies', 'tankEnemies']
+                },
+                {
+                    bossType: 'master',
+                    description: "The final boss",
+                    minions: ['rangedEnemies', 'flankerEnemies', 'tankEnemies', 'basicEnemies', 'fastEnemies', 'spearEnemies', 'blitzerEnemies', 'boomerangEnemies']
+                }
+            ];
+
+            const bossIndex = (this.currentWave / 4 - 1) % bossWaves.length;
+            const bossWave = bossWaves[bossIndex];
+
+            return {
+                composition: {
+                    basicEnemies: 0,
+                    fastEnemies: 0,
+                    tankEnemies: 0,
+                    rangedEnemies: 0,
+                    spearEnemies: 0,
+                    blitzerEnemies: 0,
+                    flankerEnemies: 0,
+                    boomerangEnemies: 0
+                },
+                spawnDelay: 1000,
+                description: bossWave.description,
+                isBossWave: true,
+                bossType: bossWave.bossType,
+                minionInterval: 4,
+                minionTypes: bossWave.minions as Array<keyof WaveComposition>
+            };
+        }
+
         const index = Math.min(this.currentWave - 1, WAVE_DEFINITIONS.length - 1);
         return WAVE_DEFINITIONS[index];
     }
@@ -321,9 +431,9 @@ export class WaveSystem {
     }
 
     private spawnBoss(type: string): void {
-        let boss: Entity;
+        let boss: Entity | null = null;
         
-        switch(type) {
+        switch (type) {
             case 'warrior':
                 boss = new WarriorBoss(this.bounds, this.player);
                 break;
@@ -333,21 +443,21 @@ export class WaveSystem {
             case 'hunter':
                 boss = new HunterBoss(this.bounds, this.player);
                 break;
-            default:
-                console.error(`Unknown boss type: ${type}`);
-                return;
+            case 'master':
+                boss = new MasterOfArmsBoss(this.bounds, this.player);
+                break;
         }
 
-        // Position boss at center top of screen
-        boss.x = this.bounds.width / 2;
-        boss.y = -50;
+        if (boss) {
+            // Position boss at center top of screen
+            boss.x = this.bounds.width / 2;
+            boss.y = -50;
 
-        this.enemies.push(boss);
-        this.currentBoss = boss;
-        
-        // Call onAddedToScene to ensure healthbar is added
-        if ('onAddedToScene' in boss) {
-            (boss as any).onAddedToScene();
+            this.enemies.push(boss);
+            this.currentBoss = boss;
+            if ('onAddedToScene' in boss) {
+                (boss as any).onAddedToScene();
+            }
         }
     }
 
@@ -368,21 +478,24 @@ export class WaveSystem {
             if (this.currentBoss && !this.currentBoss.isAlive()) {
                 this.waveActive = false;
                 this.currentBoss = null;
+                // Don't start next wave if it was the Master of Arms
+                if (waveDef.bossType === 'master') {
+                    return;
+                }
                 return;
             }
 
-            // Spawn minions periodically
-            if (waveDef.minionsPerMinute && waveDef.minionsPerMinute > 0) {
+            // Spawn minions periodically if boss is alive
+            if (this.currentBoss && this.currentBoss.isAlive() && waveDef.minionInterval && waveDef.minionInterval > 0) {
                 this.spawnTimer += delta * 1000;
-                const spawnInterval = 60000 / waveDef.minionsPerMinute;
-                
+                const spawnInterval = waveDef.minionInterval * 1000;
                 if (this.spawnTimer >= spawnInterval) {
                     this.spawnTimer = 0;
                     if (this.spawnQueue.length === 0 && waveDef.minionTypes) {
                         // Create a new spawn queue with just the allowed minion types
                         const minionComposition = { ...zeroComposition };
                         waveDef.minionTypes.forEach(type => {
-                            minionComposition[type] = waveDef.composition[type];
+                            minionComposition[type] = 1; // Add one of each type to the queue
                         });
                         this.createSpawnQueue(minionComposition);
                     }
@@ -404,10 +517,11 @@ export class WaveSystem {
                     const enemyType = this.spawnQueue.pop()!;
                     this.spawnEnemy(enemyType);
                 }
+            }
 
-                if (this.enemiesSpawned >= totalEnemies) {
-                    this.waveActive = false;
-                }
+            // Check if wave is complete (all enemies spawned and none alive)
+            if (this.enemiesSpawned >= totalEnemies && this.enemies.length === 0) {
+                this.waveActive = false;
             }
         }
     }

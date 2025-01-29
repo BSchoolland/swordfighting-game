@@ -12,20 +12,22 @@ import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import { BaseWeapon } from '../entities/weapons/BaseWeapon';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
+import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
+import { HomeScreen } from './HomeScreen';
 
 export class GameScene extends PIXI.Container {
-    private player: Player;
+    private player!: Player;
     private enemies: Entity[] = [];
     private projectiles: Projectile[] = [];
-    private targetCursor: PIXI.Graphics;
+    private targetCursor!: PIXI.Graphics;
     private inputManager: InputManager;
     private worldToScreenScale: number = 1;
     private dimensions: { width: number; height: number };
-    private healthBar: HealthBar;
+    private healthBar!: HealthBar;
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
-    private waveSystem: WaveSystem;
+    private waveSystem!: WaveSystem;
     private bossHealthBar: HealthBar | null = null;
     private bossNameText: PIXI.Text | null = null;
     private freezeFrameTimer: number = 0;
@@ -33,13 +35,16 @@ export class GameScene extends PIXI.Container {
     private static readonly BOSS_FREEZE_DURATION = 400; // 400ms freeze for boss deaths
 
     // Wave display
-    private waveText: PIXI.Text;
-    private waveAnnouncement: PIXI.Text;
+    private waveText!: PIXI.Text;
+    private waveAnnouncement!: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
 
     private particleSystem: ParticleSystem;
-    private upgradeSystem: UpgradeSystem;
+    private upgradeSystem!: UpgradeSystem;
+
+    private homeScreen: HomeScreen | null = null;
+    private gameStarted: boolean = false;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -50,10 +55,31 @@ export class GameScene extends PIXI.Container {
         // Initialize sound system
         this.soundManager.initialize().catch(console.error);
 
+        // Show home screen initially
+        this.showHomeScreen();
+
+        // Initialize particle system
+        this.particleSystem = ParticleSystem.getInstance(this);
+    }
+
+    private showHomeScreen(): void {
+        this.homeScreen = new HomeScreen(this.dimensions, () => {
+            this.startGame();
+        });
+        this.addChild(this.homeScreen);
+    }
+
+    private startGame(): void {
+        // Remove home screen
+        if (this.homeScreen) {
+            this.removeChild(this.homeScreen);
+            this.homeScreen = null;
+        }
+
         // Create player with fixed game world bounds
-        this.player = new Player(dimensions);
-        this.player.x = dimensions.width / 2;
-        this.player.y = dimensions.height / 2;
+        this.player = new Player(this.dimensions);
+        this.player.x = this.dimensions.width / 2;
+        this.player.y = this.dimensions.height / 2;
         this.addChild(this.player);
 
         // Create target cursor
@@ -73,7 +99,7 @@ export class GameScene extends PIXI.Container {
             fill: 0xffffff,
             align: 'center'
         });
-        this.waveText.position.set(dimensions.width - 150, 20);
+        this.waveText.position.set(this.dimensions.width - 150, 20);
         this.addChild(this.waveText);
 
         // Create centered wave announcement text
@@ -84,19 +110,22 @@ export class GameScene extends PIXI.Container {
             align: 'center'
         });
         this.waveAnnouncement.anchor.set(0.5);
-        this.waveAnnouncement.position.set(dimensions.width / 2, dimensions.height / 2);
+        this.waveAnnouncement.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
         this.waveAnnouncement.alpha = 0;
         this.addChild(this.waveAnnouncement);
 
         // Initialize wave system
-        this.waveSystem = new WaveSystem(dimensions, this.player, this.enemies);
+        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies);
 
         // Initialize upgrade system
-        this.upgradeSystem = new UpgradeSystem(dimensions, this.player);
+        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
         this.addChild(this.upgradeSystem);
 
         // Start first wave
         this.startWave(1);
+
+        // Set game as started
+        this.gameStarted = true;
 
         // Listen for restart and debug keys
         window.addEventListener('keydown', (e) => {
@@ -122,9 +151,6 @@ export class GameScene extends PIXI.Container {
                 this.waveAnnouncementTimer = 0;
             }
         });
-
-        // Initialize particle system
-        this.particleSystem = ParticleSystem.getInstance(this);
     }
 
     private startWave(waveNumber: number): void {
@@ -157,18 +183,20 @@ export class GameScene extends PIXI.Container {
             this.gameOverScreen = null;
         }
 
-        this.player.reset();
-        this.player.x = this.dimensions.width / 2;
-        this.player.y = this.dimensions.height / 2;
+        // Show home screen instead of immediately restarting
+        this.gameStarted = false;
+        this.isGameOver = false;
+        this.showHomeScreen();
 
+        // Clear existing game elements
+        if (this.player) this.removeChild(this.player);
         this.enemies.forEach(enemy => this.removeChild(enemy));
         this.enemies = [];
-
-        this.isGameOver = false;
-        
-        // Reinitialize wave system
-        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies);
-        this.startWave(1);
+        if (this.targetCursor) this.removeChild(this.targetCursor);
+        if (this.healthBar) this.removeChild(this.healthBar);
+        if (this.waveText) this.removeChild(this.waveText);
+        if (this.waveAnnouncement) this.removeChild(this.waveAnnouncement);
+        if (this.upgradeSystem) this.removeChild(this.upgradeSystem);
     }
 
     private showGameOver(): void {
@@ -247,6 +275,9 @@ export class GameScene extends PIXI.Container {
         if (delta === undefined) {
             delta = 1/60;
         }
+
+        // Skip updates if game hasn't started
+        if (!this.gameStarted) return;
 
         // Skip updates if upgrade screen is visible
         if (this.upgradeSystem.isUpgradeScreenVisible()) {
@@ -398,11 +429,183 @@ export class GameScene extends PIXI.Container {
                 this.removeChild(this.bossNameText);
                 this.bossNameText = null;
             }
+
+            // Check if it was the Master of Arms
+            if (enemy instanceof MasterOfArmsBoss) {
+                // Show credits instead of upgrade screen
+                setTimeout(() => {
+                    this.showCredits();
+                }, 2000); // Wait 2 seconds after death effects
+            }
         } else {
             // Regular enemy death
             this.freezeFrameTimer = GameScene.FREEZE_FRAME_DURATION;
             this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
         }
+    }
+
+    private showCredits(): void {
+        // Create credits container
+        const credits = new PIXI.Container();
+        
+        // Create semi-transparent background
+        const bg = new PIXI.Graphics();
+        bg.beginFill(0x000000, 0.9);
+        bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
+        bg.endFill();
+        credits.addChild(bg);
+
+        // Create glow effect for title
+        const glowSize = 60;
+        const glow = new PIXI.Graphics();
+        glow.beginFill(0xFFD700, 0.3);
+        glow.drawCircle(this.dimensions.width / 2, 100, glowSize);
+        glow.endFill();
+        credits.addChild(glow);
+
+        // Animate glow
+        const animateGlow = () => {
+            if (!credits.parent) return;
+            glow.scale.x = 1 + Math.sin(Date.now() / 500) * 0.1;
+            glow.scale.y = 1 + Math.sin(Date.now() / 500) * 0.1;
+            requestAnimationFrame(animateGlow);
+        };
+        animateGlow();
+
+        // Title with gradient and outline
+        const title = new PIXI.Text('PIXEL RAGE', {
+            fontFamily: 'Arial Black, Arial Bold, Arial',
+            fontSize: 64,
+            fill: ['#FFD700', '#FFA500'], // Gold to orange gradient
+            fillGradientType: 1,
+            fillGradientStops: [0.2, 1],
+            stroke: '#000000',
+            strokeThickness: 6,
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowBlur: 4,
+            dropShadowAngle: Math.PI / 4,
+            dropShadowDistance: 6,
+            align: 'center',
+            fontWeight: 'bold'
+        });
+        title.anchor.set(0.5);
+        title.position.set(this.dimensions.width / 2, 100);
+        credits.addChild(title);
+
+        // Add pulsing effect to title
+        const animateTitle = () => {
+            if (!credits.parent) return;
+            title.scale.x = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            title.scale.y = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            requestAnimationFrame(animateTitle);
+        };
+        animateTitle();
+
+        // Credits text
+        const creditsText = [
+            'Congratulations!',
+            'You have defeated the Final Boss',
+            'and completed the game!',
+            '',
+            '',
+            'Game Design & Development By:',
+            'Benjamin Schoolland',
+            'Claud-3.5-sonnet',
+            'ChatGPT',
+            '',
+            'Music By:',
+            'Suno AI',
+            '',
+            '',
+            'Art By:',
+            'you guessed it!',
+            'AI',
+            '',
+            'Special Thanks To:',
+            'The two or three players who helped test the game',
+            'Depending on whether you count me as a player',
+            'And of course,',
+            'Our AI overlords',
+            '',
+            '',
+            'Thank you for playing!'
+        ];
+
+        // Create a container for scrolling text
+        const textContainer = new PIXI.Container();
+        credits.addChild(textContainer);
+
+        let yPos = 0;
+        creditsText.forEach((line, index) => {
+            const text = new PIXI.Text(line, {
+                fontFamily: 'Arial',
+                fontSize: index < 3 ? 32 : 24,
+                fill: index < 3 ? 0xFFD700 : 0xFFFFFF,
+                align: 'center'
+            });
+            text.anchor.set(0.5);
+            text.position.set(this.dimensions.width / 2, yPos);
+            textContainer.addChild(text);
+            yPos += index < 3 ? 50 : 40;
+        });
+
+        // Calculate total height of credits
+        const totalCreditsHeight = yPos;
+
+        // Add restart button
+        const button = new PIXI.Graphics();
+        button.beginFill(0x444444);
+        button.drawRoundedRect(0, 0, 150, 50, 10);
+        button.endFill();
+        button.position.set(
+            this.dimensions.width - 160, // Move to the top right
+            50 // Position it near the top
+        );
+        button.interactive = true;
+        button.cursor = 'pointer';
+        
+        const buttonText = new PIXI.Text('Play Again', {
+            fontFamily: 'Arial',
+            fontSize: 24,
+            fill: 0xFFFFFF
+        });
+        buttonText.anchor.set(0.5);
+        buttonText.position.set(75, 25);
+        button.addChild(buttonText);
+        
+        button.on('mouseover', () => button.tint = 0x666666);
+        button.on('mouseout', () => button.tint = 0xFFFFFF);
+        button.on('click', () => {
+            this.removeChild(credits);
+            this.restart();
+        });
+        
+        credits.addChild(button);
+        
+        // Add credits to scene
+        this.addChild(credits);
+
+        // Position text container to start below screen
+        textContainer.y = this.dimensions.height;
+
+        // Start credits scroll animation
+        const scrollSpeed = 0.3;
+        const animate = () => {
+            if (!credits.parent) return; // Stop if credits were removed
+            
+            // Move text container up
+            textContainer.y -= scrollSpeed;
+            
+            // If all text has scrolled past the top (with extra padding)
+            if (textContainer.y < -totalCreditsHeight - 200) {
+                // Reset to below screen with extra padding
+                textContainer.y = this.dimensions.height + 200;
+            }
+            
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     private handleHit(target: Entity, weapon: BaseWeapon): void {

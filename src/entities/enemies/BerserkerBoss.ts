@@ -104,7 +104,12 @@ export class BerserkerBoss extends BossEnemy {
 
     public update(delta: number, targets: Entity[] = []): void {
         super.update(delta, targets);
-
+        if (this.health === 400) {
+            this.isEnraged = false;
+            this.stats.speed = 0.5;
+            this.stats.maxSpeed = 2;
+            this.baseSpeed = this.stats.speed;
+        }
         if (!this.stunned) {
             const healthRatio = this.health / 400;
             const shouldBeEnraged = healthRatio <= BerserkerBoss.RAGE_THRESHOLD;
