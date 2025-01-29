@@ -20,7 +20,7 @@ export class BerserkerBoss extends BossEnemy {
 
     private baseSpeed: number;
     private baseMaxSpeed: number;
-    private static readonly RAGE_THRESHOLD = 0.7; // 40% health
+    private static readonly RAGE_THRESHOLD = 0.4; // 40% health
     private static readonly RAGE_SPEED_MULTIPLIER = 2;
     private isEnraged: boolean = false;
     private rageTransitionTime: number = 0;

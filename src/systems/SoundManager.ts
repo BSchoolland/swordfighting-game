@@ -156,6 +156,8 @@ export class SoundManager {
         ambient: 0.1    // 100ms - Longer for ambient/UI sounds
     };
 
+    private bossMusic: HTMLAudioElement | null = null;
+
     private constructor() {}
 
     public static getInstance(): SoundManager {
@@ -171,13 +173,77 @@ export class SoundManager {
             this.backgroundMusic = new Audio('/audio/background_music.mp3');
             this.backgroundMusic.loop = true;
             this.backgroundMusic.volume = this.musicVolume;
+
+            // Initialize boss music
+            this.bossMusic = new Audio('/audio/background_music_boss.mp3');
+            this.bossMusic.loop = true;
+            this.bossMusic.volume = 0; // Start at 0 for fade in
             
             // Add error handling
             this.backgroundMusic.onerror = (e) => {
                 console.error('Error loading background music:', e);
             };
 
+            this.bossMusic.onerror = (e) => {
+                console.error('Error loading boss music:', e);
+            };
+
             this.initialized = true;
+        }
+    }
+
+    private fadeOut(audio: HTMLAudioElement, duration: number = 1000): Promise<void> {
+        return new Promise((resolve) => {
+            const startVolume = audio.volume;
+            const steps = 20;
+            const volumeStep = startVolume / steps;
+            const intervalTime = duration / steps;
+            
+            const interval = setInterval(() => {
+                if (audio.volume > volumeStep) {
+                    audio.volume = Math.max(0, audio.volume - volumeStep);
+                } else {
+                    audio.volume = 0;
+                    audio.pause();
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, intervalTime);
+        });
+    }
+
+    private fadeIn(audio: HTMLAudioElement, targetVolume: number, duration: number = 1000): Promise<void> {
+        return new Promise((resolve) => {
+            audio.volume = 0;
+            audio.play();
+            
+            const steps = 20;
+            const volumeStep = targetVolume / steps;
+            const intervalTime = duration / steps;
+            
+            const interval = setInterval(() => {
+                if (audio.volume < targetVolume - volumeStep) {
+                    audio.volume = Math.min(targetVolume, audio.volume + volumeStep);
+                } else {
+                    audio.volume = targetVolume;
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, intervalTime);
+        });
+    }
+
+    public async transitionToBossMusic(): Promise<void> {
+        if (this.backgroundMusic && this.bossMusic) {
+            await this.fadeOut(this.backgroundMusic);
+            await this.fadeIn(this.bossMusic, this.musicVolume);
+        }
+    }
+
+    public async transitionToNormalMusic(): Promise<void> {
+        if (this.backgroundMusic && this.bossMusic) {
+            await this.fadeOut(this.bossMusic);
+            await this.fadeIn(this.backgroundMusic, this.musicVolume);
         }
     }
 
@@ -276,7 +342,7 @@ export class SoundManager {
     public playGameOverSound(): void {
         if (!this.canPlaySound('ambient')) return;
         // Dramatic descending tone
-        zzfx(2, .05, 240, .3, .5, .3, 1, -4, -0.5);
+        zzfx(1, .05, 240, .3, .5, .3, 1, -4, -0.5);
     }
 
     public playWaveStartSound(): void {

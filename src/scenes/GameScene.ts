@@ -11,12 +11,13 @@ import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import { BaseWeapon } from '../entities/weapons/BaseWeapon';
+
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
 import { HomeScreen } from './HomeScreen';
 
 export class GameScene extends PIXI.Container {
-    private player!: Player;
+    private player: Player;
     private enemies: Entity[] = [];
     private projectiles: Projectile[] = [];
     private targetCursor!: PIXI.Graphics;
@@ -27,7 +28,7 @@ export class GameScene extends PIXI.Container {
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
-    private waveSystem!: WaveSystem;
+    private waveSystem: WaveSystem;
     private bossHealthBar: HealthBar | null = null;
     private bossNameText: PIXI.Text | null = null;
     private freezeFrameTimer: number = 0;
@@ -41,10 +42,11 @@ export class GameScene extends PIXI.Container {
     private waveAnnouncementTimer: number = 0;
 
     private particleSystem: ParticleSystem;
-    private upgradeSystem!: UpgradeSystem;
+    private upgradeSystem: UpgradeSystem;
 
     private homeScreen: HomeScreen | null = null;
     private gameStarted: boolean = false;
+    private waitingForUpgrade: boolean = false;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -60,6 +62,20 @@ export class GameScene extends PIXI.Container {
 
         // Initialize particle system
         this.particleSystem = ParticleSystem.getInstance(this);
+
+        // Initialize player first
+        this.player = new Player(dimensions);
+        this.addChild(this.player);
+
+        // make player invisible by moving far offscreen
+        this.player.position.set(-1000, -1000);
+        
+        // Initialize upgrade system before wave system
+        this.upgradeSystem = new UpgradeSystem(dimensions, this.player);
+        this.addChild(this.upgradeSystem);
+
+        // Initialize wave system with upgrade system
+        this.waveSystem = new WaveSystem(dimensions, this.player, this.enemies, this.upgradeSystem);
     }
 
     private showHomeScreen(): void {
@@ -70,17 +86,16 @@ export class GameScene extends PIXI.Container {
     }
 
     private startGame(): void {
+        // move player back to screen
+        this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
+
         // Remove home screen
         if (this.homeScreen) {
             this.removeChild(this.homeScreen);
             this.homeScreen = null;
         }
 
-        // Create player with fixed game world bounds
-        this.player = new Player(this.dimensions);
-        this.player.x = this.dimensions.width / 2;
-        this.player.y = this.dimensions.height / 2;
-        this.addChild(this.player);
+        
 
         // Create target cursor
         this.targetCursor = new PIXI.Graphics();
@@ -113,13 +128,6 @@ export class GameScene extends PIXI.Container {
         this.waveAnnouncement.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
         this.waveAnnouncement.alpha = 0;
         this.addChild(this.waveAnnouncement);
-
-        // Initialize wave system
-        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies);
-
-        // Initialize upgrade system
-        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
-        this.addChild(this.upgradeSystem);
 
         // Start first wave
         this.startWave(1);
@@ -154,6 +162,11 @@ export class GameScene extends PIXI.Container {
     }
 
     private startWave(waveNumber: number): void {
+        // Don't start wave if waiting for upgrade selection
+        if (this.waitingForUpgrade) {
+            return;
+        }
+
         // Start the wave in the wave system first
         this.waveSystem.startNextWave();
 
@@ -163,13 +176,6 @@ export class GameScene extends PIXI.Container {
         // Play wave start sound
         this.soundManager.playWaveStartSound();
         
-        // Heal player by 30% of missing health between waves
-        if (waveNumber > 1) {
-            const healAmount = Math.floor(30);
-            this.player.heal(healAmount);
-            this.soundManager.playHealSound();
-        }
-
         // Show wave announcement (now we can safely get the wave definition)
         const waveDef = this.waveSystem.getCurrentWaveDefinition();
         this.waveAnnouncement.text = `Wave ${waveNumber}\n${waveDef.description}`;
@@ -318,14 +324,30 @@ export class GameScene extends PIXI.Container {
             }
         }
 
-        // Check for wave completion and start next wave
-        if (!this.waveSystem.isWaveActive() && this.enemies.length === 0) {
-            console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
-            this.startWave(this.waveSystem.getCurrentWave() + 1);
+        // Check for wave completion and show upgrades
+        if (!this.waveSystem.isWaveActive() && this.enemies.length === 0 && !this.waitingForUpgrade) {
+            const isBossWave = this.waveSystem.getCurrentWaveDefinition().isBossWave;
+            
+            if (isBossWave) {
+                this.waitingForUpgrade = true;
+                // Show upgrade selection after a short delay
+                setTimeout(() => {
+                    this.upgradeSystem.showUpgradeSelection(false, () => {
+                        // After upgrade is selected
+                        this.waitingForUpgrade = false;
+                        // Start next wave
+                        console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
+                        this.startWave(this.waveSystem.getCurrentWave() + 1);
+                    });
+                }, 500); // Small delay to let death effects finish
+            } else {
+                // For normal waves, just start the next wave immediately
+                console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
+                this.startWave(this.waveSystem.getCurrentWave() + 1);
+            }
         }
 
         // Get input vectors
-        const movement = this.inputManager.getMovementVector();
         const aim = this.inputManager.getAimDirection();
         
         // Update target cursor position based on input type
@@ -352,7 +374,7 @@ export class GameScene extends PIXI.Container {
             this.targetCursor.x,
             this.targetCursor.y,
             this.inputManager.isDashActive(),
-            [...this.enemies, ...this.projectiles.filter(p => p.isAlive())],
+            [...this.enemies, ...this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]],
             this.inputManager.isAttacking()
         );
 
@@ -373,7 +395,7 @@ export class GameScene extends PIXI.Container {
             const enemy = this.enemies[i];
             if (enemy instanceof BaseEnemy) {
                 enemy.playerIsAttacking = this.inputManager.isAttacking();
-                enemy.update(delta, this.projectiles.filter(p => p.isAlive()));
+                enemy.update(delta, this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]);
                 if (!enemy.isAlive()) {
                     const wasBoss = enemy instanceof BossEnemy;
                     this.handleEnemyDeath(enemy);
@@ -382,9 +404,9 @@ export class GameScene extends PIXI.Container {
 
                     // Show upgrade screen after boss death
                     if (wasBoss) {
-                        setTimeout(() => {
-                            this.upgradeSystem.showUpgradeSelection();
-                        }, 1000); // Show after 1 second delay
+                        // setTimeout(() => {
+                        //     this.upgradeSystem.showUpgradeSelection();
+                        // }, 1000); // Show after 1 second delay
                     }
                 }
             }

@@ -22,21 +22,18 @@ export class HealthBar extends PIXI.Container {
 
         // Create health bar
         this.bar = new PIXI.Graphics();
-        this.bar.beginFill(this.customColor || 0x00ff00);
-        this.bar.drawRect(0, 0, width, height);
-        this.bar.endFill();
+        this.updateHealth(1, 1); // Initialize at full health
         this.addChild(this.bar);
     }
 
     public updateHealth(current: number, max: number): void {
         const ratio = Math.max(0, Math.min(1, current / max));
-        this.bar.scale.x = ratio;
-
-        // Change color based on health percentage, unless a custom color is set
-        if (!this.customColor) {
-            const color = this.getHealthColor(ratio);
-            this.bar.tint = color;
-        }
+        
+        // Update the bar graphics
+        this.bar.clear();
+        this.bar.beginFill(this.customColor || this.getHealthColor(ratio));
+        this.bar.drawRect(0, 0, this.barWidth * ratio, this.barHeight);
+        this.bar.endFill();
     }
 
     private getHealthColor(ratio: number): number {

@@ -13,6 +13,8 @@ import { WarriorBoss } from '../entities/enemies/WarriorBoss';
 import { BerserkerBoss } from '../entities/enemies/BerserkerBoss';
 import { HunterBoss } from '../entities/enemies/HunterBoss';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
+import { SoundManager } from './SoundManager';
+import { UpgradeSystem } from './UpgradeSystem';
 
 interface WaveComposition {
     basicEnemies: number;
@@ -95,8 +97,8 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: {
             ...zeroComposition,
-            spearEnemies: 4,
-            tankEnemies: 3,
+            spearEnemies: 2,
+            tankEnemies: 2,
             basicEnemies: 6,
             rangedEnemies: 2,
         },
@@ -238,11 +240,13 @@ export class WaveSystem {
     private waveActive: boolean = false;
     private spawnQueue: Array<keyof WaveComposition> = [];
     private currentBoss: Entity | null = null;
+    private upgradeSystem: UpgradeSystem;
 
-    constructor(bounds: { width: number; height: number }, player: Player, enemies: Entity[]) {
+    constructor(bounds: { width: number; height: number }, player: Player, enemies: Entity[], upgradeSystem: UpgradeSystem) {
         this.bounds = bounds;
         this.player = player;
         this.enemies = enemies;
+        this.upgradeSystem = upgradeSystem;
     }
 
     private createSpawnQueue(composition: WaveComposition): void {
@@ -276,6 +280,11 @@ export class WaveSystem {
         const waveDef = this.getCurrentWaveDefinition();
         this.createSpawnQueue(waveDef.composition);
         console.log(`[WaveSystem] Starting wave ${this.currentWave}: ${waveDef.description}`);
+
+        // Start boss music if it's a boss wave
+        if (waveDef.isBossWave) {
+            SoundManager.getInstance().transitionToBossMusic();
+        }
     }
 
     public setEnemiesArray(enemies: Entity[]): void {
@@ -296,25 +305,6 @@ export class WaveSystem {
 
     public getCurrentWaveDefinition(): WaveDefinition {
         // Final boss wave
-        if (this.currentWave === 12) {
-            return {
-                composition: {
-                    basicEnemies: 0,
-                    fastEnemies: 0,
-                    tankEnemies: 0,
-                    rangedEnemies: 0,
-                    spearEnemies: 0,
-                    blitzerEnemies: 0,
-                    flankerEnemies: 0,
-                    boomerangEnemies: 0
-                },
-                spawnDelay: 0,
-                description: "The Master of Arms Appears!",
-                isBossWave: true,
-                bossType: 'master',
-                minionInterval: 0
-            };
-        }
         
         // Regular boss waves
         if (this.currentWave % 4 === 0) {
@@ -478,6 +468,12 @@ export class WaveSystem {
             if (this.currentBoss && !this.currentBoss.isAlive()) {
                 this.waveActive = false;
                 this.currentBoss = null;
+                // Heal player by 30% of max health
+                const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
+                this.player.heal(healAmount);
+                SoundManager.getInstance().playHealSound();
+                // Transition back to normal music when boss dies
+                SoundManager.getInstance().transitionToNormalMusic();
                 // Don't start next wave if it was the Master of Arms
                 if (waveDef.bossType === 'master') {
                     return;
@@ -522,6 +518,10 @@ export class WaveSystem {
             // Check if wave is complete (all enemies spawned and none alive)
             if (this.enemiesSpawned >= totalEnemies && this.enemies.length === 0) {
                 this.waveActive = false;
+                // Heal player by 30% of max health between waves
+                const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
+                this.player.heal(healAmount);
+                SoundManager.getInstance().playHealSound();
             }
         }
     }

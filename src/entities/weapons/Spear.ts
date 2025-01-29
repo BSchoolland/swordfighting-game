@@ -16,7 +16,7 @@ export class Spear extends BaseWeapon {
         color: 0x888888,
         optimalRange: 0.9, // Needs to be at tip for max damage
         retreatRange: 0.5,
-        windUpTime: 200,
+        windUpTime: 400,
         previewAlpha: 0.3
     };
 

@@ -5,16 +5,18 @@ import { SoundManager } from '../systems/SoundManager';
 export abstract class Entity extends PIXI.Container {
     public velocity: { x: number; y: number } = { x: 0, y: 0 };
     public radius: number = 10;  // Default radius for collision detection
-    public health: number;
-    public maxHealth: number;
+    protected health: number = 100;
+    protected maxHealth: number = 100;
     public target: Entity | null = null;
     public isEnemy: boolean = false;  // Default to false, enemies will set this to true
-    protected bounds: PIXI.Rectangle;
+    public isBlocking: boolean = false;
+    protected healthBar: HealthBar | null = null;
+    protected sprite: PIXI.Sprite | null = null;
+    protected debugId: string = 'Entity';
+    protected bounds: { width: number; height: number };
     protected friction: number = 0.95;
     protected speed: number = 2;  // Default movement speed
     public canBlock: boolean = false;
-    public isBlocking: boolean = false;
-    protected healthBar: HealthBar | null = null;
 
     constructor(bounds: { width: number; height: number }, maxHealth: number) {
         super();

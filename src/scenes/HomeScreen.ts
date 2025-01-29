@@ -168,7 +168,7 @@ export class HomeScreen extends PIXI.Container {
 
         // controller controls
         const controllerText = new PIXI.Text(
-            'Gamepad Controls:\nLeft Stick - Move\nRight Stick - Aim\nA - Attack\nB - Dash',
+            'Gamepad Controls:\nLeft Stick - Move\nRight Stick - Aim\nRT - Attack\nLT - Dash',
             {
                 fontFamily: 'Arial',
                 fontSize: 20,
