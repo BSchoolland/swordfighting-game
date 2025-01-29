@@ -629,9 +629,4 @@ export class GameScene extends PIXI.Container {
         };
         animate();
     }
-
-    private handleHit(target: Entity, weapon: BaseWeapon): void {
-        // Create hit sparks
-        this.particleSystem.createHitSparks(target.x, target.y, weapon.getColor());
-    }
 } 
