@@ -232,6 +232,10 @@ export class Player extends Entity {
         return this.dash;
     }
 
+    public isDashing(): boolean {
+        return this.dash.isCurrentlyActive();
+    }
+
     public increaseSwordLength(percentage: number): void {
         this.swordLengthMultiplier *= (1 + percentage);
         const newLength = 60 * this.swordLengthMultiplier; // 60 is the default blade length

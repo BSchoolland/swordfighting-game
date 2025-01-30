@@ -84,7 +84,6 @@ export abstract class BaseWeapon extends PIXI.Container {
         };
     }
 
-    public abstract swing(): void;
     public abstract getCooldownProgress(): number;
     public abstract setBladeLength(length: number): void;
     public abstract setSwingSpeedMultiplier(multiplier: number): void;
@@ -231,9 +230,9 @@ export abstract class BaseWeapon extends PIXI.Container {
                 }
 
                 // Adjust hit arc based on target size - larger enemies are easier to hit
-                const baseHitArc = Math.PI/3; // 
+                const baseHitArc = Math.PI/3;
                 const sizeMultiplier = target.getRadius() / 10; // 10 is the default radius
-                const adjustedHitArc = baseHitArc * Math.min(2, Math.max(1, sizeMultiplier)); // Cap at 2x base arc
+                const adjustedHitArc = baseHitArc * Math.min(2, Math.max(1, sizeMultiplier));
 
                 if (angleDiff < adjustedHitArc) {
                     const knockbackDir = {
@@ -241,7 +240,17 @@ export abstract class BaseWeapon extends PIXI.Container {
                         y: dy / distance
                     };
                     
-                    target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
+                    // Calculate damage based on dash state
+                    let damage = this.stats.damage;
+                    let knockback = this.stats.knockback;
+                    let shouldFreezeFrame = false;
+                    if (this.owner instanceof Player && this.owner.isDashing()) {
+                        damage *= 2; // Double damage during dash
+                        knockback *= 2;
+                        shouldFreezeFrame = true;
+                    }
+                    
+                    target.takeDamage(damage, knockbackDir, knockback);
                     this.hitEntities.add(target);
                     
                     // Play hit sound and trigger hit effect
@@ -259,6 +268,14 @@ export abstract class BaseWeapon extends PIXI.Container {
                     const gameScene = this.parent?.parent as any;
                     if (gameScene && gameScene.handleHit) {
                         gameScene.handleHit(target, this);
+                    }
+
+                    // Trigger freeze frame for dash hits
+                    if (shouldFreezeFrame) {
+                        const gameScene = this.parent?.parent as any;
+                        if (gameScene) {
+                            gameScene.freezeFrameTimer = gameScene.constructor.FREEZE_FRAME_DURATION;
+                        }
                     }
                 }
             }

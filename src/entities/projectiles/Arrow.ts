@@ -1,4 +1,3 @@
-import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Projectile, ProjectileStats } from './Projectile';
 
