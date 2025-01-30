@@ -15,6 +15,7 @@ import { BaseWeapon } from '../entities/weapons/BaseWeapon';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
 import { HomeScreen } from './HomeScreen';
+import { ScoreSystem } from '../systems/ScoreSystem';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
@@ -40,6 +41,7 @@ export class GameScene extends PIXI.Container {
     private waveAnnouncement!: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
+    private scoreText!: PIXI.Text; // Add score text
 
     private particleSystem: ParticleSystem;
     private upgradeSystem: UpgradeSystem;
@@ -48,11 +50,16 @@ export class GameScene extends PIXI.Container {
     private gameStarted: boolean = false;
     private waitingForUpgrade: boolean = false;
 
+    private scoreSystem: ScoreSystem;
+
     constructor(dimensions: { width: number; height: number }) {
         super();
         this.dimensions = dimensions;
         this.inputManager = new InputManager();
         this.soundManager = SoundManager.getInstance();
+        
+        // Initialize score system
+        this.scoreSystem = new ScoreSystem();
         
         // Initialize sound system
         this.soundManager.initialize().catch(console.error);
@@ -79,6 +86,48 @@ export class GameScene extends PIXI.Container {
     }
 
     private showHomeScreen(): void {
+        console.log('[GameScene] Showing home screen');
+        
+        // Clear all game elements first
+        console.log('[GameScene] Clearing game state for menu');
+        if (this.player) {
+            this.removeChild(this.player);
+        }
+        this.enemies.forEach(enemy => this.removeChild(enemy));
+        this.enemies = [];
+        if (this.targetCursor) {
+            this.removeChild(this.targetCursor);
+        }
+        if (this.healthBar) {
+            this.removeChild(this.healthBar);
+        }
+        if (this.waveText) {
+            this.removeChild(this.waveText);
+        }
+        if (this.scoreText) {
+            this.removeChild(this.scoreText);
+        }
+        if (this.waveAnnouncement) {
+            this.removeChild(this.waveAnnouncement);
+        }
+        if (this.upgradeSystem) {
+            this.removeChild(this.upgradeSystem);
+        }
+        
+        // Reinitialize core systems
+        console.log('[GameScene] Reinitializing systems for menu');
+        this.player = new Player(this.dimensions);
+        this.addChild(this.player);
+        // Move player off screen initially
+        this.player.position.set(-1000, -1000);
+        
+        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
+        this.addChild(this.upgradeSystem);
+        
+        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+        
+        // Show the home screen
+        console.log('[GameScene] Creating home screen');
         this.homeScreen = new HomeScreen(this.dimensions, () => {
             this.startGame();
         });
@@ -86,28 +135,31 @@ export class GameScene extends PIXI.Container {
     }
 
     private startGame(): void {
+        console.log('[GameScene] Starting game');
         // move player back to screen
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
         // Remove home screen
         if (this.homeScreen) {
+            console.log('[GameScene] Removing home screen');
             this.removeChild(this.homeScreen);
             this.homeScreen = null;
         }
 
-        
-
         // Create target cursor
+        console.log('[GameScene] Creating target cursor');
         this.targetCursor = new PIXI.Graphics();
         this.drawCursor();
         this.addChild(this.targetCursor);
 
         // Create health bar
+        console.log('[GameScene] Creating health bar');
         this.healthBar = new HealthBar(200, 20);
         this.healthBar.position.set(20, 20);
         this.addChild(this.healthBar);
 
         // Create wave text (top right corner)
+        console.log('[GameScene] Creating wave text');
         this.waveText = new PIXI.Text('Wave 1', {
             fontFamily: 'Arial',
             fontSize: 24,
@@ -117,7 +169,19 @@ export class GameScene extends PIXI.Container {
         this.waveText.position.set(this.dimensions.width - 150, 20);
         this.addChild(this.waveText);
 
+        // Create score text under wave text
+        console.log('[GameScene] Creating score text');
+        this.scoreText = new PIXI.Text('Score: 0', {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            fill: 0xFFD700,
+            align: 'center'
+        });
+        this.scoreText.position.set(this.dimensions.width - 150, 50);
+        this.addChild(this.scoreText);
+
         // Create centered wave announcement text
+        console.log('[GameScene] Creating wave announcement');
         this.waveAnnouncement = new PIXI.Text('', {
             fontFamily: 'Arial',
             fontSize: 48,
@@ -130,21 +194,20 @@ export class GameScene extends PIXI.Container {
         this.addChild(this.waveAnnouncement);
 
         // Start first wave
+        console.log('[GameScene] Starting first wave');
         this.startWave(1);
 
         // Set game as started
+        console.log('[GameScene] Game started');
         this.gameStarted = true;
 
-        // Listen for restart and debug keys
+        // Listen for debug keys
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyR' && this.isGameOver) {
-                this.restart();
-            }
             // Debug: Skip to wave number using number keys (1-9)
             const waveMatch = e.code.match(/Digit([1-9])/);
             if (waveMatch) {
                 const targetWave = parseInt(waveMatch[1]);
-                console.log(`Debug: Skipping to wave ${targetWave}`);
+                console.log(`[GameScene] Debug: Skipping to wave ${targetWave}`);
                 // Clear current enemies
                 this.enemies.forEach(enemy => this.removeChild(enemy));
                 this.enemies = [];
@@ -167,6 +230,9 @@ export class GameScene extends PIXI.Container {
             return;
         }
 
+        // Update score system with new wave
+        this.scoreSystem.setWave(waveNumber);
+
         // Start the wave in the wave system first
         this.waveSystem.startNextWave();
 
@@ -184,30 +250,98 @@ export class GameScene extends PIXI.Container {
     }
 
     private restart(): void {
+        console.log('[GameScene] Starting restart process');
         if (this.gameOverScreen) {
+            console.log('[GameScene] Removing game over screen');
             this.removeChild(this.gameOverScreen);
             this.gameOverScreen = null;
         }
 
-        // Show home screen instead of immediately restarting
-        this.gameStarted = false;
-        this.isGameOver = false;
-        this.showHomeScreen();
+        // Reset score system
+        this.scoreSystem.reset();
 
         // Clear existing game elements
-        if (this.player) this.removeChild(this.player);
+        console.log('[GameScene] Clearing game elements');
+        if (this.player) {
+            console.log('[GameScene] Removing player');
+            this.removeChild(this.player);
+        }
+        console.log('[GameScene] Removing enemies:', this.enemies.length);
         this.enemies.forEach(enemy => this.removeChild(enemy));
         this.enemies = [];
-        if (this.targetCursor) this.removeChild(this.targetCursor);
-        if (this.healthBar) this.removeChild(this.healthBar);
-        if (this.waveText) this.removeChild(this.waveText);
-        if (this.waveAnnouncement) this.removeChild(this.waveAnnouncement);
-        if (this.upgradeSystem) this.removeChild(this.upgradeSystem);
+        if (this.targetCursor) {
+            console.log('[GameScene] Removing target cursor');
+            this.removeChild(this.targetCursor);
+        }
+        if (this.healthBar) {
+            console.log('[GameScene] Removing health bar');
+            this.removeChild(this.healthBar);
+        }
+        if (this.waveText) {
+            console.log('[GameScene] Removing wave text');
+            this.removeChild(this.waveText);
+        }
+        if (this.scoreText) {
+            console.log('[GameScene] Removing score text');
+            this.removeChild(this.scoreText);
+        }
+        if (this.waveAnnouncement) {
+            console.log('[GameScene] Removing wave announcement');
+            this.removeChild(this.waveAnnouncement);
+        }
+        if (this.upgradeSystem) {
+            console.log('[GameScene] Removing upgrade system');
+            this.removeChild(this.upgradeSystem);
+        }
+
+        // Reset game state
+        console.log('[GameScene] Resetting game state');
+        this.isGameOver = false;
+        
+        // Reinitialize core systems
+        console.log('[GameScene] Reinitializing core systems');
+        
+        // Reinitialize player
+        console.log('[GameScene] Reinitializing player');
+        this.player = new Player(this.dimensions);
+        this.addChild(this.player);
+        
+        // Reinitialize upgrade system
+        console.log('[GameScene] Reinitializing upgrade system');
+        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
+        this.addChild(this.upgradeSystem);
+        
+        // Reinitialize wave system
+        console.log('[GameScene] Reinitializing wave system');
+        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+        
+        // Start game immediately instead of showing home screen
+        console.log('[GameScene] Starting new game');
+        this.startGame();
     }
 
     private showGameOver(): void {
+        console.log('[GameScene] Showing game over screen');
         this.isGameOver = true;
-        this.gameOverScreen = new GameOverScreen(this.dimensions.width, this.dimensions.height);
+        this.gameOverScreen = new GameOverScreen(
+            this.dimensions.width, 
+            this.dimensions.height,
+            () => {
+                console.log('[GameScene] Restart callback triggered');
+                this.restart();
+            },
+            () => {
+                console.log('[GameScene] Menu callback triggered');
+                if (this.gameOverScreen) {
+                    this.removeChild(this.gameOverScreen);
+                    this.gameOverScreen = null;
+                }
+                this.gameStarted = false;
+                this.isGameOver = false;
+                this.showHomeScreen();
+            },
+            this.scoreSystem
+        );
         this.addChild(this.gameOverScreen);
         this.soundManager.playGameOverSound();
     }
@@ -297,6 +431,9 @@ export class GameScene extends PIXI.Container {
         }
 
         if (this.isGameOver) return;
+
+        // Update score display
+        this.scoreText.text = `Score: ${this.scoreSystem.getCurrentScore()}`;
 
         // Handle wave announcement fade out
         if (this.waveAnnouncement.alpha > 0) {
@@ -428,6 +565,9 @@ export class GameScene extends PIXI.Container {
     }
 
     private handleEnemyDeath(enemy: BaseEnemy): void {
+        // Add score for the defeated enemy
+        this.scoreSystem.addScore(enemy);
+
         // Check if the enemy is a boss
         if (enemy instanceof BossEnemy) {
             // Kill all other enemies

@@ -110,8 +110,8 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: {
             ...zeroComposition,
-            fastEnemies: 6,
-            blitzerEnemies: 3,
+            fastEnemies: 5,
+            blitzerEnemies: 2,
             basicEnemies: 2,
             spearEnemies: 1,
             rangedEnemies: 2

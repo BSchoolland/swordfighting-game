@@ -246,6 +246,7 @@ export abstract class BaseWeapon extends PIXI.Container {
                             SoundManager.getInstance().playHeavyDamageSound();
                         } else {
                             SoundManager.getInstance().playHitSound();
+                            ParticleSystem.getInstance().createHitSparks(target.x, target.y, this.stats.color);
                         }
                     }
                     
