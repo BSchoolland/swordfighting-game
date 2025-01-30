@@ -1,6 +1,5 @@
 import { Entity } from '../Entity';
 import { Player } from '../Player';
-import { SoundManager } from '../../systems/SoundManager';
 
 export interface AbilityStats {
     cooldown: number;
@@ -27,7 +26,7 @@ export abstract class BaseAbility {
 
             // Play power-up sound for player abilities
             if (this.owner instanceof Player) {
-                SoundManager.getInstance().playPowerUpSound();
+                // SoundManager.getInstance().playPowerUpSound();
             }
 
             return true;

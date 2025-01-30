@@ -7,9 +7,9 @@ import { HunterBow } from '../weapons/HunterBow';
 
 export class MasterOfArmsBoss extends BossEnemy {
     private static readonly STATS = {
-        health: 500,
+        health: 400,
         speed: 0.5,
-        maxSpeed: 2.5,
+        maxSpeed: 2.0,
         chaseRange: 600,
         color: 0xFFD700, // Gold color for the master
         movementRestriction: 0.7,
@@ -116,17 +116,17 @@ export class MasterOfArmsBoss extends BossEnemy {
             this.stats.maxRotateSpeed = 5;
         } else if (this.weapon instanceof MasterHammer) {
             this.stats.speed = 0.5; 
-            this.stats.maxSpeed = 2.0; // Slightly lower max speed
+            this.stats.maxSpeed = 1.5; // Slightly lower max speed
             this.stats.knockbackResistance = 0.9; // Very high knockback resistance
             this.stats.maxRotateSpeed = 3;
         } else if (this.weapon instanceof MasterSpear) {
             this.stats.speed = 0.5; 
-            this.stats.maxSpeed = 2.5; 
+            this.stats.maxSpeed = 2.0; 
             this.stats.knockbackResistance = 0.5;
             this.stats.maxRotateSpeed = 0.75; // very slow turn speed
         } else {
             this.stats.speed = 0.5;
-            this.stats.maxSpeed = 2.5;
+            this.stats.maxSpeed = 2.0;
             this.stats.knockbackResistance = 0.5;
             this.stats.maxRotateSpeed = 3;
         }

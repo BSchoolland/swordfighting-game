@@ -10,7 +10,7 @@ export class HunterBow extends RangedWeapon {
     private static readonly PLAYER_PARAMS: RangedWeaponStats = {
         damage: 12,
         knockback: 8,
-        attackSpeed: 1200,
+        attackSpeed: 3000,
         range: 400,
         swingSpeed: 0,  // Not used for bow
         swingRange: 0,  // Not used for bow

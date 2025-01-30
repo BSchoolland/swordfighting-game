@@ -257,14 +257,8 @@ export abstract class BaseWeapon extends PIXI.Container {
 
                     // Play hit sound and trigger hit effect
                     if (this.owner instanceof Player) {
-                        // Check if it's a critical hit (you can define your own criteria)
-                        const isCriticalHit = this.swingAngle > this.stats.swingRange * 0.7; // Example: hits during the peak of the swing
-                        if (isCriticalHit) {
-                            SoundManager.getInstance().playHeavyDamageSound();
-                        } else {
-                            SoundManager.getInstance().playHitSound();
-                            ParticleSystem.getInstance().createHitSparks(target.x, target.y, this.stats.color);
-                        }
+                        SoundManager.getInstance().playHitSound();
+                        ParticleSystem.getInstance().createHitSparks(target.x, target.y, this.stats.color);
                     }
                     
                     const gameScene = this.parent?.parent as any;

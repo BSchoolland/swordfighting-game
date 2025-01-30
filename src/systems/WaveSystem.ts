@@ -191,10 +191,10 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: {
             ...zeroComposition,
-            tankEnemies: 8,
+            tankEnemies: 5,
             basicEnemies: 10,
             fastEnemies: 6,
-            spearEnemies: 6,
+            spearEnemies: 3,
         },
         spawnDelay: 700,
         description: "Ironclad Invasion"
@@ -204,14 +204,14 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: {
             ...zeroComposition,
-            rangedEnemies: 5,
-            flankerEnemies: 5,
-            boomerangEnemies: 5,
-            tankEnemies: 5,
-            basicEnemies: 5,
-            fastEnemies: 5,
-            spearEnemies: 5,
-            blitzerEnemies: 5,
+            rangedEnemies: 3,
+            flankerEnemies: 3,
+            boomerangEnemies: 3,
+            tankEnemies: 3,
+            basicEnemies: 3,
+            fastEnemies: 3,
+            spearEnemies: 3,
+            blitzerEnemies: 3,
         },
         spawnDelay: 700,
         description: "The last wave"
@@ -224,7 +224,7 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
         description: "",
         isBossWave: true,
         bossType: "master",
-        minionInterval: 4, // every 4 seconds
+        minionInterval: 10, // every 10 seconds
         minionTypes: ['rangedEnemies', 'flankerEnemies', 'tankEnemies', 'basicEnemies', 'fastEnemies', 'spearEnemies', 'blitzerEnemies', 'boomerangEnemies']
     }
 ];

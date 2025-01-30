@@ -125,10 +125,10 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'speed_legendary',
                 name: 'Avatar of Mercury',
-                description: 'Increase movement speed by 100%',
+                description: 'Increase movement speed by 75%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.SPEED,
-                apply: (player: Player) => player.increaseSpeed(1)
+                apply: (player: Player) => player.increaseSpeed(0.75)
             },
             
             // Dash Upgrades

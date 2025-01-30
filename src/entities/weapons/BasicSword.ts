@@ -5,6 +5,23 @@ import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
 
+const BASE_PLAYER_PARAMS = {
+    damage: 20,
+    knockback: 5,
+    attackSpeed: 1000, 
+    range: 40,
+    swingSpeed: 0.2,
+    swingRange: Math.PI * 1.2,
+    bladeLength: 60,
+    bladeWidth: 4,
+    swingInfluence: 0.5,
+    color: 0xcccccc,
+    optimalRange: 0.8,
+    retreatRange: 0.6,
+    windUpTime: 100,
+    previewAlpha: 0.3
+};
+
 export class BasicSword extends BaseWeapon {
     private static readonly PLAYER_PARAMS: WeaponStats = {
         damage: 20,
@@ -79,19 +96,15 @@ export class BasicSword extends BaseWeapon {
     }
 
     public reset(): void {
-        this.isSwinging = false;
-        this.isWindingUp = false;
-        this.swingAngle = 0;
-        this.lastSwingTime = 0;
-        this.windUpTimer = 0;
-        this.hitEntities.clear();
-        this.windUpStartTime = 0;
-        this.swingDirection = 1;
-        this.trailPoints = [];
-        this.lastTrailTime = 0;
-        this.swingProgress = 0;
-        this.windupTimer = 0;
-        this.damageMultiplier = 1;
-        this.swingSpeedMultiplier = 1;
+        // reset to base params
+        this.stats = { ...BASE_PLAYER_PARAMS };
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
+
+    public setSwingSpeedMultiplier(multiplier: number): void {
+        this.stats.swingSpeed = this.stats.swingSpeed * multiplier;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
     }
 } 

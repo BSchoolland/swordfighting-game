@@ -136,26 +136,74 @@ export class SoundManager {
     private initialized: boolean = false;
     private backgroundMusic: HTMLAudioElement | null = null;
     private musicVolume: number = 0.5; // 50% volume by default
+    private bossMusic: HTMLAudioElement | null = null;
+    private isMusicMuted: boolean = false;
+    private isSoundEffectsMuted: boolean = false;
     private lastPlayTimes: {
         combat: number;    // For hit, heavy hit, parry
         movement: number;  // For dash, swing
         ambient: number;   // For powerup, heal, etc.
+        important: number; // For wave start, boss death, etc.
     } = {
         combat: 0,
         movement: 0,
-        ambient: 0
+        ambient: 0,
+        important: 0
     };
 
     // Different minimum times between sounds for different categories
     private readonly MIN_TIME_BETWEEN_SOUNDS = {
         combat: 0.02,   // 20ms - Very responsive for combat
         movement: 0.05, // 50ms - Standard for movement
-        ambient: 0.1    // 100ms - Longer for ambient/UI sounds
+        ambient: 0.1,    // 100ms - Longer for ambient/UI sounds,
+        important: 0.01 // 10ms - Very responsive for important sounds
     };
 
-    private bossMusic: HTMLAudioElement | null = null;
+    private constructor() {
+        // Load saved settings from localStorage
+        this.loadSettings();
+    }
 
-    private constructor() {}
+    private loadSettings(): void {
+        const settings = localStorage.getItem('sound_settings');
+        if (settings) {
+            const { musicMuted, sfxMuted } = JSON.parse(settings);
+            this.isMusicMuted = musicMuted;
+            this.isSoundEffectsMuted = sfxMuted;
+        }
+    }
+
+    private saveSettings(): void {
+        const settings = {
+            musicMuted: this.isMusicMuted,
+            sfxMuted: this.isSoundEffectsMuted
+        };
+        localStorage.setItem('sound_settings', JSON.stringify(settings));
+    }
+
+    public isMusicEnabled(): boolean {
+        return !this.isMusicMuted;
+    }
+
+    public isSoundEffectsEnabled(): boolean {
+        return !this.isSoundEffectsMuted;
+    }
+
+    public setMusicEnabled(enabled: boolean): void {
+        this.isMusicMuted = !enabled;
+        if (this.backgroundMusic) {
+            this.backgroundMusic.volume = enabled ? this.musicVolume : 0;
+        }
+        if (this.bossMusic) {
+            this.bossMusic.volume = enabled ? this.musicVolume : 0;
+        }
+        this.saveSettings();
+    }
+
+    public setSoundEffectsEnabled(enabled: boolean): void {
+        this.isSoundEffectsMuted = !enabled;
+        this.saveSettings();
+    }
 
     public static getInstance(): SoundManager {
         if (!SoundManager.instance) {
@@ -166,17 +214,14 @@ export class SoundManager {
 
     public async initialize(): Promise<void> {
         if (!this.initialized) {
-            // Initialize background music
-            this.backgroundMusic = new Audio('/audio/background_music.mp3');
+            this.backgroundMusic = new Audio('./audio/background_music.mp3');
             this.backgroundMusic.loop = true;
-            this.backgroundMusic.volume = this.musicVolume;
+            this.backgroundMusic.volume = this.isMusicMuted ? 0 : this.musicVolume;
 
-            // Initialize boss music
-            this.bossMusic = new Audio('/audio/background_music_boss.mp3');
+            this.bossMusic = new Audio('./audio/background_music_boss.mp3');
             this.bossMusic.loop = true;
-            this.bossMusic.volume = 0; // Start at 0 for fade in
-            
-            // Add error handling
+            this.bossMusic.volume = 0;
+
             this.backgroundMusic.onerror = (e) => {
                 console.error('Error loading background music:', e);
             };
@@ -212,7 +257,15 @@ export class SoundManager {
     private fadeIn(audio: HTMLAudioElement, targetVolume: number, duration: number = 1000): Promise<void> {
         return new Promise((resolve) => {
             audio.volume = 0;
-            audio.play();
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn('Error starting audio playback:', error);
+                    resolve();
+                    return;
+                });
+            }
             
             const steps = 20;
             const volumeStep = targetVolume / steps;
@@ -232,15 +285,21 @@ export class SoundManager {
 
     public async transitionToBossMusic(): Promise<void> {
         if (this.backgroundMusic && this.bossMusic) {
+            const targetVolume = this.isMusicMuted ? 0 : this.musicVolume;
             await this.fadeOut(this.backgroundMusic);
-            await this.fadeIn(this.bossMusic, this.musicVolume);
+            this.backgroundMusic.pause();
+            this.bossMusic.currentTime = 0;
+            await this.fadeIn(this.bossMusic, targetVolume);
         }
     }
 
     public async transitionToNormalMusic(): Promise<void> {
         if (this.backgroundMusic && this.bossMusic) {
+            const targetVolume = this.isMusicMuted ? 0 : this.musicVolume;
             await this.fadeOut(this.bossMusic);
-            await this.fadeIn(this.backgroundMusic, this.musicVolume);
+            this.bossMusic.pause();
+            this.backgroundMusic.currentTime = 0;
+            await this.fadeIn(this.backgroundMusic, targetVolume);
         }
     }
 
@@ -271,7 +330,7 @@ export class SoundManager {
         }
     }
 
-    private canPlaySound(category: 'combat' | 'movement' | 'ambient'): boolean {
+    private canPlaySound(category: 'combat' | 'movement' | 'ambient' | 'important'): boolean {
         const now = performance.now() / 1000;
         if (now - this.lastPlayTimes[category] < this.MIN_TIME_BETWEEN_SOUNDS[category]) {
             return false;
@@ -281,76 +340,63 @@ export class SoundManager {
     }
 
     public playSwingSound(): void {
-        if (!this.canPlaySound('movement')) return;
-        // Swoosh with metallic quality
+        if (this.isSoundEffectsMuted || !this.canPlaySound('movement')) return;
         zzfx(.2,.05,477,.1,.01,.17,2,3,12,12,0,0,0,.2,32,0,0,.63,.17,.2,0);
     }
 
     public playHitSound(): void {
-        if (!this.canPlaySound('combat')) return;
-        // Impactful hit with some crunch
+        if (this.isSoundEffectsMuted || !this.canPlaySound('combat')) return;
         zzfx(2,.05,722,.01,.03,.03,2,2.3,-21,-29.9,0,0,0,0,13,.1,.07,.67,.02,0,0);
     }
 
     public playDashSound(): void {
-        if (!this.canPlaySound('movement')) return;
-        // Quick whoosh
+        if (this.isSoundEffectsMuted || !this.canPlaySound('movement')) return;
         zzfx(0.5,.05,504,.01,.03,.04,2,3,26,0,-150,0,0,.3,0,0,0,.66,.02,.06,0);
     }
 
     public playHealSound(): void {
-        if (!this.canPlaySound('ambient')) return;
-        // Sparkly healing sound
-        zzfx(.7, .05, 1200, 0, .1, .2, 1, 6, 10, 50, 0, 0, 0, 0, 0, .1, .1, .8, .1);
+        if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
+        // zzfx(.7, .05, 1200, 0, .1, .2, 1, 6, 10, 50, 0, 0, 0, 0, 0, .1, .1, .8, .1);
     }
 
     public playDamageSound(): void {
-        if (!this.canPlaySound('combat')) return;
-        // Harsh impact with lower frequency for more "oomph"
+        if (this.isSoundEffectsMuted || !this.canPlaySound('combat')) return;
         zzfx(1.1,.05,779,0,.04,.03,4,.7,0,-16,44,.26,0,0,0,.8,0,.9,.01,.06,0);
     }
 
-    public playHeavyDamageSound(): void {
-        if (!this.canPlaySound('combat')) return;
-        // More intense version of damage sound for critical hits
-        
-    }
-
     public playParrySound(): void {
-        if (!this.canPlaySound('combat')) return;
-        // Metallic clash sound
+        if (this.isSoundEffectsMuted || !this.canPlaySound('combat')) return;
         zzfx(1, .05, 1800, .03, .02, .08, 2, 2, -15);
         setTimeout(() => {
-            zzfx(.7, .05, 1200, 0, .01, .1, 1, 1, -8);
+            if (!this.isSoundEffectsMuted) {
+                zzfx(.7, .05, 1200, 0, .01, .1, 1, 1, -8);
+            }
         }, 20);
     }
 
     public playEnemyShootSound(): void {
-        if (!this.canPlaySound('combat')) return;
-        // Enemy projectile launch sound
+        if (this.isSoundEffectsMuted || !this.canPlaySound('combat')) return;
         zzfx(2.1,.05,370,0,.06,.19,0,.2,-3,-1,0,0,0,0,0,0,.17,.9,.15,0,959);
     }
 
     public playPowerUpSound(): void {
-        if (!this.canPlaySound('ambient')) return;
-        // Rising pitch with sparkly effect
+        if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
+        // FIXME: this is actually the wave start sound
+        zzfx(0.7,.05,520,.04,.18,.24,1,3.1,-6,0,17,.05,.08,0,0,0,0,.87,.27,.48,0);
     }
-
     public playGameOverSound(): void {
-        if (!this.canPlaySound('ambient')) return;
-        // Dramatic descending tone
+        if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
         zzfx(1, .05, 240, .3, .5, .3, 1, -4, -0.5);
     }
 
     public playWaveStartSound(): void {
-        if (!this.canPlaySound('ambient')) return;
-        // Rising alert sound
+        console.log("playWaveStartSound");
+        if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
         zzfx(0.7,.05,520,.04,.18,.24,1,3.1,-6,0,17,.05,.08,0,0,0,0,.87,.27,.48,0);
     }
 
     public playBossDeathSound(): void {
-        if (!this.canPlaySound('ambient')) return;
-        // Epic explosion with reverb-like effect
+        if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
         zzfx(2.1,.05,64,.04,.21,.64,4,3.3,-5,0,0,0,0,1.2,0,.4,.24,.33,.28,0,0);
     }
 } 
