@@ -6,7 +6,7 @@ export class SpearEnemy extends BaseEnemy {
     private static readonly STATS: EnemyStats = {
         health: 45,
         speed: 0.4, // Slower than basic enemy
-        maxSpeed: 1.5,
+        maxSpeed: 1.0,
         chaseRange: 600, // Longer chase range due to spear
         color: 0xaa4444,
         movementRestriction: 0, // Very restricted movement during thrust

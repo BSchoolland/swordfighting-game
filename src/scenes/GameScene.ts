@@ -135,15 +135,62 @@ export class GameScene extends PIXI.Container {
 
     private startGame(): void {
         console.log('[GameScene] Starting game');
-        // move player back to screen
+
+        // Reset game state
+        this.isGameOver = false;
+        this.gameStarted = true;
+        this.waitingForUpgrade = false;
+
+        // Reset score system
+        this.scoreSystem.reset();
+
+        // Clear all existing entities and UI elements
+        this.enemies.forEach(enemy => this.removeChild(enemy));
+        this.enemies = [];
+        this.projectiles.forEach(projectile => this.removeChild(projectile));
+        this.projectiles = [];
+
+        // Reset player position and state
+        this.player.reset();
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
-        // Remove home screen
+        // Reset wave system
+        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+
+        // Remove home screen if it exists
         if (this.homeScreen) {
             console.log('[GameScene] Removing home screen');
             this.removeChild(this.homeScreen);
             this.homeScreen = null;
         }
+
+        // Remove any existing UI elements
+        if (this.targetCursor) {
+            this.removeChild(this.targetCursor);
+        }
+        if (this.healthBar) {
+            this.removeChild(this.healthBar);
+        }
+        if (this.waveText) {
+            this.removeChild(this.waveText);
+        }
+        if (this.scoreText) {
+            this.removeChild(this.scoreText);
+        }
+        if (this.waveAnnouncement) {
+            this.removeChild(this.waveAnnouncement);
+        }
+        if (this.bossHealthBar) {
+            this.removeChild(this.bossHealthBar);
+            this.bossHealthBar = null;
+        }
+        if (this.bossNameText) {
+            this.removeChild(this.bossNameText);
+            this.bossNameText = null;
+        }
+
+        // Reset music to normal background music
+        this.soundManager.transitionToNormalMusic();
 
         // Create target cursor
         console.log('[GameScene] Creating target cursor');
@@ -195,10 +242,6 @@ export class GameScene extends PIXI.Container {
         // Start first wave
         console.log('[GameScene] Starting first wave');
         this.startWave(1);
-
-        // Set game as started
-        console.log('[GameScene] Game started');
-        this.gameStarted = true;
 
         // Listen for debug keys
         window.addEventListener('keydown', (e) => {
@@ -631,7 +674,7 @@ export class GameScene extends PIXI.Container {
         animateGlow();
 
         // Title with gradient and outline
-        const title = new PIXI.Text('PIXEL RAGE', {
+        const title = new PIXI.Text('BLADE', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 64,
             fill: ['#FFD700', '#FFA500'], // Gold to orange gradient

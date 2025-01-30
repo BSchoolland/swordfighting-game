@@ -30,9 +30,15 @@ export class BerserkerBoss extends BossEnemy {
     private pulseTime: number = 0;
 
     constructor(bounds: { width: number; height: number }, player: Player) {
-        super(bounds, player, BerserkerBoss.STATS, "The Berserker");
-        this.baseSpeed = this.stats.speed;
-        this.baseMaxSpeed = this.stats.maxSpeed;
+        // Create a deep copy of STATS to prevent modifying the shared object
+        const statsClone = {
+            ...BerserkerBoss.STATS,
+            speed: BerserkerBoss.STATS.speed,
+            maxSpeed: BerserkerBoss.STATS.maxSpeed
+        };
+        super(bounds, player, statsClone, "The Berserker");
+        this.baseSpeed = statsClone.speed;
+        this.baseMaxSpeed = statsClone.maxSpeed;
 
         // Initialize rage effects
         this.rageGlow = new PIXI.Graphics();
@@ -102,14 +108,32 @@ export class BerserkerBoss extends BossEnemy {
         }
     }
 
+    public reset(): void {
+        console.log("Resetting Berserker Boss");
+        // Reset health
+        this.health = 400;
+        
+        // Reset speed to base values
+        this.stats.speed = this.baseSpeed;
+        this.stats.maxSpeed = this.baseMaxSpeed;
+        console.log("Speed reset to:", this.stats.speed);
+        
+        // Reset rage state
+        this.isEnraged = false;
+        this.rageTransitionTime = 0;
+        this.pulseTime = 0;
+        
+        // Clear rage effects
+        this.rageGlow.clear();
+        this.rageLines.clear();
+        
+        // Reset velocity
+        this.velocity.x = 0;
+        this.velocity.y = 0;
+    }
+
     public update(delta: number, targets: Entity[] = []): void {
         super.update(delta, targets);
-        if (this.health === 400) {
-            this.isEnraged = false;
-            this.stats.speed = 0.5;
-            this.stats.maxSpeed = 2;
-            this.baseSpeed = this.stats.speed;
-        }
         if (!this.stunned) {
             const healthRatio = this.health / 400;
             const shouldBeEnraged = healthRatio <= BerserkerBoss.RAGE_THRESHOLD;

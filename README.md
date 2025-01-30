@@ -1,8 +1,8 @@
-# Pixel Rage
+# Blade
 
 A fast-paced top-down action combat game where you face waves of enemies and epic boss battles. Master the art of sword combat, dodge enemy attacks, and upgrade your abilities to become the ultimate warrior.
 
-![Pixel Rage Gameplay](screenshot.png)
+![Blade Gameplay](screenshot.png)
 
 ## Loads of AI support
 A prime goal of this project was to familiarize myself with the limits of today's AI tools.  As such I used AI wherever possible, and probably wrote less than 5% of the code myself.  I also used Suno AI to generate the music.  This process sped up development significantly, and the whole game was made in about 2 days. 

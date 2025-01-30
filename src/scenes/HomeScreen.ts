@@ -70,7 +70,7 @@ export class HomeScreen extends PIXI.Container {
         animateGlow();
 
         // Create main title
-        const title = new PIXI.Text('PIXEL RAGE', {
+        const title = new PIXI.Text('BLADE', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 96,
             fill: ['#FFD700', '#FFA500'],

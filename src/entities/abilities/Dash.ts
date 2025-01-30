@@ -87,4 +87,11 @@ export class Dash extends BaseAbility {
             y: movement.y / length
         };
     }
+
+    public reset(): void {
+        this.lastUseTime = 0;
+        this.isActive = false;
+        this.dashDirection = { x: 0, y: 0 };
+        this.cooldownMultiplier = 1;
+    }
 } 

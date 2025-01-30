@@ -1,5 +1,3 @@
-// TODO: PIXI is imported but never used. Consider removing if not needed for type checking.
-import * as PIXI from 'pixi.js';
 import { Entity } from '../entities/Entity';
 import { Player } from '../entities/Player';
 import { BasicEnemy } from '../entities/enemies/BasicEnemy';
@@ -123,13 +121,13 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     
     // Boss Wave: Berserker Boss
     {
-        composition: { ...zeroComposition, rangedEnemies: 4, blitzerEnemies: 3 },
+        composition: { ...zeroComposition, rangedEnemies: 4, tankEnemies: 3 },
         spawnDelay: 4000,
         description: "He has no chill",
         isBossWave: true,
         bossType: "berserker",
         minionInterval: 5,
-        minionTypes: ['rangedEnemies', 'blitzerEnemies']
+        minionTypes: ['rangedEnemies', 'tankEnemies']
     },
     // Wave 7: Ranged Masters
     {
@@ -241,6 +239,7 @@ export class WaveSystem {
     private waveActive: boolean = false;
     private spawnQueue: Array<keyof WaveComposition> = [];
     private currentBoss: Entity | null = null;
+    // @ts-ignore - upgradeSystem is used for type safety
     private upgradeSystem: UpgradeSystem;
 
     constructor(bounds: { width: number; height: number }, player: Player, enemies: Entity[], upgradeSystem: UpgradeSystem) {
@@ -278,6 +277,15 @@ export class WaveSystem {
         this.enemiesSpawned = 0;
         this.spawnTimer = 0;
         this.waveActive = true;
+
+        // Reset current boss if it exists
+        if (this.currentBoss) {
+            if ('reset' in this.currentBoss) {
+                (this.currentBoss as any).reset();
+            }
+            this.currentBoss = null;
+        }
+
         const waveDef = this.getCurrentWaveDefinition();
         this.createSpawnQueue(waveDef.composition);
         console.log(`[WaveSystem] Starting wave ${this.currentWave}: ${waveDef.description}`);
@@ -300,6 +308,14 @@ export class WaveSystem {
         this.waveActive = false; // Will be set to true in startNextWave
         this.spawnQueue = []; // Clear the spawn queue
         
+        // Reset current boss if it exists
+        if (this.currentBoss) {
+            if ('reset' in this.currentBoss) {
+                (this.currentBoss as any).reset();
+            }
+            this.currentBoss = null;
+        }
+        
         // Start the new wave
         this.startNextWave();
     }
@@ -318,7 +334,7 @@ export class WaveSystem {
                 {
                     bossType: 'berserker',
                     description: "He has no chill",
-                    minions: ['rangedEnemies', 'blitzerEnemies']
+                    minions: ['rangedEnemies', 'tankEnemies']
                 },
                 {
                     bossType: 'hunter',
@@ -440,6 +456,12 @@ export class WaveSystem {
         }
 
         if (boss) {
+            // Reset boss state
+            if ('reset' in boss) {
+                console.log(`[WaveSystem] Resetting ${type} boss on spawn`);
+                (boss as any).reset();
+            }
+
             // Position boss at center top of screen
             boss.x = this.bounds.width / 2;
             boss.y = -50;

@@ -1,8 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Player } from '../entities/Player';
 import { SoundManager } from './SoundManager';
-// TODO: BasicSword is imported but never used. Consider removing if not needed for type checking.
-import { BasicSword } from '../entities/weapons/BasicSword';
 
 export enum UpgradeRarity {
     COMMON = 'Common',

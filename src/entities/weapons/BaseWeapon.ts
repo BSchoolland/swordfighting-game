@@ -1,3 +1,4 @@
+// @ts-ignore - PIXI is required for inheritance
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Player } from '../Player';

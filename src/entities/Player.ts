@@ -91,9 +91,34 @@ export class Player extends Entity {
     }
 
     public reset(): void {
+        // Reset health to max
         this.health = this.maxHealth;
+        
+        // Reset movement state
         this.velocity.x = 0;
         this.velocity.y = 0;
+        this.resetSpeed();
+        
+        // Reset combat state
+        this.isCurrentlyAttacking = false;
+        this.stunned = false;
+        this.stunTimer = 0;
+        
+        // Reset multipliers
+        this.speedMultiplier = 1;
+        this.swordLengthMultiplier = 1;
+        this.swingSpeedMultiplier = 1;
+        this.damageMultiplier = 1;
+        
+        // Reset dash
+        if (this.dash) {
+            this.dash.reset();
+        }
+        
+        // Reset weapon
+        if (this.weapon) {
+            this.weapon.reset();
+        }
     }
 
     public getHealth(): number {

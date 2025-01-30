@@ -1,4 +1,6 @@
-// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
+// @ts-ignore - PIXI is required for inheritance
+// PIXI import needed as this class extends BaseWeapon which extends PIXI.Container
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';

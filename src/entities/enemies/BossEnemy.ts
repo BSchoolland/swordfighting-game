@@ -71,4 +71,21 @@ export abstract class BossEnemy extends BaseEnemy {
     public getNameText(): PIXI.Text {
         return this.nameText;
     }
+
+    public reset(): void {
+        // Reset health
+        this.health = this.maxHealth;
+        
+        // Reset velocity
+        this.velocity.x = 0;
+        this.velocity.y = 0;
+        
+        // Reset health bar
+        this.healthBar.updateHealth(this.health, this.maxHealth);
+        
+        // Reset weapon if it exists
+        if (this.weapon && 'reset' in this.weapon) {
+            (this.weapon as any).reset();
+        }
+    }
 } 

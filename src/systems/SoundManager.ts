@@ -65,10 +65,6 @@ const zzfxG = (...parameters: number[]) => {
     // Init parameters
     let PI2 = Math.PI * 2,
         sampleRate = 44100,
-        // TODO: These variables are currently unused. They might be needed for future features or debugging.
-        period = sampleRate / frequency,
-        maxPeriod = sampleRate / 20,
-        minPeriod = sampleRate / 2000,
         startSlide = slide *= 500 * PI2 / sampleRate / sampleRate,
         startFrequency = frequency *= (1 + randomness * 2 * Math.random() - randomness) * PI2 / sampleRate,
         b = [], t = 0, tm = 0, i = 0, j = 1, r = 0, c = 0, s = 0, f, length;

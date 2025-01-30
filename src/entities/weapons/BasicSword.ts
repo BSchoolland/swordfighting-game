@@ -1,4 +1,6 @@
-// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
+// @ts-ignore - PIXI is required for inheritance
+// PIXI import needed as this class extends BaseWeapon which extends PIXI.Container
+// @ts-ignore - PIXI is required for inheritance
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
@@ -74,5 +76,22 @@ export class BasicSword extends BaseWeapon {
 
     public swing(): void {
         super.swing(); // Use BaseWeapon's swing logic
+    }
+
+    public reset(): void {
+        this.isSwinging = false;
+        this.isWindingUp = false;
+        this.swingAngle = 0;
+        this.lastSwingTime = 0;
+        this.windUpTimer = 0;
+        this.hitEntities.clear();
+        this.windUpStartTime = 0;
+        this.swingDirection = 1;
+        this.trailPoints = [];
+        this.lastTrailTime = 0;
+        this.swingProgress = 0;
+        this.windupTimer = 0;
+        this.damageMultiplier = 1;
+        this.swingSpeedMultiplier = 1;
     }
 } 

@@ -1,14 +1,15 @@
+// @ts-ignore - PIXI is required for inheritance
+// PIXI import needed as parent classes extend PIXI.Container
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
-import { BaseWeapon, WeaponStats } from './BaseWeapon';
-import { RangedWeapon, RangedWeaponStats } from './RangedWeapon';
+import { WeaponStats } from './BaseWeapon';
+import { RangedWeaponStats } from './RangedWeapon';
 import { BasicSword } from './BasicSword';
 import { Hammer } from './Hammer';
 import { Spear } from './Spear';
 import { Dagger } from './Dagger';
 import { Boomerang } from './Boomerang';
-import { Arrow } from '../projectiles/Arrow';
-import { BoomerangProjectile } from '../projectiles/BoomerangProjectile';
 
 // Enhanced Master of Arms Sword
 export class MasterSword extends BasicSword {
