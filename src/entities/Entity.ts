@@ -32,7 +32,6 @@ export abstract class Entity extends PIXI.Container {
             return;
         }
 
-        const oldHealth = this.health;
         this.health = Math.max(0, this.health - amount);
         
         // Apply knockback if direction is provided

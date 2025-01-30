@@ -107,6 +107,6 @@ export class Game {
     }
 
     private update(): void {
-        this.currentScene.update();
+        this.currentScene.update(this.app.ticker.deltaMS / 1000);
     }
 } 

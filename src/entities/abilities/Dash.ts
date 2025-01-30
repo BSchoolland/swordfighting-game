@@ -1,5 +1,4 @@
 import { BaseAbility, AbilityStats } from './BaseAbility';
-import { ParticleSystem } from '../../effects/ParticleSystem';
 import { SoundManager } from '../../systems/SoundManager';
 import { Player } from '../Player';
 import { InputManager } from '../../systems/InputManager';

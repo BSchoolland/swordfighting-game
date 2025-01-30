@@ -10,7 +10,6 @@ import { WaveSystem } from '../systems/WaveSystem';
 import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
-import { BaseWeapon } from '../entities/weapons/BaseWeapon';
 
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
@@ -412,9 +411,6 @@ export class GameScene extends PIXI.Container {
     }
 
     public update(delta: number): void {
-        if (delta === undefined) {
-            delta = 1/60;
-        }
 
         // Skip updates if game hasn't started
         if (!this.gameStarted) return;
