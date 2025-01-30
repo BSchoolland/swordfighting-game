@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { RangedWeapon, RangedWeaponStats } from './RangedWeapon';

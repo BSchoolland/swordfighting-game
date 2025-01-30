@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
@@ -14,7 +15,7 @@ export abstract class RangedWeapon extends BaseWeapon {
         super(owner, stats, isEnemy);
     }
 
-    public update(delta: number, targets: Entity[]): void {
+    public update(_delta: number, _targets: Entity[]): void {
         // Handle wind-up phase
         if (this.isWindingUp) {
             const currentTime = Date.now();
@@ -31,7 +32,7 @@ export abstract class RangedWeapon extends BaseWeapon {
         }
     }
 
-    protected checkHits(targets: Entity[], prevAngle: number): void {
+    protected checkHits(_targets: Entity[], _prevAngle: number): void {
         // No melee hit detection for ranged weapons
     }
 

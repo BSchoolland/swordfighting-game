@@ -81,7 +81,7 @@ export class MasterHammer extends Hammer {
         }
     }
 
-    public update(delta: number, targets: Entity[]): void {
+    public update(_delta: number, targets: Entity[]): void {
         if (this.isWindingUp) {
             const currentTime = Date.now();
             const elapsedWindUpTime = currentTime - this.windUpStartTime;
@@ -114,6 +114,18 @@ export class MasterHammer extends Hammer {
             }
         }
     }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
 }
 
 // Enhanced Master of Arms Spear
@@ -141,6 +153,12 @@ export class MasterSpear extends Spear {
         this.drawWeapon();
         this.drawPreviewWeapon();
     }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
 }
 
 // Enhanced Master of Arms Dagger
@@ -165,6 +183,18 @@ export class MasterDagger extends Dagger {
     constructor(owner: Entity) {
         super(owner, true);
         this.stats = MasterDagger.MASTER_PARAMS;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
         this.drawWeapon();
         this.drawPreviewWeapon();
     }
@@ -201,6 +231,18 @@ export class MasterBoomerang extends Boomerang {
     constructor(owner: Entity) {
         super(owner, true);
         this.stats = MasterBoomerang.MASTER_PARAMS;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
+    }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
         this.drawWeapon();
         this.drawPreviewWeapon();
     }

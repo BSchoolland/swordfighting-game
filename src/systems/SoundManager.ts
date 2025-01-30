@@ -65,6 +65,7 @@ const zzfxG = (...parameters: number[]) => {
     // Init parameters
     let PI2 = Math.PI * 2,
         sampleRate = 44100,
+        // TODO: These variables are currently unused. They might be needed for future features or debugging.
         period = sampleRate / frequency,
         maxPeriod = sampleRate / 20,
         minPeriod = sampleRate / 2000,

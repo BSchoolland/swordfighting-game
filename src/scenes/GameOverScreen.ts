@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+// TODO: HighScore type is imported but never used. Consider removing if not needed for type checking.
 import { HighScore, ScoreSystem } from '../systems/ScoreSystem';
 
 export class GameOverScreen extends PIXI.Container {

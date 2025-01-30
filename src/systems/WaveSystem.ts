@@ -1,3 +1,4 @@
+// TODO: PIXI is imported but never used. Consider removing if not needed for type checking.
 import * as PIXI from 'pixi.js';
 import { Entity } from '../entities/Entity';
 import { Player } from '../entities/Player';

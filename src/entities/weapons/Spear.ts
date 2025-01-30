@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
@@ -22,7 +23,7 @@ export class Spear extends BaseWeapon {
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
         damage: 10,
-        knockback: 6,
+        knockback: 6, 
         attackSpeed: 1200, // Slower than sword
         range: 130,
         swingSpeed: 0.25,
@@ -78,7 +79,7 @@ export class Spear extends BaseWeapon {
         this.previewSprite.lineTo(this.stats.bladeLength, 0);
     }
 
-    public update(delta: number, targets: Entity[] = []): void {
+    public update(_delta: number, targets: Entity[] = []): void {
         if (this.isWindingUp) {
             const currentTime = Date.now();
             const elapsedWindUpTime = currentTime - this.windUpStartTime;
@@ -167,5 +168,11 @@ export class Spear extends BaseWeapon {
         const currentTime = Date.now();
         const timeSinceLastSwing = currentTime - this.lastSwingTime;
         return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
     }
 } 
