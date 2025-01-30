@@ -12,7 +12,7 @@ export interface ProjectileStats {
 }
 
 export abstract class Projectile extends Entity {
-    protected sprite: PIXI.Graphics;
+    protected override sprite: PIXI.Graphics;
     protected stats: ProjectileStats;
     protected direction: { x: number, y: number };
     protected owner: Entity;

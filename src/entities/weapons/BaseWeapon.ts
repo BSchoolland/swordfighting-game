@@ -84,13 +84,15 @@ export abstract class BaseWeapon extends PIXI.Container {
         };
     }
 
-    public abstract getCooldownProgress(): number;
-    public abstract setBladeLength(length: number): void;
-    public abstract setSwingSpeedMultiplier(multiplier: number): void;
-    public abstract setDamageMultiplier(multiplier: number): void;
-    public abstract isInWindUp(): boolean;
+    // Abstract methods grouped together
     protected abstract drawWeapon(): void;
     protected abstract drawPreviewWeapon(): void;
+    public abstract getCooldownProgress(): number;
+    public abstract setBladeLength(length: number): void;
+
+    public isInWindUp(): boolean {
+        return this.isWindingUp;
+    }
 
     public update(delta: number, targets: Entity[]): void {
         if (this.isWindingUp) {
@@ -198,10 +200,6 @@ export abstract class BaseWeapon extends PIXI.Container {
         }
     }
 
-    public isInWindUp(): boolean {
-        return this.isWindingUp;
-    }
-
     public isInSwing(): boolean {
         return this.isSwinging;
     }
@@ -249,10 +247,13 @@ export abstract class BaseWeapon extends PIXI.Container {
                         knockback *= 2;
                         shouldFreezeFrame = true;
                     }
+
+                    // Apply damage multiplier
+                    damage *= this.damageMultiplier;
                     
                     target.takeDamage(damage, knockbackDir, knockback);
                     this.hitEntities.add(target);
-                    
+
                     // Play hit sound and trigger hit effect
                     if (this.owner instanceof Player) {
                         // Check if it's a critical hit (you can define your own criteria)

@@ -1,4 +1,3 @@
-import * as PIXI from 'pixi.js';
 import { Player } from '../Player';
 import { BossEnemy } from './BossEnemy';
 import { Entity } from '../Entity';
