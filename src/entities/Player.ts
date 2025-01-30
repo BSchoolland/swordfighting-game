@@ -8,8 +8,8 @@ import { InputManager } from '../systems/InputManager';
 import { BaseWeapon } from './weapons/BaseWeapon';
 
 export class Player extends Entity {
-    private sprite: PIXI.Graphics;
-    private sword: BasicSword;
+    private graphics: PIXI.Graphics;
+    private weapon: BasicSword;
     private dash: Dash;
     private lastDamageSource: Entity | null = null;
     private knockbackForce: number = 20;
@@ -27,12 +27,11 @@ export class Player extends Entity {
     private speedMultiplier: number = 1;
     private swordLengthMultiplier: number = 1;
     private swingSpeedMultiplier: number = 1;
-    private speed: number = 5;
+    protected speed: number = 5;
     protected maxHealth: number = 100;
     private baseMaxHealth: number = 100;
     private baseDamage: number = 1;
     private damageMultiplier: number = 1;
-    private weapon: BaseWeapon | null = null;
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -46,26 +45,26 @@ export class Player extends Entity {
         this.addChild(this.swordIndicator);
         
         // Create a simple player sprite (blue triangle for directional visibility)
-        this.sprite = new PIXI.Graphics();
+        this.graphics = new PIXI.Graphics();
         this.drawSprite();
-        this.addChild(this.sprite);
+        this.addChild(this.graphics);
 
-        // Add sword
-        this.sword = new BasicSword(this, false);
-        this.addChild(this.sword);
+        // Add weapon
+        this.weapon = new BasicSword(this, false);
+        this.addChild(this.weapon);
 
         // Initialize dash ability
         this.dash = new Dash(this, this.inputManager);
     }
 
     private drawSprite(): void {
-        this.sprite.clear();
-        this.sprite.beginFill(0x3498db);
-        this.sprite.moveTo(-10, -10);
-        this.sprite.lineTo(10, 0);
-        this.sprite.lineTo(-10, 10);
-        this.sprite.lineTo(-10, -10);
-        this.sprite.endFill();
+        this.graphics.clear();
+        this.graphics.beginFill(0x3498db);
+        this.graphics.moveTo(-10, -10);
+        this.graphics.lineTo(10, 0);
+        this.graphics.lineTo(-10, 10);
+        this.graphics.lineTo(-10, -10);
+        this.graphics.endFill();
     }
 
     private drawCooldownIndicator(graphics: PIXI.Graphics, progress: number, radius: number, baseColor: number, readyColor: number): void {
@@ -127,7 +126,7 @@ export class Player extends Entity {
 
         // Update cooldown indicators
         this.drawDashIndicator(this.dash.getCooldownProgress());
-        this.drawSwordIndicator(this.sword.getCooldownProgress());
+        this.drawSwordIndicator(this.weapon.getCooldownProgress());
 
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
@@ -150,12 +149,12 @@ export class Player extends Entity {
 
             if (isAttacking && !this.isCurrentlyAttacking) {
                 this.isCurrentlyAttacking = true;
-                this.sword.swing();
+                this.weapon.swing();
             } else if (!isAttacking && this.isCurrentlyAttacking) {
                 this.isCurrentlyAttacking = false;
             }
             
-            this.sword.update(delta, targets);
+            this.weapon.update(delta, targets);
             return;
         }
 
@@ -180,15 +179,15 @@ export class Player extends Entity {
         const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
         this.rotation = angle;
 
-        // Handle sword attack state and sound
+        // Handle weapon attack state and sound
         if (isAttacking && !this.isCurrentlyAttacking) {
             this.isCurrentlyAttacking = true;
-            this.sword.swing();
+            this.weapon.swing();
         } else if (!isAttacking && this.isCurrentlyAttacking) {
             this.isCurrentlyAttacking = false;
         }
         
-        this.sword.update(delta, targets);
+        this.weapon.update(delta, targets);
     }
 
     public heal(amount: number): void {
@@ -236,7 +235,7 @@ export class Player extends Entity {
     public increaseSwordLength(percentage: number): void {
         this.swordLengthMultiplier *= (1 + percentage);
         const newLength = 60 * this.swordLengthMultiplier; // 60 is the default blade length
-        this.sword.setBladeLength(newLength);
+        this.weapon.setBladeLength(newLength);
         console.log(`Sword length increased by ${percentage * 100}%. New multiplier: ${this.swordLengthMultiplier}`);
     }
 
@@ -258,8 +257,8 @@ export class Player extends Entity {
 
     public increaseSwingSpeed(percentage: number): void {
         this.swingSpeedMultiplier *= (1 + percentage);
-        if (this.sword) {
-            this.sword.setSwingSpeedMultiplier(this.swingSpeedMultiplier);
+        if (this.weapon) {
+            this.weapon.setSwingSpeedMultiplier(this.swingSpeedMultiplier);
         }
         console.log(`Swing speed increased by ${percentage * 100}%. New multiplier: ${this.swingSpeedMultiplier}`);
     }

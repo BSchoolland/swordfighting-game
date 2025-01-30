@@ -84,6 +84,12 @@ export abstract class BaseWeapon extends PIXI.Container {
         };
     }
 
+    public abstract swing(): void;
+    public abstract getCooldownProgress(): number;
+    public abstract setBladeLength(length: number): void;
+    public abstract setSwingSpeedMultiplier(multiplier: number): void;
+    public abstract setDamageMultiplier(multiplier: number): void;
+    public abstract isInWindUp(): boolean;
     protected abstract drawWeapon(): void;
     protected abstract drawPreviewWeapon(): void;
 

@@ -4,8 +4,8 @@ import { Player } from './Player';
 import { BasicSword } from './weapons/BasicSword';
 
 export class Enemy extends Entity {
-    private sprite: PIXI.Graphics;
-    private speed: number = 0.5;
+    private graphics: PIXI.Graphics;
+    protected speed: number = 0.5;
     private player: Player;
     private static readonly CHASE_RANGE = 250;
     private maxSpeed: number = 2;
@@ -13,33 +13,29 @@ export class Enemy extends Entity {
     private stunTimer: number = 0;
     private static readonly STUN_DURATION = 200;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
-    private sword: BasicSword;
+    private weapon: BasicSword;
     private attackRange: number;
     private retreatRange: number;
     private canMoveWhileWindingUp: boolean = false;
 
     constructor(bounds: { width: number; height: number }, player: Player, canMoveWhileWindingUp: boolean = false) {
-        super(bounds, 40);
+        super(bounds, 100);
         this.player = player;
         this.canMoveWhileWindingUp = canMoveWhileWindingUp;
+        this.isEnemy = true;
 
-        this.sprite = new PIXI.Graphics();
-        this.sprite.beginFill(0xff0000);
-        this.sprite.moveTo(-10, -10);
-        this.sprite.lineTo(10, 0);
-        this.sprite.lineTo(-10, 10);
-        this.sprite.lineTo(-10, -10);
-        this.sprite.endFill();
-        
-        this.addChild(this.sprite);
+        this.graphics = new PIXI.Graphics();
+        this.graphics.beginFill(0xff0000);
+        this.graphics.drawCircle(0, 0, 10);
+        this.graphics.endFill();
+        this.addChild(this.graphics);
 
-        this.sword = new BasicSword(this, true);
-        this.addChild(this.sword);
+        this.weapon = new BasicSword(this, true);
+        this.addChild(this.weapon);
 
-        // Get weapon ranges
-        const ranges = this.sword.getRange();
-        this.attackRange = ranges.attackRange;
-        this.retreatRange = ranges.retreatRange;
+        const { attackRange, retreatRange } = this.weapon.getRange();
+        this.attackRange = attackRange;
+        this.retreatRange = retreatRange;
 
         do {
             this.x = Math.random() * (bounds.width - 20) + 10;
@@ -62,8 +58,8 @@ export class Enemy extends Entity {
     public update(delta: number): void {
         if (!this.isAlive()) return;
 
-        // Update sword first
-        this.sword.update(delta, [this.player]);
+        // Update weapon first
+        this.weapon.update(delta, [this.player]);
 
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
@@ -83,7 +79,7 @@ export class Enemy extends Entity {
         }
 
         // Don't move if winding up and not allowed to
-        if (this.sword.isInWindUp() && !this.canMoveWhileWindingUp) {
+        if (this.weapon.isInWindUp() && !this.canMoveWhileWindingUp) {
             this.velocity.x = 0;
             this.velocity.y = 0;
         } else if (!this.stunned) {
@@ -108,7 +104,7 @@ export class Enemy extends Entity {
                     // In perfect range, slow down and attack
                     this.velocity.x *= 0.8;
                     this.velocity.y *= 0.8;
-                    this.sword.swing();
+                    this.weapon.swing();
                 }
 
                 // Cap velocity
