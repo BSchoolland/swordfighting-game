@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { RangedWeapon, RangedWeaponStats } from './RangedWeapon';
@@ -25,7 +26,8 @@ export class Bow extends RangedWeapon {
             knockback: 3,
             size: 4,
             color: 0xCCCCCC,
-            lifetime: 2000
+            lifetime: 2000,
+            maxRange: 400  // Match the weapon's range
         }
     };
 
@@ -42,7 +44,8 @@ export class Bow extends RangedWeapon {
             knockback: 2,
             size: 4,
             color: 0xCCCCCC,
-            lifetime: 2000
+            lifetime: 2000,
+            maxRange: 400  // Match the weapon's range
         }
     };
 
@@ -82,5 +85,17 @@ export class Bow extends RangedWeapon {
         this.previewSprite.lineTo(this.stats.bladeLength * Math.cos(Math.PI/6), this.stats.bladeLength * Math.sin(Math.PI/6));
         
         this.previewSprite.alpha = this.stats.previewAlpha;
+    }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
     }
 } 

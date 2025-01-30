@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { RangedWeapon, RangedWeaponStats } from './RangedWeapon';
@@ -79,5 +80,17 @@ export class Boomerang extends RangedWeapon {
         this.previewSprite.moveTo(0, 0);
         this.previewSprite.lineTo(this.stats.bladeLength, 0);
         this.previewSprite.lineTo(this.stats.bladeLength, this.stats.bladeLength);
+    }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
     }
 } 

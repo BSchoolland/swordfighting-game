@@ -94,7 +94,7 @@ export abstract class BaseWeapon extends PIXI.Container {
         return this.isWindingUp;
     }
 
-    public update(delta: number, targets: Entity[]): void {
+    public update(_delta: number, targets: Entity[]): void {
         if (this.isWindingUp) {
             const currentTime = Date.now();
             const elapsedWindUpTime = currentTime - this.windUpStartTime;
@@ -204,7 +204,7 @@ export abstract class BaseWeapon extends PIXI.Container {
         return this.isSwinging;
     }
 
-    protected checkHits(targets: Entity[], prevAngle: number): void {
+    protected checkHits(targets: Entity[], _prevAngle: number): void {
         targets.forEach(target => {
             if (target === this.owner || !target.isAlive() || this.hitEntities.has(target)) return;
 

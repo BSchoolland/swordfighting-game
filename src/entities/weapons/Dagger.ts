@@ -1,3 +1,4 @@
+// TODO: Investigate if PIXI import is needed due to inheritance from BaseWeapon
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
@@ -37,5 +38,17 @@ export class Dagger extends BaseWeapon {
         this.previewSprite.drawRect(0, -this.stats.bladeWidth/2, this.stats.bladeLength, this.stats.bladeWidth);
         this.previewSprite.endFill();
         this.previewSprite.alpha = this.stats.previewAlpha;
+    }
+
+    public getCooldownProgress(): number {
+        const currentTime = Date.now();
+        const timeSinceLastSwing = currentTime - this.lastSwingTime;
+        return Math.min(1, timeSinceLastSwing / this.stats.attackSpeed);
+    }
+
+    public setBladeLength(length: number): void {
+        this.stats.bladeLength = length;
+        this.drawWeapon();
+        this.drawPreviewWeapon();
     }
 } 
