@@ -1,18 +1,14 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from './Entity';
 import { BasicSword } from './weapons/BasicSword';
-import { BaseEnemy } from './enemies/BaseEnemy';
 import { Dash } from './abilities/Dash';
 import { SoundManager } from '../systems/SoundManager';
 import { InputManager } from '../systems/InputManager';
-import { BaseWeapon } from './weapons/BaseWeapon';
 
 export class Player extends Entity {
     private graphics: PIXI.Graphics;
     private weapon: BasicSword;
     private dash: Dash;
-    private lastDamageSource: Entity | null = null;
-    private knockbackForce: number = 20;
     private soundManager: SoundManager;
     private isCurrentlyAttacking: boolean = false;
     private dashIndicator: PIXI.Graphics;
@@ -30,7 +26,6 @@ export class Player extends Entity {
     protected speed: number = 5;
     protected maxHealth: number = 100;
     private baseMaxHealth: number = 100;
-    private baseDamage: number = 1;
     private damageMultiplier: number = 1;
 
     constructor(screenBounds: { width: number; height: number }) {
@@ -115,7 +110,7 @@ export class Player extends Entity {
 
     public update(
         delta: number,
-        keys: Set<string>,
+        _keys: Set<string>,  // Prefixed with _ to indicate intentionally unused
         mouseX: number,
         mouseY: number,
         isDashing: boolean,

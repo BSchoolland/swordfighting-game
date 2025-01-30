@@ -11,7 +11,7 @@ export abstract class Entity extends PIXI.Container {
     public isEnemy: boolean = false;  // Default to false, enemies will set this to true
     public isBlocking: boolean = false;
     protected healthBar: HealthBar | null = null;
-    protected sprite: PIXI.Sprite | null = null;
+    protected sprite: PIXI.Sprite | PIXI.Graphics | null = null;
     protected debugId: string = 'Entity';
     protected bounds: { width: number; height: number };
     protected friction: number = 0.95;

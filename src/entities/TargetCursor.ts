@@ -1,33 +1,33 @@
 import * as PIXI from 'pixi.js';
 
 export class TargetCursor extends PIXI.Container {
-    private cursor: PIXI.Graphics;
+    private cursorGraphics: PIXI.Graphics;
     private static readonly SIZE = 20;
 
     constructor() {
         super();
 
-        this.cursor = new PIXI.Graphics();
+        this.cursorGraphics = new PIXI.Graphics();
         this.drawCursor();
-        this.addChild(this.cursor);
+        this.addChild(this.cursorGraphics);
     }
 
     private drawCursor(): void {
-        this.cursor.clear();
+        this.cursorGraphics.clear();
         
         // Draw crosshair
-        this.cursor.lineStyle(2, 0xff0000);
+        this.cursorGraphics.lineStyle(2, 0xff0000);
         
         // Horizontal line
-        this.cursor.moveTo(-TargetCursor.SIZE/2, 0);
-        this.cursor.lineTo(TargetCursor.SIZE/2, 0);
+        this.cursorGraphics.moveTo(-TargetCursor.SIZE/2, 0);
+        this.cursorGraphics.lineTo(TargetCursor.SIZE/2, 0);
         
         // Vertical line
-        this.cursor.moveTo(0, -TargetCursor.SIZE/2);
-        this.cursor.lineTo(0, TargetCursor.SIZE/2);
+        this.cursorGraphics.moveTo(0, -TargetCursor.SIZE/2);
+        this.cursorGraphics.lineTo(0, TargetCursor.SIZE/2);
         
         // Circle
-        this.cursor.drawCircle(0, 0, TargetCursor.SIZE/3);
+        this.cursorGraphics.drawCircle(0, 0, TargetCursor.SIZE/3);
     }
 
     public updatePosition(x: number, y: number): void {

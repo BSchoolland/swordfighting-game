@@ -17,7 +17,7 @@ export interface EnemyStats {
 }
 
 export abstract class BaseEnemy extends Entity {
-    protected sprite: PIXI.Graphics;
+    protected override sprite: PIXI.Graphics;
     protected player: Player;
     protected weapon!: BaseWeapon;
     protected stats: EnemyStats;
