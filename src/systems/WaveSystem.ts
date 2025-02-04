@@ -328,22 +328,22 @@ export class WaveSystem {
             const bossWaves = [
                 {
                     bossType: 'warrior',
-                    description: "Big boi",
+                    description: "Warrior",
                     minions: ['basicEnemies', 'fastEnemies']
                 },
                 {
                     bossType: 'berserker',
-                    description: "He has no chill",
+                    description: "Berserker",
                     minions: ['rangedEnemies', 'tankEnemies']
                 },
                 {
                     bossType: 'hunter',
-                    description: "Pew pew!",
+                    description: "Hunter",
                     minions: ['rangedEnemies', 'flankerEnemies', 'tankEnemies']
                 },
                 {
                     bossType: 'master',
-                    description: "The final boss",
+                    description: "The Final Boss",
                     minions: ['rangedEnemies', 'flankerEnemies', 'tankEnemies', 'basicEnemies', 'fastEnemies', 'spearEnemies', 'blitzerEnemies', 'boomerangEnemies']
                 }
             ];

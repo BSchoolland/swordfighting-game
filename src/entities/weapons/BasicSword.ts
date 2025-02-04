@@ -267,7 +267,7 @@ export class BasicSword extends BaseWeapon {
         return Date.now() - this.lastDashTime < BasicSword.DASH_DAMAGE_EXTENSION;
     }
 
-    protected checkHits(targets: Entity[], prevAngle: number): void {
+    protected checkHits(targets: Entity[]): void {
         // Override to apply double damage during dash extension
         targets.forEach(target => {
             if (target === this.owner || !target.isAlive() || this.hitEntities.has(target)) return;

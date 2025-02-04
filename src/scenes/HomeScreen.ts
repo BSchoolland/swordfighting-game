@@ -3,7 +3,7 @@ import { SoundManager } from '../systems/SoundManager';
 
 export class HomeScreen extends PIXI.Container {
     private dimensions: { width: number; height: number };
-    private onStart: () => void;
+    private onStart: () => Promise<void>;
     private weaponSprites: PIXI.Graphics[] = [];
     private readonly weaponColors = [0xFFD700, 0xFF4400, 0x00AA44, 0x666666];
     private readonly weaponRotationSpeeds = [0.02, -0.03, 0.025, -0.015];
@@ -17,7 +17,7 @@ export class HomeScreen extends PIXI.Container {
         'Hint: Bosses spawn minions while alive, defeat them quickly!'
     ];
 
-    constructor(dimensions: { width: number; height: number }, onStart: () => void) {
+    constructor(dimensions: { width: number; height: number }, onStart: () => Promise<void>) {
         super();
         this.dimensions = dimensions;
         this.onStart = onStart;
@@ -129,13 +129,23 @@ export class HomeScreen extends PIXI.Container {
         button.addChild(buttonBg);
 
         const buttonText = new PIXI.Text('START GAME', {
-            fontFamily: 'Arial Black',
-            fontSize: 28,
-            fill: 0xFFD700,
-            align: 'center'
+            fontFamily: 'Arial Black, Arial Bold, Arial',
+            fontSize: 24,
+            fill: ['#FFD700', '#FFA500'],
+            fillGradientType: 1,
+            fillGradientStops: [0.2, 1],
+            stroke: '#000000',
+            strokeThickness: 8,
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowBlur: 6,
+            dropShadowAngle: Math.PI / 4,
+            dropShadowDistance: 8,
+            align: 'center',
+            fontWeight: 'bold'
         });
         buttonText.anchor.set(0.5);
-        buttonText.position.set(100, 30);
+        buttonText.position.set(100, 34);
         button.addChild(buttonText);
 
         button.position.set(
@@ -154,9 +164,9 @@ export class HomeScreen extends PIXI.Container {
             buttonBg.tint = 0xFFFFFF;
             buttonText.scale.set(1);
         });
-        button.on('click', () => {
+        button.on('click', async () => {
             SoundManager.getInstance().playPowerUpSound();
-            this.onStart();
+            await this.onStart();
         });
 
         this.addChild(button);

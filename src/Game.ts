@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameScene } from './scenes/GameScene';
 import { SoundManager } from './systems/SoundManager';
+import { AdManager } from './systems/AdManager';
 
 export class Game {
     private app: PIXI.Application;
@@ -12,6 +13,9 @@ export class Game {
     private static readonly GAME_HEIGHT = 600;
 
     constructor() {
+        // Initialize CrazyGames SDK first
+        AdManager.getInstance();
+
         // Create application with darker background for letterboxed areas
         this.app = new PIXI.Application({
             width: window.innerWidth,

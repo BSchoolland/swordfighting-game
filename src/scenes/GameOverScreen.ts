@@ -10,7 +10,7 @@ export class GameOverScreen extends PIXI.Container {
         align: 'center'
     });
 
-    constructor(width: number, height: number, onRestart: () => void, onMenu: () => void, scoreSystem: ScoreSystem) {
+    constructor(width: number, height: number, onRestart: () => Promise<void>, onMenu: () => Promise<void>, scoreSystem: ScoreSystem) {
         super();
 
         // Semi-transparent black background
@@ -92,17 +92,17 @@ export class GameOverScreen extends PIXI.Container {
 
         // Create restart button
         const restartButton = this.createButton('Play Again', width / 2 - 120, height * 0.8);
-        restartButton.on('click', () => {
+        restartButton.on('click', async () => {
             console.log('[GameOverScreen] Play Again button clicked');
-            onRestart();
+            await onRestart();
         });
         this.addChild(restartButton);
 
         // Create menu button
         const menuButton = this.createButton('Main Menu', width / 2 + 120, height * 0.8);
-        menuButton.on('click', () => {
+        menuButton.on('click', async () => {
             console.log('[GameOverScreen] Main Menu button clicked');
-            onMenu();
+            await onMenu();
         });
         this.addChild(menuButton);
     }

@@ -15,6 +15,7 @@ import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
 import { HomeScreen } from './HomeScreen';
 import { ScoreSystem } from '../systems/ScoreSystem';
+import { AdManager } from '../systems/AdManager';
 
 export class GameScene extends PIXI.Container {
     private player: Player;
@@ -50,12 +51,14 @@ export class GameScene extends PIXI.Container {
     private waitingForUpgrade: boolean = false;
 
     private scoreSystem: ScoreSystem;
+    private adManager: AdManager;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
         this.dimensions = dimensions;
         this.inputManager = new InputManager();
         this.soundManager = SoundManager.getInstance();
+        this.adManager = AdManager.getInstance();
         
         // Initialize score system
         this.scoreSystem = new ScoreSystem();
@@ -84,9 +87,21 @@ export class GameScene extends PIXI.Container {
         this.waveSystem = new WaveSystem(dimensions, this.player, this.enemies, this.upgradeSystem);
     }
 
-    private showHomeScreen(): void {
+    private async showHomeScreen(): Promise<void> {
         console.log('[GameScene] Showing home screen');
         
+        // Notify gameplay stop if coming from gameplay
+        if (this.gameStarted) {
+            await this.adManager.notifyGameplayStop();
+        }
+
+        // Remove game over screen if it exists
+        if (this.gameOverScreen) {
+            console.log('[GameScene] Removing game over screen');
+            this.removeChild(this.gameOverScreen);
+            this.gameOverScreen = null;
+        }
+
         // Clear all game elements first
         console.log('[GameScene] Clearing game state for menu');
         if (this.player) {
@@ -94,6 +109,8 @@ export class GameScene extends PIXI.Container {
         }
         this.enemies.forEach(enemy => this.removeChild(enemy));
         this.enemies = [];
+        this.projectiles.forEach(projectile => this.removeChild(projectile));
+        this.projectiles = [];
         if (this.targetCursor) {
             this.removeChild(this.targetCursor);
         }
@@ -112,6 +129,19 @@ export class GameScene extends PIXI.Container {
         if (this.upgradeSystem) {
             this.removeChild(this.upgradeSystem);
         }
+        if (this.bossHealthBar) {
+            this.removeChild(this.bossHealthBar);
+            this.bossHealthBar = null;
+        }
+        if (this.bossNameText) {
+            this.removeChild(this.bossNameText);
+            this.bossNameText = null;
+        }
+        
+        // Reset game state
+        this.isGameOver = false;
+        this.gameStarted = false;
+        this.waitingForUpgrade = false;
         
         // Reinitialize core systems
         console.log('[GameScene] Reinitializing systems for menu');
@@ -125,16 +155,22 @@ export class GameScene extends PIXI.Container {
         
         this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
         
+        // Reset score system
+        this.scoreSystem.reset();
+        
         // Show the home screen
         console.log('[GameScene] Creating home screen');
-        this.homeScreen = new HomeScreen(this.dimensions, () => {
-            this.startGame();
+        this.homeScreen = new HomeScreen(this.dimensions, async () => {
+            await this.startGame();
         });
         this.addChild(this.homeScreen);
     }
 
-    private startGame(): void {
+    private async startGame(): Promise<void> {
         console.log('[GameScene] Starting game');
+
+        // Notify gameplay start
+        await this.adManager.notifyGameplayStart();
 
         // Reset game state
         this.isGameOver = false;
@@ -269,7 +305,7 @@ export class GameScene extends PIXI.Container {
         this.waveAnnouncementTimer = 0;
     }
 
-    private restart(): void {
+    private async restart(): Promise<void> {
         console.log('[GameScene] Starting restart process');
         if (this.gameOverScreen) {
             console.log('[GameScene] Removing game over screen');
@@ -337,29 +373,28 @@ export class GameScene extends PIXI.Container {
         
         // Start game immediately instead of showing home screen
         console.log('[GameScene] Starting new game');
-        this.startGame();
+        await this.startGame();
     }
 
-    private showGameOver(): void {
-        console.log('[GameScene] Showing game over screen');
+    private async showGameOver(): Promise<void> {
+        if (this.isGameOver) return;
+        
         this.isGameOver = true;
+        this.gameStarted = false;
+
+        // Notify gameplay stop
+        await this.adManager.notifyGameplayStop();
+
+        // Create and show game over screen
         this.gameOverScreen = new GameOverScreen(
-            this.dimensions.width, 
+            this.dimensions.width,
             this.dimensions.height,
-            () => {
-                console.log('[GameScene] Restart callback triggered');
-                this.restart();
+            async () => {
+                // Show ad before restarting
+                await this.adManager.showAd();
+                await this.restart();
             },
-            () => {
-                console.log('[GameScene] Menu callback triggered');
-                if (this.gameOverScreen) {
-                    this.removeChild(this.gameOverScreen);
-                    this.gameOverScreen = null;
-                }
-                this.gameStarted = false;
-                this.isGameOver = false;
-                this.showHomeScreen();
-            },
+            async () => this.showHomeScreen(),
             this.scoreSystem
         );
         this.addChild(this.gameOverScreen);
