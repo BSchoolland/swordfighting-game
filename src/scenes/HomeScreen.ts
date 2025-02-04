@@ -108,6 +108,29 @@ export class HomeScreen extends PIXI.Container {
         animateTitle();
         this.addChild(title);
 
+        // add "STRIKE" Diagonally at the top right of the title
+        const strikeText = new PIXI.Text('STRIKE', {
+            fontFamily: 'Arial Black, Arial Bold, Arial',
+            fontSize: 32,
+            fill: ['#FF4500', '#FF6347'],
+            fillGradientType: 1,
+            fillGradientStops: [0.2, 1],
+            stroke: '#000000',
+            strokeThickness: 8,
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowBlur: 6,
+            dropShadowAngle: Math.PI / 4,
+            dropShadowDistance: 8,
+            align: 'center',
+            fontWeight: 'bold'
+        });
+        strikeText.anchor.set(0.5);
+        // rotate the text 45 degrees
+        strikeText.rotation = Math.PI / 4;
+        strikeText.position.set(this.dimensions.width / 2 + 165, this.dimensions.height / 3 - 45);
+        this.addChild(strikeText);
+
         // Create subtitle
         const subtitle = new PIXI.Text('A Top-Down Action Combat Game', {
             fontFamily: 'Arial',

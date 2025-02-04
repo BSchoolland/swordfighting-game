@@ -54,9 +54,6 @@ export class ScoreSystem {
             date: new Date().toISOString()
         };
 
-        // Add wave completion bonus
-        newScore.score += (this.highestWave - 1) * 50;
-
         // Check if this is a new high score
         const isHighScore = highScores.length < ScoreSystem.MAX_HIGH_SCORES ||
             highScores.some(score => newScore.score > score.score);

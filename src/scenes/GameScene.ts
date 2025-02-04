@@ -687,7 +687,7 @@ export class GameScene extends PIXI.Container {
         animateGlow();
 
         // Title with gradient and outline
-        const title = new PIXI.Text('BLADE', {
+        const title = new PIXI.Text('BLADE STRIKE', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 64,
             fill: ['#FFD700', '#FFA500'], // Gold to orange gradient
