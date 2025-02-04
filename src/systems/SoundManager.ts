@@ -349,6 +349,12 @@ export class SoundManager {
         zzfx(2,.05,722,.01,.03,.03,2,2.3,-21,-29.9,0,0,0,0,13,.1,.07,.67,.02,0,0);
     }
 
+    public playCriticalHitSound(): void {
+        if (this.isSoundEffectsMuted || !this.canPlaySound('combat')) return;
+        // More impactful sound for critical hits
+        zzfx(2,.05,700,.01,.03,.05,1,2.7,-21,-29.9,89,.5,.1,0,13,.1,.07,.67,.02,0,0);
+    }
+
     public playDashSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('movement')) return;
         zzfx(0.5,.05,504,.01,.03,.04,2,3,26,0,-150,0,0,.3,0,0,0,.66,.02,.06,0);

@@ -242,28 +242,6 @@ export class GameScene extends PIXI.Container {
         // Start first wave
         console.log('[GameScene] Starting first wave');
         this.startWave(1);
-
-        // Listen for debug keys
-        window.addEventListener('keydown', (e) => {
-            // Debug: Skip to wave number using number keys (1-9)
-            const waveMatch = e.code.match(/Digit([1-9])/);
-            if (waveMatch) {
-                const targetWave = parseInt(waveMatch[1]);
-                console.log(`[GameScene] Debug: Skipping to wave ${targetWave}`);
-                // Clear current enemies
-                this.enemies.forEach(enemy => this.removeChild(enemy));
-                this.enemies = [];
-                // Update wave system's reference to the new empty array
-                this.waveSystem.setEnemiesArray(this.enemies);
-                // Start the target wave
-                this.waveSystem.setWave(targetWave);
-                this.waveText.text = `Wave ${targetWave}`;
-                const waveDef = this.waveSystem.getCurrentWaveDefinition();
-                this.waveAnnouncement.text = `Wave ${targetWave}\n${waveDef.description}`;
-                this.waveAnnouncement.alpha = 1;
-                this.waveAnnouncementTimer = 0;
-            }
-        });
     }
 
     private startWave(waveNumber: number): void {

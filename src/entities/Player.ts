@@ -16,8 +16,8 @@ export class Player extends Entity {
     private inputManager: InputManager;
     private stunned: boolean = false;
     private stunTimer: number = 0;
-    private static readonly STUN_DURATION: number = 100; // Reduced from 200ms to 100ms
-    private static readonly KNOCKBACK_THRESHOLD: number = 1.0; // Increased from 0.5 to make recovery faster
+    private static readonly STUN_DURATION: number = 100; 
+    private static readonly KNOCKBACK_THRESHOLD: number = 1.0; 
     private static readonly BASE_SPEED = 1.75;
     private baseSpeed: number = Player.BASE_SPEED;
     private speedMultiplier: number = 1;
@@ -33,13 +33,13 @@ export class Player extends Entity {
         this.soundManager = SoundManager.getInstance();
         this.inputManager = new InputManager();
         
-        // Create cooldown indicators (behind player)
+        // Create cooldown indicators
         this.dashIndicator = new PIXI.Graphics();
         this.swordIndicator = new PIXI.Graphics();
         this.addChild(this.dashIndicator);
         this.addChild(this.swordIndicator);
         
-        // Create a simple player sprite (blue triangle for directional visibility)
+        // Create a simple player sprite
         this.graphics = new PIXI.Graphics();
         this.drawSprite();
         this.addChild(this.graphics);

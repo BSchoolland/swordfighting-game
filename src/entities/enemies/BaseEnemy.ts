@@ -74,7 +74,7 @@ export abstract class BaseEnemy extends Entity {
         this.outOfRangeTimer = 0;
     }
 
-    private applyRepulsion(): void {
+    public applyRepulsion(): void {
         // Get all enemies in the scene
         const enemies = this.parent?.children.filter(
             child => child instanceof BaseEnemy && child !== this

@@ -36,6 +36,9 @@ export class BlitzerEnemy extends BaseEnemy {
 
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
+        // Apply enemy and screen edge repulsion before movement
+        this.applyRepulsion();
+
         // Handle stun and knockback first
         if (this.stunned) {
             this.stunTimer -= delta * 16.67;

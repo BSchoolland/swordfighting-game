@@ -8,6 +8,14 @@ export class HomeScreen extends PIXI.Container {
     private readonly weaponColors = [0xFFD700, 0xFF4400, 0x00AA44, 0x666666];
     private readonly weaponRotationSpeeds = [0.02, -0.03, 0.025, -0.015];
     private settingsPanel: PIXI.Container | null = null;
+    private tipsText!: PIXI.Text;
+    private currentTipIndex: number = 0;
+    private readonly tips: string[] = [
+        'Hint: Attacking while dashing deals double damage!',
+        'Hint: You can slice projectiles out of the air!',
+        'Hint: Defeating a boss grants powerful upgrades!',
+        'Hint: Bosses spawn minions while alive, defeat them quickly!'
+    ];
 
     constructor(dimensions: { width: number; height: number }, onStart: () => void) {
         super();
@@ -153,6 +161,22 @@ export class HomeScreen extends PIXI.Container {
 
         this.addChild(button);
 
+        // Add combat tips text
+        this.tipsText = new PIXI.Text(
+            this.tips[0],
+            {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fill: 0xFFD700,
+                align: 'center'
+            }
+        );
+        this.tipsText.anchor.set(0.5);
+        this.tipsText.position.set(this.dimensions.width / 2, this.dimensions.height * 0.7 + 80);
+        this.addChild(this.tipsText);
+
+        
+
         // Add controls text
         const controlsText = new PIXI.Text(
             'Keyboard Controls:\nWASD - Move\nMouse - Aim\nLeft Click - Attack\nSpace - Dash',
@@ -216,6 +240,9 @@ export class HomeScreen extends PIXI.Container {
 
         // Start animation loop
         this.animate();
+
+        // Start tip rotation
+        this.rotateTips();
     }
 
     private toggleSettingsPanel(): void {
@@ -332,5 +359,34 @@ export class HomeScreen extends PIXI.Container {
         });
 
         requestAnimationFrame(() => this.animate());
+    }
+
+    private rotateTips(): void {
+        // Fade out current tip
+        const fadeOut = () => {
+            if (this.tipsText.alpha <= 0) {
+                // Change text and start fade in
+                this.currentTipIndex = (this.currentTipIndex + 1) % this.tips.length;
+                this.tipsText.text = this.tips[this.currentTipIndex];
+                fadeIn();
+            } else {
+                this.tipsText.alpha -= 0.05;
+                requestAnimationFrame(fadeOut);
+            }
+        };
+
+        // Fade in new tip
+        const fadeIn = () => {
+            if (this.tipsText.alpha >= 1) {
+                // Wait 5 seconds before starting next fade out
+                setTimeout(() => fadeOut(), 7500);
+            } else {
+                this.tipsText.alpha += 0.05;
+                requestAnimationFrame(fadeIn);
+            }
+        };
+
+        // Start the cycle
+        setTimeout(() => fadeOut(), 7500);
     }
 } 

@@ -151,36 +151,36 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'dash_epic',
                 name: 'Shadow Step',
-                description: 'Reduce dash cooldown by 45%',
+                description: 'Reduce dash cooldown by 50%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.45)
+                apply: (player: Player) => player.getDash().reduceCooldown(0.5)
             },
             {
                 id: 'dash_legendary',
                 name: 'Time Weaver',
-                description: 'Reduce dash cooldown by 65%',
+                description: 'Reduce dash cooldown by 75%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.65)
+                apply: (player: Player) => player.getDash().reduceCooldown(0.75)
             },
             
             // Sword Upgrades
             {
                 id: 'sword_common',
-                name: 'Extended Reach',
-                description: 'Increase sword length by 10%',
+                name: 'Longer Reach',
+                description: 'Increase sword length by 15%',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.SWORD,
-                apply: (player: Player) => player.increaseSwordLength(0.1)
+                apply: (player: Player) => player.increaseSwordLength(0.15)
             },
             {
                 id: 'sword_rare',
-                name: 'Master\'s Reach',
-                description: 'Increase sword length by 15%',
+                name: 'Extended Reach',
+                description: 'Increase sword length by 20%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.SWORD,
-                apply: (player: Player) => player.increaseSwordLength(0.15)
+                apply: (player: Player) => player.increaseSwordLength(0.2)
             },
             {
                 id: 'sword_epic',
@@ -203,68 +203,68 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'swing_common',
                 name: 'Quick Strikes',
-                description: 'Increase attack speed by 15%',
-                rarity: UpgradeRarity.COMMON,
-                type: UpgradeType.SWING_SPEED,
-                apply: (player: Player) => player.increaseSwingSpeed(0.15)
-            },
-            {
-                id: 'swing_rare',
-                name: 'Swift Blade',
                 description: 'Increase attack speed by 25%',
-                rarity: UpgradeRarity.RARE,
+                rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.SWING_SPEED,
                 apply: (player: Player) => player.increaseSwingSpeed(0.25)
             },
             {
-                id: 'swing_epic',
-                name: 'Blade Dance',
+                id: 'swing_rare',
+                name: 'Swift Blade',
                 description: 'Increase attack speed by 40%',
-                rarity: UpgradeRarity.EPIC,
+                rarity: UpgradeRarity.RARE,
                 type: UpgradeType.SWING_SPEED,
                 apply: (player: Player) => player.increaseSwingSpeed(0.4)
             },
             {
-                id: 'swing_legendary',
-                name: 'Time Distortion',
+                id: 'swing_epic',
+                name: 'Blade Dance',
                 description: 'Increase attack speed by 60%',
-                rarity: UpgradeRarity.LEGENDARY,
+                rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.SWING_SPEED,
                 apply: (player: Player) => player.increaseSwingSpeed(0.6)
+            },
+            {
+                id: 'swing_legendary',
+                name: 'Time Distortion',
+                description: 'Increase attack speed by 90%',
+                rarity: UpgradeRarity.LEGENDARY,
+                type: UpgradeType.SWING_SPEED,
+                apply: (player: Player) => player.increaseSwingSpeed(0.9)
             },
 
             // Max Health Upgrades
             {
                 id: 'health_common',
                 name: 'Tough Skin',
-                description: 'Increase max health by 25%',
+                description: 'Increase max health by 15%',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(0.25)
+                apply: (player: Player) => player.increaseMaxHealth(0.15)
             },
             {
                 id: 'health_rare',
                 name: 'Iron Body',
-                description: 'Increase max health by 50%',
+                description: 'Increase max health by 25%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(0.5)
+                apply: (player: Player) => player.increaseMaxHealth(0.25)
             },
             {
                 id: 'health_epic',
                 name: 'Titan\'s Endurance',
-                description: 'Increase max health by 100%',
+                description: 'Increase max health by 50%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(1)
+                apply: (player: Player) => player.increaseMaxHealth(0.5)
             },
             {
                 id: 'health_legendary',
                 name: 'Immortal Vessel',
-                description: 'Increase max health by 200%',
+                description: 'Increase max health by 100%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(2)
+                apply: (player: Player) => player.increaseMaxHealth(1)
             }
         ];
 
