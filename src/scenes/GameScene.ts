@@ -60,6 +60,25 @@ export class GameScene extends PIXI.Container {
         this.soundManager = SoundManager.getInstance();
         this.adManager = AdManager.getInstance();
         
+        // Check SDK status
+        const sdkStatus = this.adManager.getInitializationStatus();
+        if (sdkStatus.fallbackMode) {
+            console.warn('SDK Status:', sdkStatus.error);
+            // Create warning text with appropriate message
+            const warningMessage = sdkStatus.error?.includes('disabled on this domain') 
+                ? 'Development Mode - No Ads'
+                : 'Offline Mode';
+            const warningText = new PIXI.Text(warningMessage, {
+                fontFamily: 'Arial',
+                fontSize: 16,
+                fill: 0xffaa00,
+                align: 'right'
+            });
+            warningText.position.set(dimensions.width - warningText.width - 10, dimensions.height - 30);
+            warningText.alpha = 0.7;
+            this.addChild(warningText);
+        }
+        
         // Initialize score system
         this.scoreSystem = new ScoreSystem();
         
