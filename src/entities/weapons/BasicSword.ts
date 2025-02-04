@@ -264,9 +264,6 @@ export class BasicSword extends BaseWeapon {
     }
 
     private isDuringDashDamageExtension(): boolean {
-        console.log('isDuringDashDamageExtension', Date.now() - this.lastDashTime < BasicSword.DASH_DAMAGE_EXTENSION);
-        console.log('lastDashTime', this.lastDashTime);
-        console.log('DASH_DAMAGE_EXTENSION', BasicSword.DASH_DAMAGE_EXTENSION);
         return Date.now() - this.lastDashTime < BasicSword.DASH_DAMAGE_EXTENSION;
     }
 

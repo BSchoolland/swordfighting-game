@@ -187,14 +187,10 @@ export abstract class BaseEnemy extends Entity {
         }
 
         // Get absolute positions
-        const enemyGlobalPos = this.getGlobalPosition();
-        const playerGlobalPos = this.player.getGlobalPosition();
-        
-        const dx = playerGlobalPos.x - enemyGlobalPos.x;
-        const dy = playerGlobalPos.y - enemyGlobalPos.y;
+        const dx = this.player.x - this.x;
+        const dy = this.player.y - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const targetAngle = Math.atan2(dy, dx);
-        
         
         // Smoothly rotate towards the player with movement restriction
         this.rotateTowards(targetAngle, delta, movementMultiplier);
