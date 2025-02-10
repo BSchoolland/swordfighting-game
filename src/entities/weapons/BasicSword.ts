@@ -233,10 +233,12 @@ export class BasicSword extends BaseWeapon {
     }
 
     public setSwingSpeedMultiplier(multiplier: number): void {
+        console.log(`Setting swing speed multiplier to ${multiplier}`);
         this.stats.swingSpeed = this.stats.swingSpeed * multiplier;
-        this.stats.attackSpeed = this.stats.attackSpeed * multiplier;
-        this.drawWeapon();
-        this.drawPreviewWeapon();
+        this.stats.attackSpeed = this.stats.attackSpeed / multiplier;
+        console.log(`Attack speed: ${this.stats.attackSpeed}`);
+        // this.drawWeapon();
+        // this.drawPreviewWeapon();
     }
 
     public update(delta: number, targets: Entity[]): void {

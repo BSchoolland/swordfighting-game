@@ -30,8 +30,9 @@ export class Player extends Entity {
     private attackSpeedMultiplier: number = 1;
     private experience: number = 0;
     private level: number = 1;
-    private static readonly EXP_PER_LEVEL: number = 100; // Base EXP needed per level
+    private static readonly EXP_PER_LEVEL: number = 150; // Base EXP needed per level
     private static readonly EXP_SCALING: number = 1.5; // How much more EXP each level needs
+    private hasUpgradeAvailable: boolean = false; // Track if upgrade is available
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -291,26 +292,32 @@ export class Player extends Entity {
 
     public increaseSwingSpeed(percentage: number): void {
         console.log(`Increasing swing speed by ${percentage * 100}%`);
-        this.swingSpeedMultiplier *= (1 + percentage);
-        this.attackSpeedMultiplier *= (1 + percentage);
+        this.swingSpeedMultiplier = (1 + percentage);
         if (this.weapon) {
             this.weapon.setSwingSpeedMultiplier(this.swingSpeedMultiplier);
-            this.weapon.setAttackSpeedMultiplier(this.attackSpeedMultiplier);
         }
         console.log(`Swing speed increased by ${percentage * 100}%. New multiplier: ${this.swingSpeedMultiplier}`);
         console.log(`Attack speed increased by ${percentage * 100}%. New multiplier: ${this.attackSpeedMultiplier}`);
     }
 
     public gainExperience(amount: number): boolean {
-        this.experience += amount;
-        const expNeeded = this.getExpNeededForNextLevel();
-        
-        if (this.experience >= expNeeded) {
-            this.level++;
-            this.experience -= expNeeded;
-            return true; // Indicates a level up occurred
+        // If we already have an upgrade available, don't gain more XP
+        if (this.hasUpgradeAvailable) {
+            return false;
         }
-        return false;
+
+        const expNeeded = this.getExpNeededForNextLevel();
+        const newExp = this.experience + amount;
+        
+        if (newExp >= expNeeded) {
+            // Level up and set upgrade available
+            this.experience = expNeeded; // Cap at max XP instead of rolling over
+            this.hasUpgradeAvailable = true;
+            return true; // Indicates a level up occurred
+        } else {
+            this.experience = newExp;
+            return false;
+        }
     }
 
     public getLevel(): number {
@@ -327,5 +334,16 @@ export class Player extends Entity {
 
     public getExperienceProgress(): number {
         return this.experience / this.getExpNeededForNextLevel();
+    }
+
+    public hasAvailableUpgrade(): boolean {
+        return this.hasUpgradeAvailable;
+    }
+
+    public clearUpgradeAvailable(): void {
+        this.hasUpgradeAvailable = false;
+        this.level++;
+        // When upgrade is used, reset XP to 0 for the new level
+        this.experience = 0;
     }
 } 

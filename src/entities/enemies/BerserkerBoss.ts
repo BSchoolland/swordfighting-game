@@ -16,7 +16,7 @@ export class BerserkerBoss extends BossEnemy {
         chaseDuration: 4000,
         knockbackResistance: 0.6,
         maxRotateSpeed: 3.0,
-        expValue: 150 // Berserker boss gives 150 EXP
+        expValue: 1500
     };
 
     private baseSpeed: number;

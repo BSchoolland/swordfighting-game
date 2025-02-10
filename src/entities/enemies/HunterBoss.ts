@@ -13,9 +13,9 @@ export class HunterBoss extends BossEnemy {
         movementRestriction: 0.8, // High mobility
         windupRestriction: 0.6,
         chaseDuration: 4000,
-        knockbackResistance: 0, // No knockback resistance for extra dodge
+        knockbackResistance: 0.7, // High knockback resistance
         maxRotateSpeed: 3.5,
-        expValue: 200 // Hunter boss gives 200 EXP
+        expValue: 2000 
     };
 
     private dodgeCooldown: number = 0;

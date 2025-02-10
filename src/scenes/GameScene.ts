@@ -39,6 +39,7 @@ export class GameScene extends PIXI.Container {
     // Wave display
     private waveText!: PIXI.Text;
     private waveAnnouncement!: PIXI.Text;
+    private upgradeAvailableText!: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
     private scoreText!: PIXI.Text; // Add score text
@@ -250,9 +251,12 @@ export class GameScene extends PIXI.Container {
 
         // Reset music to normal background music
         this.soundManager.transitionToNormalMusic();
-
+        // if we already created the exp bar, no need to create it again
+        if (!this.expBar) {
+            console.log('[GameScene] Creating exp bar');
+            this.createExpBar();
+        }
         // Create UI elements
-        this.createExpBar();
         
         // Create target cursor
         console.log('[GameScene] Creating target cursor');
@@ -276,6 +280,17 @@ export class GameScene extends PIXI.Container {
         });
         this.waveText.position.set(this.dimensions.width - 150, 20);
         this.addChild(this.waveText);
+
+        // Create upgrade available text
+        this.upgradeAvailableText = new PIXI.Text('⭐ Upgrade Available!', {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            fill: 0xffd700,
+            align: 'center'
+        });
+        this.upgradeAvailableText.position.set(20, 50); // Below health bar
+        this.upgradeAvailableText.visible = false;
+        this.addChild(this.upgradeAvailableText);
 
         // Create score text under wave text
         console.log('[GameScene] Creating score text');
@@ -556,6 +571,9 @@ export class GameScene extends PIXI.Container {
         // Update EXP bar
         this.updateExpBar();
 
+        // Update upgrade available indicator
+        this.upgradeAvailableText.visible = this.player.hasAvailableUpgrade();
+
         // Skip updates if upgrade screen is visible
         if (this.upgradeSystem.isUpgradeScreenVisible()) {
             return;
@@ -598,14 +616,15 @@ export class GameScene extends PIXI.Container {
 
         // Check for wave completion and show upgrades
         if (!this.waveSystem.isWaveActive() && this.enemies.length === 0 && !this.waitingForUpgrade) {
-            const isBossWave = this.waveSystem.getCurrentWaveDefinition().isBossWave;
+            this.waitingForUpgrade = true;
             
-            if (isBossWave) {
-                this.waitingForUpgrade = true;
+            // Show upgrade selection if available, regardless of wave type
+            if (this.player.hasAvailableUpgrade()) {
                 // Show upgrade selection after a short delay
                 setTimeout(() => {
-                    this.upgradeSystem.showUpgradeSelection(false, () => {
+                    this.upgradeSystem.showUpgradeSelection(this.waveSystem.getCurrentWaveDefinition().isBossWave, () => {
                         // After upgrade is selected
+                        this.player.clearUpgradeAvailable();
                         this.waitingForUpgrade = false;
                         // Start next wave
                         console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
@@ -613,7 +632,8 @@ export class GameScene extends PIXI.Container {
                     });
                 }, 500); // Small delay to let death effects finish
             } else {
-                // For normal waves, just start the next wave immediately
+                // No upgrade available, start next wave immediately
+                this.waitingForUpgrade = false;
                 console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
                 this.startWave(this.waveSystem.getCurrentWave() + 1);
             }
@@ -729,7 +749,14 @@ export class GameScene extends PIXI.Container {
 
             // Check if it was the Master of Arms
             if (enemy instanceof MasterOfArmsBoss) {
-                // Show credits instead of upgrade screen
+                // Set game as over to prevent new spawns and upgrades
+                this.isGameOver = true;
+                this.gameStarted = false;
+                
+                // Clear any remaining enemies
+                this.enemies.length = 0;
+                
+                // Show credits after a delay
                 setTimeout(() => {
                     this.showCredits();
                 }, 2000); // Wait 2 seconds after death effects

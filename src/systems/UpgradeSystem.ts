@@ -41,18 +41,12 @@ export class UpgradeSystem extends PIXI.Container {
     };
 
     private static readonly RARITY_WEIGHTS = {
-        [UpgradeRarity.COMMON]: 55,
-        [UpgradeRarity.RARE]: 25,
-        [UpgradeRarity.EPIC]: 15,
-        [UpgradeRarity.LEGENDARY]: 5
+        [UpgradeRarity.COMMON]: 65,
+        [UpgradeRarity.RARE]: 23,
+        [UpgradeRarity.EPIC]: 10,
+        [UpgradeRarity.LEGENDARY]: 2
     };
 
-    private static readonly BOSS_RARITY_WEIGHTS = {
-        [UpgradeRarity.COMMON]: 0,    // No common upgrades after boss
-        [UpgradeRarity.RARE]: 25,      // No rare upgrades after boss
-        [UpgradeRarity.EPIC]: 62,     // Higher chance for epic
-        [UpgradeRarity.LEGENDARY]: 13  // Good chance for legendary
-    };
     
     private upgrades: Upgrade[] = [];
     private player: Player;
@@ -66,7 +60,6 @@ export class UpgradeSystem extends PIXI.Container {
     
     // Track chosen upgrades
     private chosenUpgrades: Map<UpgradeType, Upgrade> = new Map();
-    private static readonly MAX_REROLL_ATTEMPTS = 5;
     private onUpgradeSelected: (() => void) | null = null;
 
     constructor(dimensions: { width: number; height: number }, player: Player) {
@@ -205,34 +198,34 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'swing_common',
                 name: 'Quick Strikes',
-                description: 'Increase attack speed by 25%',
+                description: 'Increase attack speed by 10%',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.SWING_SPEED,
-                apply: (player: Player) => player.increaseSwingSpeed(0.25)
+                apply: (player: Player) => player.increaseSwingSpeed(0.1)
             },
             {
                 id: 'swing_rare',
                 name: 'Swift Blade',
-                description: 'Increase attack speed by 40%',
+                description: 'Increase attack speed by 20%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.SWING_SPEED,
-                apply: (player: Player) => player.increaseSwingSpeed(0.4)
+                apply: (player: Player) => player.increaseSwingSpeed(0.2)
             },
             {
                 id: 'swing_epic',
                 name: 'Blade Dance',
-                description: 'Increase attack speed by 60%',
+                description: 'Increase attack speed by 30%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.SWING_SPEED,
-                apply: (player: Player) => player.increaseSwingSpeed(0.6)
+                apply: (player: Player) => player.increaseSwingSpeed(0.3)
             },
             {
                 id: 'swing_legendary',
-                name: 'Time Distortion',
-                description: 'Increase attack speed by 90%',
+                name: 'Lightning Blade',
+                description: 'Increase attack speed by 50%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.SWING_SPEED,
-                apply: (player: Player) => player.increaseSwingSpeed(0.9)
+                apply: (player: Player) => player.increaseSwingSpeed(0.5)
             },
 
             // Max Health Upgrades
@@ -333,9 +326,10 @@ export class UpgradeSystem extends PIXI.Container {
     }
 
     public update(): void {
+        // No longer automatically show upgrades during combat
+        // Just track the level for internal state
         const currentLevel = this.player.getLevel();
         if (currentLevel > this.lastCheckedLevel) {
-            this.showUpgradeSelection(false);
             this.lastCheckedLevel = currentLevel;
         }
     }
@@ -346,6 +340,9 @@ export class UpgradeSystem extends PIXI.Container {
         this.isVisible = true;
         this.visible = true;
         this.onUpgradeSelected = onSelected || null;
+
+        // Play upgrade sound
+        this.soundManager.playUpgradeSound();
 
         // Get random upgrades
         const upgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
@@ -368,13 +365,6 @@ export class UpgradeSystem extends PIXI.Container {
             this.addChild(particleContainer);
             this.particleContainers.push(particleContainer);
         });
-    }
-
-    private getReplacementMessage(newUpgrade: Upgrade, existingUpgrade: Upgrade): string {
-        if (newUpgrade.rarity === existingUpgrade.rarity) {
-            return '(Replaces existing upgrade)';
-        }
-        return `(Replaces ${existingUpgrade.rarity} ${existingUpgrade.name})`;
     }
 
     private createUpgradeCard(upgrade: Upgrade): PIXI.Container {
@@ -422,11 +412,8 @@ export class UpgradeSystem extends PIXI.Container {
         card.addChild(nameText);
         
         // Add replacement message if applicable
-        const existingUpgrade = this.chosenUpgrades.get(upgrade.type);
         let description = upgrade.description;
-        if (existingUpgrade && !upgrade.isHealing) {
-            description += '\n\n' + this.getReplacementMessage(upgrade, existingUpgrade);
-        }
+        
         
         // Upgrade description
         const descText = new PIXI.Text(description, {
@@ -487,14 +474,8 @@ export class UpgradeSystem extends PIXI.Container {
             if (!selectedTypes.has(type)) {
                 selectedTypes.add(type);
                 
-                let upgrade = this.selectValidUpgrade(upgradesByType.get(type)!, isBossWave);
-                let attempts = 0;
-                
-                // If we can't find a valid upgrade after several attempts, offer healing
-                if (!upgrade && attempts >= UpgradeSystem.MAX_REROLL_ATTEMPTS) {
-                    upgrade = this.upgrades.find(u => u.isHealing);
-                }
-                
+                let upgrade = this.selectUpgradeByRarityWeight(upgradesByType.get(type)!, isBossWave);
+
                 if (upgrade) {
                     selected.push(upgrade);
                 }
@@ -506,30 +487,8 @@ export class UpgradeSystem extends PIXI.Container {
         return selected;
     }
 
-    private selectValidUpgrade(upgrades: Upgrade[], isBossWave: boolean): Upgrade | undefined {
-        let attempts = 0;
-        while (attempts < UpgradeSystem.MAX_REROLL_ATTEMPTS) {
-            const upgrade = this.selectUpgradeByRarityWeight(upgrades, isBossWave);
-            const existingUpgrade = this.chosenUpgrades.get(upgrade.type);
-            
-            // For boss waves, only accept epic or legendary upgrades
-            if (isBossWave && upgrade.rarity < UpgradeRarity.EPIC) {
-                attempts++;
-                continue;
-            }
-            
-            // Accept if no existing upgrade or higher rarity
-            if (!existingUpgrade || upgrade.rarity > existingUpgrade.rarity) {
-                return upgrade;
-            }
-            
-            attempts++;
-        }
-        return undefined;
-    }
-
     private selectUpgradeByRarityWeight(upgrades: Upgrade[], isBossWave: boolean): Upgrade {
-        const weights = isBossWave ? UpgradeSystem.BOSS_RARITY_WEIGHTS : UpgradeSystem.RARITY_WEIGHTS;
+        const weights = UpgradeSystem.RARITY_WEIGHTS;
         const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
         let random = Math.random() * totalWeight;
         
@@ -574,6 +533,10 @@ export class UpgradeSystem extends PIXI.Container {
     private hideUpgradeSelection(): void {
         this.visible = false;
         this.isVisible = false;
+
+        // clean up cards
+        this.cards.forEach(card => card.destroy());
+        this.cards = [];
         
         // Clean up particle effects
         this.particleContainers.forEach(container => container.destroy());

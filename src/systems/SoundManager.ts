@@ -405,4 +405,9 @@ export class SoundManager {
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
         zzfx(2.1,.05,64,.04,.21,.64,4,3.3,-5,0,0,0,0,1.2,0,.4,.24,.33,.28,0,0);
     }
+
+    public playUpgradeSound(): void {
+        // Play a pleasant chime sound for upgrades
+        console.log("Fixme, play sound")
+    }
 } 
