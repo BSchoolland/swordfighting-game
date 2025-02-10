@@ -62,6 +62,7 @@ export class UpgradeSystem extends PIXI.Container {
     private background: PIXI.Graphics;
     private cards: PIXI.Container[] = [];
     private particleContainers: PIXI.Container[] = [];
+    private lastCheckedLevel: number = 1;
     
     // Track chosen upgrades
     private chosenUpgrades: Map<UpgradeType, Upgrade> = new Map();
@@ -73,6 +74,7 @@ export class UpgradeSystem extends PIXI.Container {
         this.dimensions = dimensions;
         this.player = player;
         this.soundManager = SoundManager.getInstance();
+        this.lastCheckedLevel = player.getLevel();
         
         this.initializeUpgrades();
         
@@ -143,26 +145,26 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'dash_rare',
                 name: 'Swift Recovery',
-                description: 'Reduce dash cooldown by 30%',
+                description: 'Reduce dash cooldown by 20%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.3)
+                apply: (player: Player) => player.getDash().reduceCooldown(0.2)
             },
             {
                 id: 'dash_epic',
                 name: 'Shadow Step',
-                description: 'Reduce dash cooldown by 50%',
+                description: 'Reduce dash cooldown by 25%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.5)
+                apply: (player: Player) => player.getDash().reduceCooldown(0.25)
             },
             {
                 id: 'dash_legendary',
                 name: 'Time Weaver',
-                description: 'Reduce dash cooldown by 75%',
+                description: 'Reduce dash cooldown by 50%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.75)
+                apply: (player: Player) => player.getDash().reduceCooldown(0.5)
             },
             
             // Sword Upgrades
@@ -330,37 +332,41 @@ export class UpgradeSystem extends PIXI.Container {
         return container;
     }
 
-    public showUpgradeSelection(isBossWave: boolean = false, onSelected?: () => void): void {
-        this.visible = true;
-        this.isVisible = true;
-        this.onUpgradeSelected = onSelected || null;
-        
-        // Clear existing cards and particles
-        this.cards.forEach(card => card.destroy());
-        this.cards = [];
-        this.particleContainers.forEach(container => container.destroy());
-        this.particleContainers = [];
+    public update(): void {
+        const currentLevel = this.player.getLevel();
+        if (currentLevel > this.lastCheckedLevel) {
+            this.showUpgradeSelection(false);
+            this.lastCheckedLevel = currentLevel;
+        }
+    }
 
-        // Get three random upgrades of different types
-        const selectedUpgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
+    public showUpgradeSelection(isBossWave: boolean = false, onSelected?: () => void): void {
+        if (this.isVisible) return;
         
-        const totalWidth = (UpgradeSystem.CARD_WIDTH * 3) + (UpgradeSystem.CARD_SPACING * 2);
-        let startX = (this.dimensions.width - totalWidth) / 2;
+        this.isVisible = true;
+        this.visible = true;
+        this.onUpgradeSelected = onSelected || null;
+
+        // Get random upgrades
+        const upgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
         
-        selectedUpgrades.forEach((upgrade, index) => {
+        // Create and position upgrade cards
+        const totalWidth = (UpgradeSystem.CARD_WIDTH * upgrades.length) + (UpgradeSystem.CARD_SPACING * (upgrades.length - 1));
+        const startX = (this.dimensions.width - totalWidth) / 2;
+        
+        upgrades.forEach((upgrade, index) => {
             const card = this.createUpgradeCard(upgrade);
             card.x = startX + (UpgradeSystem.CARD_WIDTH + UpgradeSystem.CARD_SPACING) * index;
             card.y = (this.dimensions.height - UpgradeSystem.CARD_HEIGHT) / 2;
-            
-            // Add particle effects
-            const particles = this.createParticleEffect(upgrade.rarity);
-            particles.x = card.x;
-            particles.y = card.y;
-            this.particleContainers.push(particles);
-            
-            this.addChild(particles);
             this.addChild(card);
             this.cards.push(card);
+            
+            // Create particle effect
+            const particleContainer = this.createParticleEffect(upgrade.rarity);
+            particleContainer.x = card.x + UpgradeSystem.CARD_WIDTH / 2;
+            particleContainer.y = card.y + UpgradeSystem.CARD_HEIGHT / 2;
+            this.addChild(particleContainer);
+            this.particleContainers.push(particleContainer);
         });
     }
 

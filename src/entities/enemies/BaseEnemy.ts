@@ -14,6 +14,7 @@ export interface EnemyStats {
     chaseDuration: number; // How long enemy must be out of range before stopping chase
     knockbackResistance?: number; // Value between 0 and 1, where 1 means complete knockback immunity
     maxRotateSpeed: number; // Maximum rotation speed in radians per second
+    expValue?: number; // Experience points awarded when killed
 }
 
 export abstract class BaseEnemy extends Entity {
@@ -67,7 +68,19 @@ export abstract class BaseEnemy extends Entity {
     }
 
     public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
+        const wasAlive = this.isAlive();
         super.takeDamage(amount, knockbackDir, knockbackForce);
+        
+        // If the enemy died from this damage, award EXP
+        if (wasAlive && !this.isAlive()) {
+            const expValue = this.stats.expValue || 10; // Default to 10 EXP if not specified
+            const leveledUp = this.player.gainExperience(expValue);
+            if (leveledUp) {
+                // TODO: Trigger level up event or callback
+                console.log(`Player leveled up to ${this.player.getLevel()}!`);
+            }
+        }
+
         this.stunned = true;
         this.stunTimer = BaseEnemy.STUN_DURATION;
         this.isChasing = true; // Start chasing when damaged

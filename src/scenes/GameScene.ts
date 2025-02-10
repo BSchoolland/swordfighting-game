@@ -53,6 +53,10 @@ export class GameScene extends PIXI.Container {
     private scoreSystem: ScoreSystem;
     private adManager: AdManager;
 
+    private expBar!: PIXI.Graphics;
+    private expText!: PIXI.Text;
+    private levelText!: PIXI.Text;
+
     constructor(dimensions: { width: number; height: number }) {
         super();
         this.dimensions = dimensions;
@@ -247,6 +251,9 @@ export class GameScene extends PIXI.Container {
         // Reset music to normal background music
         this.soundManager.transitionToNormalMusic();
 
+        // Create UI elements
+        this.createExpBar();
+        
         // Create target cursor
         console.log('[GameScene] Creating target cursor');
         this.targetCursor = new PIXI.Graphics();
@@ -485,10 +492,69 @@ export class GameScene extends PIXI.Container {
         }
     }
 
-    public update(delta: number): void {
+    private createExpBar(): void {
+        // Create EXP bar container
+        const barWidth = 200;
+        const barHeight = 10;
+        const barX = 10;
+        const barY = this.dimensions.height - 30;
 
-        // Skip updates if game hasn't started
-        if (!this.gameStarted) return;
+        // Create background
+        this.expBar = new PIXI.Graphics();
+        this.addChild(this.expBar);
+
+        // Create level text
+        this.levelText = new PIXI.Text('Level 1', {
+            fontFamily: 'Arial',
+            fontSize: 14,
+            fill: 0xffffff
+        });
+        this.levelText.position.set(barX, barY - 20);
+        this.addChild(this.levelText);
+
+        // Create EXP text
+        this.expText = new PIXI.Text('0/100 EXP', {
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: 0xffffff
+        });
+        this.expText.position.set(barX + barWidth / 2, barY + barHeight + 5);
+        this.expText.anchor.x = 0.5;
+        this.addChild(this.expText);
+    }
+
+    private updateExpBar(): void {
+        const barWidth = 200;
+        const barHeight = 10;
+        const barX = 10;
+        const barY = this.dimensions.height - 30;
+
+        this.expBar.clear();
+        
+        // Draw background
+        this.expBar.beginFill(0x333333);
+        this.expBar.drawRect(barX, barY, barWidth, barHeight);
+        this.expBar.endFill();
+
+        // Draw progress
+        const progress = this.player.getExperienceProgress();
+        this.expBar.beginFill(0x00ff00);
+        this.expBar.drawRect(barX, barY, barWidth * progress, barHeight);
+        this.expBar.endFill();
+
+        // Update texts
+        this.levelText.text = `Level ${this.player.getLevel()}`;
+        this.expText.text = `${this.player.getExperience()}/${this.player.getExpNeededForNextLevel()} EXP`;
+    }
+
+    public update(delta: number): void {
+        if (!this.gameStarted || this.isGameOver) return;
+
+        // Update upgrade system
+        this.upgradeSystem.update();
+
+        // Update EXP bar
+        this.updateExpBar();
 
         // Skip updates if upgrade screen is visible
         if (this.upgradeSystem.isUpgradeScreenVisible()) {
@@ -500,8 +566,6 @@ export class GameScene extends PIXI.Container {
             this.freezeFrameTimer -= delta * 1000;
             return; // Skip update during freeze frame
         }
-
-        if (this.isGameOver) return;
 
         // Update score display
         this.scoreText.text = `Score: ${this.scoreSystem.getCurrentScore()}`;

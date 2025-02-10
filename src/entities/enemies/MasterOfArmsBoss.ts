@@ -16,7 +16,8 @@ export class MasterOfArmsBoss extends BossEnemy {
         windupRestriction: 0.5,
         chaseDuration: 5000,
         knockbackResistance: 0.5,
-        maxRotateSpeed: 3.0
+        maxRotateSpeed: 3.0,
+        expValue: 300 // Final boss gives 300 EXP
     };
 
     private weaponTypes: (new (owner: Entity) => BaseWeapon)[] = [

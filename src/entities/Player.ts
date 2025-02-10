@@ -27,6 +27,11 @@ export class Player extends Entity {
     protected maxHealth: number = 100;
     private baseMaxHealth: number = 100;
     private damageMultiplier: number = 1;
+    private attackSpeedMultiplier: number = 1;
+    private experience: number = 0;
+    private level: number = 1;
+    private static readonly EXP_PER_LEVEL: number = 100; // Base EXP needed per level
+    private static readonly EXP_SCALING: number = 1.5; // How much more EXP each level needs
 
     constructor(screenBounds: { width: number; height: number }) {
         super(screenBounds, 100); // 100 health points
@@ -109,6 +114,11 @@ export class Player extends Entity {
         this.swordLengthMultiplier = 1;
         this.swingSpeedMultiplier = 1;
         this.damageMultiplier = 1;
+        this.attackSpeedMultiplier = 1;
+
+        // Reset EXP and level
+        this.experience = 0;
+        this.level = 1;
         
         // Reset dash
         if (this.dash) {
@@ -280,10 +290,42 @@ export class Player extends Entity {
     }
 
     public increaseSwingSpeed(percentage: number): void {
+        console.log(`Increasing swing speed by ${percentage * 100}%`);
         this.swingSpeedMultiplier *= (1 + percentage);
+        this.attackSpeedMultiplier *= (1 + percentage);
         if (this.weapon) {
             this.weapon.setSwingSpeedMultiplier(this.swingSpeedMultiplier);
+            this.weapon.setAttackSpeedMultiplier(this.attackSpeedMultiplier);
         }
         console.log(`Swing speed increased by ${percentage * 100}%. New multiplier: ${this.swingSpeedMultiplier}`);
+        console.log(`Attack speed increased by ${percentage * 100}%. New multiplier: ${this.attackSpeedMultiplier}`);
+    }
+
+    public gainExperience(amount: number): boolean {
+        this.experience += amount;
+        const expNeeded = this.getExpNeededForNextLevel();
+        
+        if (this.experience >= expNeeded) {
+            this.level++;
+            this.experience -= expNeeded;
+            return true; // Indicates a level up occurred
+        }
+        return false;
+    }
+
+    public getLevel(): number {
+        return this.level;
+    }
+
+    public getExperience(): number {
+        return this.experience;
+    }
+
+    public getExpNeededForNextLevel(): number {
+        return Math.floor(Player.EXP_PER_LEVEL * Math.pow(Player.EXP_SCALING, this.level - 1));
+    }
+
+    public getExperienceProgress(): number {
+        return this.experience / this.getExpNeededForNextLevel();
     }
 } 

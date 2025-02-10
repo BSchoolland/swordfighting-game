@@ -13,7 +13,8 @@ export class BasicEnemy extends BaseEnemy {
         windupRestriction: 0, // More restricted during windup
         chaseDuration: 2000, // 2 seconds
         knockbackResistance: 0.1, // Small amount of knockback resistance
-        maxRotateSpeed: 4.0 // Medium turning speed (about 230 degrees per second)
+        maxRotateSpeed: 4.0, // Medium turning speed (about 230 degrees per second)
+        expValue: 10 // Basic enemies give 10 EXP
     };
 
     constructor(bounds: { width: number; height: number }, player: Player, canMoveWhileWindingUp: boolean = false) {

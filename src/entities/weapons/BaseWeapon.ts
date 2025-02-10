@@ -289,7 +289,9 @@ export abstract class BaseWeapon extends PIXI.Container {
     public setDamageMultiplier(multiplier: number): void {
         this.damageMultiplier = multiplier;
     }
-
+    public setAttackSpeedMultiplier(multiplier: number): void {
+        this.stats.attackSpeed = this.stats.originalAttackSpeed! * multiplier;
+    }
     public setSwingSpeedMultiplier(multiplier: number): void {
         this.swingSpeedMultiplier = multiplier;
         // Update attack speed (cooldown) based on the same multiplier

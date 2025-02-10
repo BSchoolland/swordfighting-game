@@ -14,7 +14,8 @@ export class WarriorBoss extends BossEnemy {
         windupRestriction: 0.3,
         chaseDuration: 5000,
         knockbackResistance: 0.8,
-        maxRotateSpeed: 2.0
+        maxRotateSpeed: 2.0,
+        expValue: 100 // Boss enemies give 100 EXP
     };
 
     private dashCooldown: number = 0;

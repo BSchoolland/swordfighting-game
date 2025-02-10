@@ -11,7 +11,8 @@ export class FastEnemy extends BaseEnemy {
         color: 0xFFAA00,
         movementRestriction: 0.8, // High mobility even during attacks
         chaseDuration: 3000, // 3 seconds - more persistent chase for fast enemy
-        maxRotateSpeed: 6.0 // Fast turning speed (about 340 degrees per second)
+        maxRotateSpeed: 6.0, // Fast turning speed (about 340 degrees per second)
+        expValue: 15 // Fast enemies give 15 EXP
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {

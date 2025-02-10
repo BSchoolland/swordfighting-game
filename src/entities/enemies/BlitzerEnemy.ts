@@ -14,7 +14,8 @@ export class BlitzerEnemy extends BaseEnemy {
         windupRestriction: 0.3, // Bad mobility during windup
         chaseDuration: 3000, // 3 seconds
         knockbackResistance: 0.2,
-        maxRotateSpeed: 6.0 // Quick turning speed
+        maxRotateSpeed: 6.0, // Quick turning speed
+        expValue: 30 // Blitzer enemies give 30 EXP
     };
 
     private static readonly CHARGE_RANGE = 250; // Will start charging attack from this range

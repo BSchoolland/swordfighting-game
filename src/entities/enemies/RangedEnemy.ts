@@ -11,7 +11,8 @@ export class RangedEnemy extends BaseEnemy {
         color: 0x00AA00, // Green color
         movementRestriction: 0.7, // Good mobility but reduced during attacks
         chaseDuration: 3000, // 3 seconds chase duration
-        maxRotateSpeed: 3.0 // Medium-slow turning speed (about 170 degrees per second)
+        maxRotateSpeed: 3.0, // Medium-slow turning speed (about 170 degrees per second)
+        expValue: 20 // Ranged enemies give 20 EXP
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {

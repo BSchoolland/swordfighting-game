@@ -234,6 +234,7 @@ export class BasicSword extends BaseWeapon {
 
     public setSwingSpeedMultiplier(multiplier: number): void {
         this.stats.swingSpeed = this.stats.swingSpeed * multiplier;
+        this.stats.attackSpeed = this.stats.attackSpeed * multiplier;
         this.drawWeapon();
         this.drawPreviewWeapon();
     }

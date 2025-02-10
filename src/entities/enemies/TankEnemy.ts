@@ -12,7 +12,8 @@ export class TankEnemy extends BaseEnemy {
         movementRestriction: 0.3, // Very restricted movement, especially during attacks
         chaseDuration: 4000, // 4 seconds - very persistent once angered
         knockbackResistance: 0.6, // Significant knockback resistance
-        maxRotateSpeed: 1.8 // Very slow turning speed (about 100 degrees per second)
+        maxRotateSpeed: 1.8, // Very slow turning speed (about 100 degrees per second)
+        expValue: 25 // Tank enemies give 25 EXP
     };
 
     constructor(bounds: { width: number; height: number }, player: Player) {
