@@ -431,8 +431,10 @@ export class GameScene extends PIXI.Container {
             this.dimensions.width,
             this.dimensions.height,
             async () => {
-                // Show ad before restarting
-                await this.adManager.showAd();
+                // Show ad before restarting if the full path includes crazygames.com
+                if (window.location.href.includes('crazygames.com')) {
+                    await this.adManager.showAd();
+                }
                 await this.restart();
             },
             async () => this.showHomeScreen(),
@@ -835,16 +837,13 @@ export class GameScene extends PIXI.Container {
             '',
             'Game Design & Development By:',
             'Benjamin Schoolland',
-            'Claud-3.5-sonnet',
-            'ChatGPT',
             '',
             'Music By:',
             'Suno AI',
             '',
             '',
             'Art By:',
-            'you guessed it!',
-            'AI',
+            'Well there wasn\'t really any art... hmm...',
             '',
             'Special Thanks To:',
             'The two or three players who helped test the game',

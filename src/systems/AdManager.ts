@@ -145,7 +145,7 @@ export class AdManager {
     }
 
     public async showAd(): Promise<void> {
-        return;
+        
         try {
             await this.ensureInitialized();
             
