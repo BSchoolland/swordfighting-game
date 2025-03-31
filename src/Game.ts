@@ -22,12 +22,14 @@ export class Game {
             height: window.innerHeight,
             backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
             antialias: true,
-            resolution: window.devicePixelRatio || 1,
-            view: document.createElement('canvas') as HTMLCanvasElement,
-            resizeTo: window
+            resolution: 1, // Fixed resolution of 1 to avoid scaling issues
+            view: document.createElement('canvas') as HTMLCanvasElement
+            // Removed resizeTo property to manually handle resizing
         });
 
         document.body.appendChild(this.app.view as HTMLCanvasElement);
+
+        this.app.ticker.maxFPS = 60; // Limit to 60 FPS
 
         // Create a container for the game world with its own background
         this.gameContainer = new PIXI.Container();
@@ -95,6 +97,9 @@ export class Game {
     private handleResize(): void {
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
+
+        // Explicitly set canvas dimensions to match window size
+        this.app.renderer.resize(screenWidth, screenHeight);
 
         // Calculate scale to fit the screen while maintaining aspect ratio
         const scaleX = screenWidth / Game.GAME_WIDTH;
