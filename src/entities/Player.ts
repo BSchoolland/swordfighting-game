@@ -56,6 +56,8 @@ export class Player extends Entity {
 
         // Initialize dash ability
         this.dash = new Dash(this, this.inputManager);
+        this.filters = [];
+
     }
 
     private drawSprite(): void {

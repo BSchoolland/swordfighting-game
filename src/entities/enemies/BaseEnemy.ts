@@ -229,9 +229,14 @@ export abstract class BaseEnemy extends Entity {
                 this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
                 this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
             } else {
-                // In perfect range, slow down and attack
-                this.velocity.x *= 0.8;
-                this.velocity.y *= 0.8;
+                // In attack range, if not in center of range, move towards center of range
+                if (distance > (this.attackRange + this.retreatRange)/2) {
+                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
+                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
+                } else {
+                    this.velocity.x *= 0.01;
+                    this.velocity.y *= 0.01;
+                }
                 this.weapon.swing();
             }
 

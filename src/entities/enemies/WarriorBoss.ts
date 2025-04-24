@@ -1,7 +1,7 @@
 import { Player } from '../Player';
 import { BossEnemy } from './BossEnemy';
 import { Entity } from '../Entity';
-import { Hammer } from '../weapons/Hammer';
+import { WarriorHammer } from '../weapons/WarriorHammer';
 
 export class WarriorBoss extends BossEnemy {
     private static readonly STATS = {
@@ -13,7 +13,7 @@ export class WarriorBoss extends BossEnemy {
         movementRestriction: 0.6,
         windupRestriction: 0.3,
         chaseDuration: 5000,
-        knockbackResistance: 0.8,
+        knockbackResistance: 0.4,
         maxRotateSpeed: 2.0,
         expValue: 1000 // Bosses give loads of exp
     };
@@ -26,8 +26,14 @@ export class WarriorBoss extends BossEnemy {
         super(bounds, player, WarriorBoss.STATS, "The Warrior");
     }
 
+    public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
+        // Apply knockback resistance
+        const reducedKnockback = knockbackForce * (1 - this.stats.knockbackResistance!);
+        super.takeDamage(amount, knockbackDir, reducedKnockback);
+    }
+
     protected initializeWeapon(): void {
-        this.weapon = new Hammer(this, true);
+        this.weapon = new WarriorHammer(this);
         this.addChild(this.weapon);
     }
 

@@ -44,8 +44,8 @@ export class HunterBow extends RangedWeapon {
         bladeWidth: 4,
         swingInfluence: 0,
         color: 0x00aa44,
-        optimalRange: 300,
-        retreatRange: 200,
+        optimalRange: 100,
+        retreatRange: 50,
         windUpTime: 500,
         previewAlpha: 0.3,
         projectileStats: {

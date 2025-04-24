@@ -84,12 +84,13 @@ export class HunterBoss extends BossEnemy {
 
         if (!this.isDodging) {
             if (distToPlayer < optimalRange - tolerance) {
-                // Too close, back away faster
+                // Too close, back away faster and try to dodge if player is attacking
                 const dx = this.player.x - this.x;
                 const dy = this.player.y - this.y;
                 const angle = Math.atan2(dy, dx);
                 this.velocity.x -= Math.cos(angle) * this.stats.speed * 1.2;
                 this.velocity.y -= Math.sin(angle) * this.stats.speed * 1.2;
+                this.performDodge();
             } else if (distToPlayer > optimalRange + tolerance) {
                 // Too far, move closer
                 const dx = this.player.x - this.x;
@@ -98,8 +99,7 @@ export class HunterBoss extends BossEnemy {
                 this.velocity.x += Math.cos(angle) * this.stats.speed;
                 this.velocity.y += Math.sin(angle) * this.stats.speed;
             } else {
-                // In optimal range, try to dodge if player is attacking
-                this.performDodge();
+                
             }
         }
     }

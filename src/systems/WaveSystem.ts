@@ -166,7 +166,7 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     // Boss Wave: Hunter Boss
     {
         composition: { ...zeroComposition, rangedEnemies: 2, flankerEnemies: 2, tankEnemies: 2 },
-        spawnDelay: 4000,
+        spawnDelay: 8000,
         description: "pew pew",
         isBossWave: true,
         bossType: "hunter",

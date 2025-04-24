@@ -329,7 +329,7 @@ export class GameScene extends PIXI.Container {
 
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
-
+        this.waveSystem.setWave(3);
         // Start the wave in the wave system first
         this.waveSystem.startNextWave();
 

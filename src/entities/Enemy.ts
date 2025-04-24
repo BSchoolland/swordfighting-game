@@ -41,6 +41,7 @@ export class Enemy extends Entity {
             this.x = Math.random() * (bounds.width - 20) + 10;
             this.y = Math.random() * (bounds.height - 20) + 10;
         } while (this.distanceToPlayer() < 150);
+
     }
 
     private distanceToPlayer(): number {
