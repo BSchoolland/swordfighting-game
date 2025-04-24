@@ -5,28 +5,27 @@ import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { WeaponStats } from './BaseWeapon';
 import { RangedWeaponStats } from './RangedWeapon';
-import { BasicSword } from './BasicSword';
-import { Hammer } from './Hammer';
 import { Spear } from './Spear';
 import { Dagger } from './Dagger';
 import { Boomerang } from './Boomerang';
-
+import { WarriorHammer } from './WarriorHammer';
+import { BerserkerSword } from './BerserkerSword';
 // Enhanced Master of Arms Sword
-export class MasterSword extends BasicSword {
+export class MasterSword extends BerserkerSword {
     private static readonly MASTER_PARAMS: WeaponStats = {
         damage: 25, // Increased from 10
         knockback: 3, // Increased from 1
         attackSpeed: 800, // Faster than enemy sword (1000)
-        range: 60, // Increased from 40
+        range: 100, // Increased from 40
         swingSpeed: 0.2, // Faster than enemy sword (0.15)
         swingRange: Math.PI * 1.3, // Wider arc than enemy sword
-        bladeLength: 60, // Longer than enemy sword (40)
-        bladeWidth: 5, // Thicker than enemy sword
+        bladeLength: 100, // Longer than enemy sword (40)
+        bladeWidth: 7, // Thicker than enemy sword
         swingInfluence: 0.6,
         color: 0xFFD700, // Gold color
         optimalRange: 0.9,
         retreatRange: 0.7,
-        windUpTime: 200, // Faster windup than enemy sword
+        windUpTime: 400, // Faster windup than enemy sword
         previewAlpha: 0.4
     };
 
@@ -39,16 +38,16 @@ export class MasterSword extends BasicSword {
 }
 
 // Enhanced Master of Arms Hammer
-export class MasterHammer extends Hammer {
+export class MasterHammer extends WarriorHammer {
     private static readonly MASTER_PARAMS: WeaponStats = {
         damage: 35, // Increased from 20
         knockback: 18, // Increased from 12
         attackSpeed: 1500, // Faster than enemy hammer (2000)
         range: 120, // Increased from 100
-        swingSpeed: 0.25, // Faster than enemy hammer
+        swingSpeed: 0.15, // Faster than enemy hammer
         swingRange: Math.PI * 3.8, // Two full spins
-        bladeLength: 85, // Longer than normal
-        bladeWidth: 10, // Thicker
+        bladeLength: 150, // Longer than normal
+        bladeWidth: 16, // Thicker
         swingInfluence: 0.9,
         color: 0xFFD700, // Gold color
         optimalRange: 1.6,
@@ -138,8 +137,8 @@ export class MasterSpear extends Spear {
         range: 180, // Increased from 150
         swingSpeed: 0.3, // Faster thrust
         swingRange: Math.PI * 0, // Still no variance for thrust
-        bladeLength: 110, // Longer than enemy spear (90)
-        bladeWidth: 4, // Slightly thicker
+        bladeLength: 140, // Longer than enemy spear (90)
+        bladeWidth: 6, // Slightly thicker
         swingInfluence: 0.9,
         color: 0xFFD700, // Gold color
         optimalRange: 0.95,
@@ -170,8 +169,8 @@ export class MasterDagger extends Dagger {
         damage: 8, // More damage than enemy dagger
         knockback: 1,
         attackSpeed: 300, // lightning fast
-        bladeLength: 50, // Way longer
-        bladeWidth: 3,
+        bladeLength: 65, // Way longer
+        bladeWidth: 5,
         swingInfluence: 0.3,
         color: 0xFFD700, // Gold color
         optimalRange: 0.95,
@@ -219,13 +218,13 @@ export class MasterBoomerang extends Boomerang {
         previewAlpha: 0.4,
         range: 350,
         projectileStats: {
-            speed: 7, // Faster than enemy boomerang
+            speed: 6.5, // Faster than enemy boomerang
             damage: 12, // More damage
             knockback: 3,
-            size: 14, // Slightly larger
+            size: 16, // much larger
             color: 0xFFD700, // Gold color
             lifetime: 3000,
-            maxRange: 250 // Longer range before return
+            maxRange: 500 // Longer range before return
         }
     };
 

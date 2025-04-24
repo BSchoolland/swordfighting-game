@@ -16,7 +16,7 @@ export class Boomerang extends RangedWeapon {
         bladeLength: 10,  // Visual size of boomerang
         bladeWidth: 4,
         swingInfluence: 0,
-        color: 0x8B4513,  // Wooden color
+        color: 0x8B000,  // Wooden color
         optimalRange: 30,
         retreatRange: 15,
         windUpTime: 400,
@@ -27,7 +27,7 @@ export class Boomerang extends RangedWeapon {
             damage: 8,
             knockback: 2,
             size: 12,
-            color: 0x8B4513,
+            color: 0x8B000,
             lifetime: 3000, // 3 seconds max flight time
             maxRange: 200  // Distance before returning
         }
@@ -50,7 +50,7 @@ export class Boomerang extends RangedWeapon {
     }
 
     protected createProjectile(startPos: { x: number, y: number }, direction: { x: number, y: number }): BoomerangProjectile {
-        return new BoomerangProjectile(this.owner.parent.getBounds(), this.owner, startPos, direction, this.isEnemy);
+        return new BoomerangProjectile(this.owner.parent.getBounds(), this.owner, startPos, direction, this.stats.projectileStats);
     }
 
     protected drawWeapon(): void {

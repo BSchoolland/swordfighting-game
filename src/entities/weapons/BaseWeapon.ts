@@ -6,6 +6,7 @@ import { ParticleSystem } from '../../effects/ParticleSystem';
 import { SoundManager } from '../../systems/SoundManager';
 
 export interface WeaponStats {
+    projectileStats: ProjectileStats;
     damage: number;
     knockback: number;
     attackSpeed: number;
