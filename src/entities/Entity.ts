@@ -33,10 +33,10 @@ export abstract class Entity extends PIXI.Container {
         // glow
         this.glowFilter = new GlowFilter({
             color: 0xffffff,
-            distance: 30,
+            distance: 20,
             outerStrength: 0.75,
             innerStrength: 0,
-            quality: 1
+            quality: 0.1
         });
         this.filters = [this.glowFilter];
     }
