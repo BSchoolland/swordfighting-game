@@ -193,6 +193,120 @@ export class ParticleSystem {
         fadeOutFlash();
     }
 
+    public createPlayerDeathEffect(x: number, y: number, color: number = 0x3498db): void {
+        // Create multiple expanding rings
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const ring = new PIXI.Graphics();
+                ring.lineStyle(4, color, 0.8);
+                ring.drawCircle(x, y, 10);
+                ring.alpha = 1;
+                this.container.addChild(ring);
+
+                // Animate the ring
+                let ringRadius = 10;
+                const expandRing = () => {
+                    ring.clear();
+                    ring.lineStyle(4, color, ring.alpha);
+                    ring.drawCircle(x, y, ringRadius);
+                    ringRadius += 5;
+                    ring.alpha -= 0.02;
+                    
+                    if (ring.alpha > 0) {
+                        requestAnimationFrame(expandRing);
+                    } else {
+                        this.container.removeChild(ring);
+                    }
+                };
+                expandRing();
+            }, i * 300); // Staggered timing
+        }
+
+        // Create shockwave effect
+        const shockwave = new PIXI.Graphics();
+        shockwave.lineStyle(6, 0xFFFFFF, 0.8);
+        shockwave.drawCircle(x, y, 5);
+        this.container.addChild(shockwave);
+
+        let shockwaveRadius = 5;
+        const animateShockwave = () => {
+            shockwave.clear();
+            shockwave.lineStyle(6, 0xFFFFFF, shockwave.alpha);
+            shockwave.drawCircle(x, y, shockwaveRadius);
+            shockwaveRadius += 10;
+            shockwave.alpha -= 0.05;
+            
+            if (shockwave.alpha > 0) {
+                requestAnimationFrame(animateShockwave);
+            } else {
+                this.container.removeChild(shockwave);
+            }
+        };
+        animateShockwave();
+
+        // Create multiple waves of particles with different colors
+        const colors = [color, 0xFFFFFF, 0xFFD700]; // Player color, white, gold
+        const createParticleWave = (delay: number, waveColor: number) => {
+            setTimeout(() => {
+                const numParticles = 36; // More particles
+                for (let i = 0; i < numParticles; i++) {
+                    const particle = new PIXI.Graphics() as Particle;
+                    
+                    // Larger, more dramatic particles
+                    particle.beginFill(waveColor);
+                    particle.drawCircle(0, 0, 4 + Math.random() * 8);
+                    particle.endFill();
+                    
+                    // Start from random position within the player
+                    const startRadius = 20;
+                    const startAngle = (i / numParticles) * Math.PI * 2;
+                    particle.x = x + Math.cos(startAngle) * startRadius * Math.random();
+                    particle.y = y + Math.sin(startAngle) * startRadius * Math.random();
+                    
+                    // Explode outward with higher speed
+                    const speed = 500 + Math.random() * 600;
+                    particle.velocity = {
+                        x: Math.cos(startAngle) * speed,
+                        y: Math.sin(startAngle) * speed
+                    };
+                    
+                    // Longer lifetime for more dramatic effect
+                    particle.maxLifetime = 1000 + Math.random() * 500;
+                    particle.lifetime = particle.maxLifetime;
+                    particle.alpha = 1;
+
+                    this.particles.push(particle);
+                    this.container.addChild(particle);
+                }
+            }, delay);
+        };
+
+        // Create multiple waves of particles with different colors
+        createParticleWave(0, colors[0]);     // Initial burst with player color
+        createParticleWave(200, colors[1]);   // Second wave with white
+        createParticleWave(400, colors[2]);   // Third wave with gold
+        createParticleWave(600, colors[0]);   // Final wave with player color again
+
+        // Create dramatic flash effect
+        const flash = new PIXI.Graphics();
+        flash.beginFill(0xFFFFFF);
+        flash.drawCircle(x, y, 300); // Larger flash
+        flash.endFill();
+        flash.alpha = 0.9; // Brighter
+        this.container.addChild(flash);
+
+        // Fade out flash
+        const fadeOutFlash = () => {
+            flash.alpha -= 0.05;
+            if (flash.alpha <= 0) {
+                this.container.removeChild(flash);
+            } else {
+                requestAnimationFrame(fadeOutFlash);
+            }
+        };
+        fadeOutFlash();
+    }
+
     public createWeaponTrail(points: Array<{x: number, y: number}>, color: number, intensity: number = 1): void {
         const trail = new PIXI.Graphics();
         trail.lineStyle({

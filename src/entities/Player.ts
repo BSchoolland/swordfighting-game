@@ -123,6 +123,9 @@ export class Player extends Entity {
         this.experience = 0;
         this.level = 1;
         
+        // Reset visual properties
+        this.alpha = 1;
+        
         // Reset dash
         if (this.dash) {
             this.dash.reset();

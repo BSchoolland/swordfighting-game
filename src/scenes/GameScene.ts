@@ -35,6 +35,7 @@ export class GameScene extends PIXI.Container {
     private freezeFrameTimer: number = 0;
     private static readonly FREEZE_FRAME_DURATION = 75; // 75ms freeze for regular enemy deaths
     private static readonly BOSS_FREEZE_DURATION = 400; // 400ms freeze for boss deaths
+    private playerDeathTimer: number = 0; // Track time since player death
 
     // Wave display
     private waveText!: PIXI.Text;
@@ -200,6 +201,7 @@ export class GameScene extends PIXI.Container {
         this.isGameOver = false;
         this.gameStarted = true;
         this.waitingForUpgrade = false;
+        this.playerDeathTimer = 0; // Reset player death timer
 
         // Reset score system
         this.scoreSystem.reset();
@@ -354,6 +356,9 @@ export class GameScene extends PIXI.Container {
 
         // Reset score system
         this.scoreSystem.reset();
+        
+        // Reset player death timer
+        this.playerDeathTimer = 0;
 
         // Clear existing game elements
         console.log('[GameScene] Clearing game elements');
@@ -678,8 +683,26 @@ export class GameScene extends PIXI.Container {
 
         // Check for game over
         if (!this.player.isAlive() && !this.isGameOver) {
-            this.showGameOver();
-            return;
+            if (this.playerDeathTimer === 0) {
+                // Player just died, start the timer
+                this.playerDeathTimer = 3000; // 3 seconds in milliseconds
+                
+                // Create player death explosion effect
+                this.soundManager.playBossDeathSound(); // Use the same sound as boss death
+                this.particleSystem.createPlayerDeathEffect(this.player.x, this.player.y); // Use our new player-specific effect
+                
+                // Hide the player
+                this.player.alpha = 0;
+            } else {
+                // Count down the timer
+                this.playerDeathTimer -= delta * 1000;
+                if (this.playerDeathTimer <= 0) {
+                    // Timer complete, show game over
+                    this.showGameOver();
+                    return;
+                }
+            }
+            // Note: We don't return here anymore, allowing enemies to continue moving
         }
 
         // Update enemies and remove dead ones

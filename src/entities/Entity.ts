@@ -39,7 +39,6 @@ export abstract class Entity extends PIXI.Container {
             quality: 1
         });
         this.filters = [this.glowFilter];
-
     }
 
     public takeDamage(amount: number, knockbackDirection?: { x: number, y: number }, knockbackForce: number = 20): void {
