@@ -84,10 +84,10 @@ export class UpgradeSystem extends PIXI.Container {
         const healingUpgrade: Upgrade = {
             id: 'healing',
             name: 'Divine Healing',
-            description: 'Restore 100% of your health',
+            description: 'Restore 50 health points',
             rarity: UpgradeRarity.EPIC,
             type: UpgradeType.MAX_HEALTH,
-            apply: (player: Player) => player.heal(player.getMaxHealth()),
+            apply: (player: Player) => player.heal(50),
             isHealing: true
         };
 
@@ -232,34 +232,34 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'health_common',
                 name: 'Tough Skin',
-                description: 'Increase max health by 15%',
+                description: 'Increase max health by 15',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(0.15)
+                apply: (player: Player) => player.increaseMaxHealth(15)
             },
             {
                 id: 'health_rare',
                 name: 'Iron Body',
-                description: 'Increase max health by 25%',
+                description: 'Increase max health by 25',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(0.25)
+                apply: (player: Player) => player.increaseMaxHealth(25)
             },
             {
                 id: 'health_epic',
                 name: 'Titan\'s Endurance',
-                description: 'Increase max health by 50%',
+                description: 'Increase max health by 50',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(0.5)
+                apply: (player: Player) => player.increaseMaxHealth(50)
             },
             {
                 id: 'health_legendary',
                 name: 'Immortal Vessel',
-                description: 'Increase max health by 100%',
+                description: 'Increase max health by 100',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.MAX_HEALTH,
-                apply: (player: Player) => player.increaseMaxHealth(1)
+                apply: (player: Player) => player.increaseMaxHealth(100)
             }
         ];
 

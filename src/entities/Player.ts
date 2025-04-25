@@ -99,7 +99,8 @@ export class Player extends Entity {
     }
 
     public reset(): void {
-        // Reset health to max
+        // Reset health-related values
+        this.maxHealth = this.baseMaxHealth;
         this.health = this.maxHealth;
         
         // Reset movement state
@@ -122,6 +123,7 @@ export class Player extends Entity {
         // Reset EXP and level
         this.experience = 0;
         this.level = 1;
+        this.hasUpgradeAvailable = false;
         
         // Reset visual properties
         this.alpha = 1;
@@ -135,6 +137,8 @@ export class Player extends Entity {
         if (this.weapon) {
             this.weapon.reset();
         }
+
+        console.log("Player reset: Health set to", this.health, "/", this.maxHealth);
     }
 
     public getHealth(): number {
@@ -228,13 +232,13 @@ export class Player extends Entity {
 
     public heal(amount: number): void {
         const oldHealth = this.health;
-        this.health = Math.min(this.maxHealth, this.health + amount);
+        this.health = Math.min(this.maxHealth, Math.round(this.health + amount));
         console.log(`Player healed for ${amount}. Health: ${oldHealth} -> ${this.health}`);
     }
 
     public takeDamage(amount: number, knockbackDirection?: { x: number, y: number }, knockbackForce: number = 20): void {
         const oldHealth = this.health;
-        this.health = Math.max(0, this.health - amount);
+        this.health = Math.max(0, Math.round(this.health - amount));
         console.log(`Player took ${amount} damage. Health: ${oldHealth} -> ${this.health}`);
         this.soundManager.playDamageSound();
         
@@ -287,12 +291,14 @@ export class Player extends Entity {
         }
     }
 
-    public increaseMaxHealth(percentage: number): void {
+    public increaseMaxHealth(amount: number): void {
         const oldMaxHealth = this.maxHealth;
-        this.maxHealth = this.baseMaxHealth * (1 + percentage);
+        // Update to add a fixed amount rather than a percentage
+        this.maxHealth = Math.round(this.maxHealth + amount);
         // Heal the difference so it feels like an immediate buff
         const healthDiff = this.maxHealth - oldMaxHealth;
         this.heal(healthDiff);
+        console.log(`Max health increased by ${amount}. Old: ${oldMaxHealth}, New: ${this.maxHealth}`);
     }
 
     public increaseSwingSpeed(percentage: number): void {

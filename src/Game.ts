@@ -36,7 +36,7 @@ export class Game {
         
         // Add a background for the actual game area
         const gameBackground = new PIXI.Graphics();
-        gameBackground.beginFill(0x1a1a1a); // Lighter gray for game area
+        gameBackground.beginFill(0x050911); // Lighter gray for game area
         gameBackground.drawRect(0, 0, Game.GAME_WIDTH, Game.GAME_HEIGHT);
         gameBackground.endFill();
         this.gameContainer.addChild(gameBackground);

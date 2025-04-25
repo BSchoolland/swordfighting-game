@@ -268,7 +268,7 @@ export class GameScene extends PIXI.Container {
 
         // Create health bar
         console.log('[GameScene] Creating health bar');
-        this.healthBar = new HealthBar(200, 20);
+        this.healthBar = new HealthBar();
         this.healthBar.position.set(20, 20);
         this.addChild(this.healthBar);
 
@@ -497,6 +497,9 @@ export class GameScene extends PIXI.Container {
                 const healthBarWidth = 300; // Same width as BossEnemy.BOSS_HEALTH_BAR_WIDTH
                 this.bossHealthBar.position.x = (this.dimensions.width - healthBarWidth) / 2;
                 this.bossHealthBar.position.y = 40; // Moved down from 20 to 40
+                
+                // Update boss health bar animation
+                this.bossHealthBar.update(1/60); // Ensure animations run even without a provided delta
             }
             
             // Ensure name text is centered above health bar
@@ -577,7 +580,7 @@ export class GameScene extends PIXI.Container {
         this.updateExpBar();
 
         // Update upgrade available indicator
-        this.upgradeAvailableText.visible = this.player.hasAvailableUpgrade();
+        this.upgradeAvailableText.visible = false //this.player.hasAvailableUpgrade();
 
         // Skip updates if upgrade screen is visible
         if (this.upgradeSystem.isUpgradeScreenVisible()) {
@@ -677,6 +680,7 @@ export class GameScene extends PIXI.Container {
 
         // Update health bar
         this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
+        this.healthBar.update(delta);
 
         // Update boss UI
         this.updateBossUI();
