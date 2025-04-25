@@ -10,6 +10,7 @@ import { WaveSystem } from '../systems/WaveSystem';
 import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
+import { ExpBar } from '../entities/ExpBar';
 
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
@@ -55,9 +56,7 @@ export class GameScene extends PIXI.Container {
     private scoreSystem: ScoreSystem;
     private adManager: AdManager;
 
-    private expBar!: PIXI.Graphics;
-    private expText!: PIXI.Text;
-    private levelText!: PIXI.Text;
+    private expBar!: ExpBar;
 
     constructor(dimensions: { width: number; height: number }) {
         super();
@@ -162,6 +161,10 @@ export class GameScene extends PIXI.Container {
             this.removeChild(this.bossNameText);
             this.bossNameText = null;
         }
+        if (this.expBar) {
+            this.removeChild(this.expBar);
+            this.expBar = null!;
+        }
         
         // Reset game state
         this.isGameOver = false;
@@ -253,11 +256,13 @@ export class GameScene extends PIXI.Container {
 
         // Reset music to normal background music
         this.soundManager.transitionToNormalMusic();
-        // if we already created the exp bar, no need to create it again
+        
+        // Create exp bar
         if (!this.expBar) {
             console.log('[GameScene] Creating exp bar');
             this.createExpBar();
         }
+        
         // Create UI elements
         
         // Create target cursor
@@ -393,6 +398,11 @@ export class GameScene extends PIXI.Container {
             console.log('[GameScene] Removing upgrade system');
             this.removeChild(this.upgradeSystem);
         }
+        if (this.expBar) {
+            console.log('[GameScene] Removing exp bar');
+            this.removeChild(this.expBar);
+            this.expBar = null!;
+        }
 
         // Reset game state
         console.log('[GameScene] Resetting game state');
@@ -516,58 +526,22 @@ export class GameScene extends PIXI.Container {
     }
 
     private createExpBar(): void {
-        // Create EXP bar container
-        const barWidth = 200;
-        const barHeight = 10;
-        const barX = 10;
-        const barY = this.dimensions.height - 30;
-
-        // Create background
-        this.expBar = new PIXI.Graphics();
+        // Create the ExpBar instance
+        this.expBar = new ExpBar();
+        this.expBar.position.set(10, this.dimensions.height - 110);
         this.addChild(this.expBar);
-
-        // Create level text
-        this.levelText = new PIXI.Text('Level 1', {
-            fontFamily: 'Arial',
-            fontSize: 14,
-            fill: 0xffffff
-        });
-        this.levelText.position.set(barX, barY - 20);
-        this.addChild(this.levelText);
-
-        // Create EXP text
-        this.expText = new PIXI.Text('0/100 EXP', {
-            fontFamily: 'Arial',
-            fontSize: 12,
-            fill: 0xffffff
-        });
-        this.expText.position.set(barX + barWidth / 2, barY + barHeight + 5);
-        this.expText.anchor.x = 0.5;
-        this.addChild(this.expText);
+        this.updateExpBar(); // Initialize with current player values
     }
 
     private updateExpBar(): void {
-        const barWidth = 200;
-        const barHeight = 10;
-        const barX = 10;
-        const barY = this.dimensions.height - 30;
-
-        this.expBar.clear();
+        if (!this.expBar) return;
         
-        // Draw background
-        this.expBar.beginFill(0x333333);
-        this.expBar.drawRect(barX, barY, barWidth, barHeight);
-        this.expBar.endFill();
-
-        // Draw progress
-        const progress = this.player.getExperienceProgress();
-        this.expBar.beginFill(0x00ff00);
-        this.expBar.drawRect(barX, barY, barWidth * progress, barHeight);
-        this.expBar.endFill();
-
-        // Update texts
-        this.levelText.text = `Level ${this.player.getLevel()}`;
-        this.expText.text = `${this.player.getExperience()}/${this.player.getExpNeededForNextLevel()} EXP`;
+        // Update the ExpBar with player's current experience, max experience needed, and level
+        this.expBar.updateExp(
+            this.player.getExperience(),
+            this.player.getExpNeededForNextLevel(),
+            this.player.getLevel()
+        );
     }
 
     public update(delta: number): void {
@@ -576,8 +550,12 @@ export class GameScene extends PIXI.Container {
         // Update upgrade system
         this.upgradeSystem.update();
 
-        // Update EXP bar
+        // Update EXP bar with new method
         this.updateExpBar();
+        // Always update the ExpBar with the current delta time for smooth animations
+        if (this.expBar) {
+            this.expBar.update(delta);
+        }
 
         // Update upgrade available indicator
         this.upgradeAvailableText.visible = false //this.player.hasAvailableUpgrade();
