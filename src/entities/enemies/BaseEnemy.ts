@@ -278,4 +278,13 @@ export abstract class BaseEnemy extends Entity {
         // Use the larger of width/height divided by 2 for the radius
         this.radius = Math.max((Math.max(bounds.width, bounds.height) / 2) - 10, 0);
     }
+
+    protected updateHealthBar(): void {
+        if (this.healthBar) {
+            // Check if the healthBar has an updateHealth method (HealthBar or BossHealthBar)
+            if ('updateHealth' in this.healthBar) {
+                (this.healthBar as any).updateHealth(this.health, this.maxHealth);
+            }
+        }
+    }
 } 

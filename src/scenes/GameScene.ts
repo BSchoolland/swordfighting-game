@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { InputManager } from '../systems/InputManager';
 import { HealthBar } from '../entities/HealthBar';
+import { BossHealthBar } from '../entities/BossHealthBar';
 import { GameOverScreen } from './GameOverScreen';
 import { Projectile } from '../entities/projectiles/Projectile';
 import { SoundManager } from '../systems/SoundManager';
@@ -31,8 +32,7 @@ export class GameScene extends PIXI.Container {
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
     private waveSystem: WaveSystem;
-    private bossHealthBar: HealthBar | null = null;
-    private bossNameText: PIXI.Text | null = null;
+    private bossHealthBar: BossHealthBar | null = null;
     private freezeFrameTimer: number = 0;
     private static readonly FREEZE_FRAME_DURATION = 75; // 75ms freeze for regular enemy deaths
     private static readonly BOSS_FREEZE_DURATION = 400; // 400ms freeze for boss deaths
@@ -157,10 +157,6 @@ export class GameScene extends PIXI.Container {
             this.removeChild(this.bossHealthBar);
             this.bossHealthBar = null;
         }
-        if (this.bossNameText) {
-            this.removeChild(this.bossNameText);
-            this.bossNameText = null;
-        }
         if (this.expBar) {
             this.removeChild(this.expBar);
             this.expBar = null!;
@@ -249,10 +245,6 @@ export class GameScene extends PIXI.Container {
             this.removeChild(this.bossHealthBar);
             this.bossHealthBar = null;
         }
-        if (this.bossNameText) {
-            this.removeChild(this.bossNameText);
-            this.bossNameText = null;
-        }
 
         // Reset music to normal background music
         this.soundManager.transitionToNormalMusic();
@@ -333,9 +325,9 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-
+        this.waveSystem.setWave(3);
         // Update score system with new wave
-        this.scoreSystem.setWave(waveNumber);``
+        this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
 
         // Update wave text
@@ -485,63 +477,268 @@ export class GameScene extends PIXI.Container {
     }
 
     private updateBossUI(): void {
-        // Remove old boss UI if it exists
-        if (this.bossHealthBar && this.bossHealthBar.parent) {
-            this.removeChild(this.bossHealthBar);
-            this.bossHealthBar = null;
-        }
-        if (this.bossNameText && this.bossNameText.parent) {
-            this.removeChild(this.bossNameText);
-            this.bossNameText = null;
-        }
-
         // Find boss in enemies array
         const boss = this.enemies.find(enemy => enemy instanceof BossEnemy) as BossEnemy | undefined;
+        
         if (boss) {
+            // If we already have a boss health bar, no need to recreate it
+            if (this.bossHealthBar) return;
+            
             // Add boss UI elements
             this.bossHealthBar = boss.getHealthBar();
-            this.bossNameText = boss.getNameText();
             
             // Ensure health bar is centered
             if (this.bossHealthBar) {
-                const healthBarWidth = 300; // Same width as BossEnemy.BOSS_HEALTH_BAR_WIDTH
-                this.bossHealthBar.position.x = (this.dimensions.width - healthBarWidth) / 2;
-                this.bossHealthBar.position.y = 40; // Moved down from 20 to 40
+                // Position at top center of screen
+                this.bossHealthBar.position.x = (this.dimensions.width) / 2;
+                this.bossHealthBar.position.y = 20; // Small padding from top
                 
-                // Update boss health bar animation
-                this.bossHealthBar.update(1/60); // Ensure animations run even without a provided delta
+                // Add immediately without fade-in effect
+                this.bossHealthBar.alpha = 1;
+                this.addChild(this.bossHealthBar);
             }
-            
-            // Ensure name text is centered above health bar
-            if (this.bossNameText) {
-                this.bossNameText.position.set(
-                    this.dimensions.width / 2,
-                    35 // Moved down from 15 to 35
-                );
-            }
-            
-            this.addChild(this.bossHealthBar);
-            this.addChild(this.bossNameText);
+        } else if (this.bossHealthBar) {
+            // No boss found, but we have a health bar - remove it
+            this.removeBossHealthBar();
         }
     }
 
-    private createExpBar(): void {
-        // Create the ExpBar instance
-        this.expBar = new ExpBar();
-        this.expBar.position.set(10, this.dimensions.height - 110);
-        this.addChild(this.expBar);
-        this.updateExpBar(); // Initialize with current player values
+    private removeBossHealthBar(): void {
+        if (this.bossHealthBar) {
+            // Create a simple fade out effect
+            const duration = 800; // 0.8 second fade
+            let elapsed = 0;
+            
+            // Make sure the boss bar doesn't update while fading away
+            this.bossHealthBar.visible = true;
+            
+            // Animation function
+            const animate = () => {
+                if (!this.bossHealthBar) return;
+                
+                elapsed += 16.67; // Approximate for 60fps
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Simply fade out without scaling
+                this.bossHealthBar.alpha = 1 - progress;
+                
+                if (progress >= 1) {
+                    // Remove after animation completes
+                    if (this.bossHealthBar.parent) {
+                        this.removeChild(this.bossHealthBar);
+                    }
+                    this.bossHealthBar = null;
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            };
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
     }
 
-    private updateExpBar(): void {
-        if (!this.expBar) return;
+    private handleEnemyDeath(enemy: BaseEnemy): void {
+        // Add score for the defeated enemy
+        this.scoreSystem.addScore(enemy);
+
+        // Check if the enemy is a boss
+        if (enemy instanceof BossEnemy) {
+            // Kill all other enemies
+            this.enemies.forEach(e => {
+                if (e !== enemy && e.isAlive()) {
+                    e.takeDamage(99999, { x: 0, y: 0 }, 0); // Large damage with no knockback
+                }
+            });
+            
+            // Trigger boss death effects
+            this.freezeFrameTimer = GameScene.BOSS_FREEZE_DURATION;
+            this.soundManager.playBossDeathSound();
+            this.particleSystem.createBossDeathEffect(enemy.x, enemy.y, enemy.getColor());
+            
+            // Remove boss UI with effect
+            this.removeBossHealthBar();
+
+            // Check if it was the Master of Arms
+            if (enemy instanceof MasterOfArmsBoss) {
+                // Set game as over to prevent new spawns and upgrades
+                this.isGameOver = true;
+                this.gameStarted = false;
+                
+                // Clear any remaining enemies
+                this.enemies.length = 0;
+                
+                // Show credits after a delay
+                setTimeout(() => {
+                    this.showCredits();
+                }, 2000); // Wait 2 seconds after death effects
+            }
+        } else {
+            // Regular enemy death
+            this.freezeFrameTimer = GameScene.FREEZE_FRAME_DURATION;
+            this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
+        }
+    }
+
+    private showCredits(): void {
+        // Create credits container
+        const credits = new PIXI.Container();
         
-        // Update the ExpBar with player's current experience, max experience needed, and level
-        this.expBar.updateExp(
-            this.player.getExperience(),
-            this.player.getExpNeededForNextLevel(),
-            this.player.getLevel()
+        // Create semi-transparent background
+        const bg = new PIXI.Graphics();
+        bg.beginFill(0x000000, 0.9);
+        bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
+        bg.endFill();
+        credits.addChild(bg);
+
+        // Create glow effect for title
+        const glowSize = 60;
+        const glow = new PIXI.Graphics();
+        glow.beginFill(0xFFD700, 0.3);
+        glow.drawCircle(this.dimensions.width / 2, 100, glowSize);
+        glow.endFill();
+        credits.addChild(glow);
+
+        // Animate glow
+        const animateGlow = () => {
+            if (!credits.parent) return;
+            glow.scale.x = 1 + Math.sin(Date.now() / 500) * 0.1;
+            glow.scale.y = 1 + Math.sin(Date.now() / 500) * 0.1;
+            requestAnimationFrame(animateGlow);
+        };
+        animateGlow();
+
+        // Title with gradient and outline
+        const title = new PIXI.Text('BLADE STRIKE', {
+            fontFamily: 'Arial Black, Arial Bold, Arial',
+            fontSize: 64,
+            fill: ['#FFD700', '#FFA500'], // Gold to orange gradient
+            fillGradientType: 1,
+            fillGradientStops: [0.2, 1],
+            stroke: '#000000',
+            strokeThickness: 6,
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowBlur: 4,
+            dropShadowAngle: Math.PI / 4,
+            dropShadowDistance: 6,
+            align: 'center',
+            fontWeight: 'bold'
+        });
+        title.anchor.set(0.5);
+        title.position.set(this.dimensions.width / 2, 100);
+        credits.addChild(title);
+
+        // Add pulsing effect to title
+        const animateTitle = () => {
+            if (!credits.parent) return;
+            title.scale.x = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            title.scale.y = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            requestAnimationFrame(animateTitle);
+        };
+        animateTitle();
+
+        // Credits text
+        const creditsText = [
+            'Congratulations!',
+            'You have defeated the Final Boss',
+            'and completed the game!',
+            '',
+            '',
+            'Game Design & Development By:',
+            'Benjamin Schoolland',
+            '',
+            'Music By:',
+            'Suno AI',
+            '',
+            '',
+            'Art By:',
+            'Well there wasn\'t really any art... hmm...',
+            '',
+            'Special Thanks To:',
+            'The two or three players who helped test the game',
+            'Depending on whether you count me as a player',
+            'And of course,',
+            'Our AI overlords',
+            '',
+            '',
+            'Thank you for playing!'
+        ];
+
+        // Create a container for scrolling text
+        const textContainer = new PIXI.Container();
+        credits.addChild(textContainer);
+
+        let yPos = 0;
+        creditsText.forEach((line, index) => {
+            const text = new PIXI.Text(line, {
+                fontFamily: 'Arial',
+                fontSize: index < 3 ? 32 : 24,
+                fill: index < 3 ? 0xFFD700 : 0xFFFFFF,
+                align: 'center'
+            });
+            text.anchor.set(0.5);
+            text.position.set(this.dimensions.width / 2, yPos);
+            textContainer.addChild(text);
+            yPos += index < 3 ? 50 : 40;
+        });
+
+        // Calculate total height of credits
+        const totalCreditsHeight = yPos;
+
+        // Add restart button
+        const button = new PIXI.Graphics();
+        button.beginFill(0x444444);
+        button.drawRoundedRect(0, 0, 150, 50, 10);
+        button.endFill();
+        button.position.set(
+            this.dimensions.width - 160, // Move to the top right
+            50 // Position it near the top
         );
+        button.interactive = true;
+        button.cursor = 'pointer';
+        
+        const buttonText = new PIXI.Text('Play Again', {
+            fontFamily: 'Arial',
+            fontSize: 24,
+            fill: 0xFFFFFF
+        });
+        buttonText.anchor.set(0.5);
+        buttonText.position.set(75, 25);
+        button.addChild(buttonText);
+        
+        button.on('mouseover', () => button.tint = 0x666666);
+        button.on('mouseout', () => button.tint = 0xFFFFFF);
+        button.on('click', () => {
+            this.removeChild(credits);
+            this.restart();
+        });
+        
+        credits.addChild(button);
+        
+        // Add credits to scene
+        this.addChild(credits);
+
+        // Position text container to start below screen
+        textContainer.y = this.dimensions.height;
+
+        // Start credits scroll animation
+        const scrollSpeed = 0.3;
+        const animate = () => {
+            if (!credits.parent) return; // Stop if credits were removed
+            
+            // Move text container up
+            textContainer.y -= scrollSpeed;
+            
+            // If all text has scrolled past the top (with extra padding)
+            if (textContainer.y < -totalCreditsHeight - 200) {
+                // Reset to below screen with extra padding
+                textContainer.y = this.dimensions.height + 200;
+            }
+            
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     public update(delta: number): void {
@@ -724,213 +921,22 @@ export class GameScene extends PIXI.Container {
         this.particleSystem.update(delta);
     }
 
-    private handleEnemyDeath(enemy: BaseEnemy): void {
-        // Add score for the defeated enemy
-        this.scoreSystem.addScore(enemy);
-
-        // Check if the enemy is a boss
-        if (enemy instanceof BossEnemy) {
-            // Kill all other enemies
-            this.enemies.forEach(e => {
-                if (e !== enemy && e.isAlive()) {
-                    e.takeDamage(99999, { x: 0, y: 0 }, 0); // Large damage with no knockback
-                }
-            });
-            
-            // Trigger boss death effects
-            this.freezeFrameTimer = GameScene.BOSS_FREEZE_DURATION;
-            this.soundManager.playBossDeathSound();
-            this.particleSystem.createBossDeathEffect(enemy.x, enemy.y, enemy.getColor());
-            
-            // Clear boss UI
-            if (this.bossHealthBar) {
-                this.removeChild(this.bossHealthBar);
-                this.bossHealthBar = null;
-            }
-            if (this.bossNameText) {
-                this.removeChild(this.bossNameText);
-                this.bossNameText = null;
-            }
-
-            // Check if it was the Master of Arms
-            if (enemy instanceof MasterOfArmsBoss) {
-                // Set game as over to prevent new spawns and upgrades
-                this.isGameOver = true;
-                this.gameStarted = false;
-                
-                // Clear any remaining enemies
-                this.enemies.length = 0;
-                
-                // Show credits after a delay
-                setTimeout(() => {
-                    this.showCredits();
-                }, 2000); // Wait 2 seconds after death effects
-            }
-        } else {
-            // Regular enemy death
-            this.freezeFrameTimer = GameScene.FREEZE_FRAME_DURATION;
-            this.particleSystem.createDeathEffect(enemy.x, enemy.y, enemy.getColor());
-        }
+    private createExpBar(): void {
+        // Create the ExpBar instance
+        this.expBar = new ExpBar();
+        this.expBar.position.set(10, this.dimensions.height - 110);
+        this.addChild(this.expBar);
+        this.updateExpBar(); // Initialize with current player values
     }
 
-    private showCredits(): void {
-        // Create credits container
-        const credits = new PIXI.Container();
+    private updateExpBar(): void {
+        if (!this.expBar) return;
         
-        // Create semi-transparent background
-        const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000, 0.9);
-        bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
-        bg.endFill();
-        credits.addChild(bg);
-
-        // Create glow effect for title
-        const glowSize = 60;
-        const glow = new PIXI.Graphics();
-        glow.beginFill(0xFFD700, 0.3);
-        glow.drawCircle(this.dimensions.width / 2, 100, glowSize);
-        glow.endFill();
-        credits.addChild(glow);
-
-        // Animate glow
-        const animateGlow = () => {
-            if (!credits.parent) return;
-            glow.scale.x = 1 + Math.sin(Date.now() / 500) * 0.1;
-            glow.scale.y = 1 + Math.sin(Date.now() / 500) * 0.1;
-            requestAnimationFrame(animateGlow);
-        };
-        animateGlow();
-
-        // Title with gradient and outline
-        const title = new PIXI.Text('BLADE STRIKE', {
-            fontFamily: 'Arial Black, Arial Bold, Arial',
-            fontSize: 64,
-            fill: ['#FFD700', '#FFA500'], // Gold to orange gradient
-            fillGradientType: 1,
-            fillGradientStops: [0.2, 1],
-            stroke: '#000000',
-            strokeThickness: 6,
-            dropShadow: true,
-            dropShadowColor: '#000000',
-            dropShadowBlur: 4,
-            dropShadowAngle: Math.PI / 4,
-            dropShadowDistance: 6,
-            align: 'center',
-            fontWeight: 'bold'
-        });
-        title.anchor.set(0.5);
-        title.position.set(this.dimensions.width / 2, 100);
-        credits.addChild(title);
-
-        // Add pulsing effect to title
-        const animateTitle = () => {
-            if (!credits.parent) return;
-            title.scale.x = 1 + Math.sin(Date.now() / 1000) * 0.05;
-            title.scale.y = 1 + Math.sin(Date.now() / 1000) * 0.05;
-            requestAnimationFrame(animateTitle);
-        };
-        animateTitle();
-
-        // Credits text
-        const creditsText = [
-            'Congratulations!',
-            'You have defeated the Final Boss',
-            'and completed the game!',
-            '',
-            '',
-            'Game Design & Development By:',
-            'Benjamin Schoolland',
-            '',
-            'Music By:',
-            'Suno AI',
-            '',
-            '',
-            'Art By:',
-            'Well there wasn\'t really any art... hmm...',
-            '',
-            'Special Thanks To:',
-            'The two or three players who helped test the game',
-            'Depending on whether you count me as a player',
-            'And of course,',
-            'Our AI overlords',
-            '',
-            '',
-            'Thank you for playing!'
-        ];
-
-        // Create a container for scrolling text
-        const textContainer = new PIXI.Container();
-        credits.addChild(textContainer);
-
-        let yPos = 0;
-        creditsText.forEach((line, index) => {
-            const text = new PIXI.Text(line, {
-                fontFamily: 'Arial',
-                fontSize: index < 3 ? 32 : 24,
-                fill: index < 3 ? 0xFFD700 : 0xFFFFFF,
-                align: 'center'
-            });
-            text.anchor.set(0.5);
-            text.position.set(this.dimensions.width / 2, yPos);
-            textContainer.addChild(text);
-            yPos += index < 3 ? 50 : 40;
-        });
-
-        // Calculate total height of credits
-        const totalCreditsHeight = yPos;
-
-        // Add restart button
-        const button = new PIXI.Graphics();
-        button.beginFill(0x444444);
-        button.drawRoundedRect(0, 0, 150, 50, 10);
-        button.endFill();
-        button.position.set(
-            this.dimensions.width - 160, // Move to the top right
-            50 // Position it near the top
+        // Update the ExpBar with player's current experience, max experience needed, and level
+        this.expBar.updateExp(
+            this.player.getExperience(),
+            this.player.getExpNeededForNextLevel(),
+            this.player.getLevel()
         );
-        button.interactive = true;
-        button.cursor = 'pointer';
-        
-        const buttonText = new PIXI.Text('Play Again', {
-            fontFamily: 'Arial',
-            fontSize: 24,
-            fill: 0xFFFFFF
-        });
-        buttonText.anchor.set(0.5);
-        buttonText.position.set(75, 25);
-        button.addChild(buttonText);
-        
-        button.on('mouseover', () => button.tint = 0x666666);
-        button.on('mouseout', () => button.tint = 0xFFFFFF);
-        button.on('click', () => {
-            this.removeChild(credits);
-            this.restart();
-        });
-        
-        credits.addChild(button);
-        
-        // Add credits to scene
-        this.addChild(credits);
-
-        // Position text container to start below screen
-        textContainer.y = this.dimensions.height;
-
-        // Start credits scroll animation
-        const scrollSpeed = 0.3;
-        const animate = () => {
-            if (!credits.parent) return; // Stop if credits were removed
-            
-            // Move text container up
-            textContainer.y -= scrollSpeed;
-            
-            // If all text has scrolled past the top (with extra padding)
-            if (textContainer.y < -totalCreditsHeight - 200) {
-                // Reset to below screen with extra padding
-                textContainer.y = this.dimensions.height + 200;
-            }
-            
-            requestAnimationFrame(animate);
-        };
-        animate();
     }
 } 

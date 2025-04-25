@@ -12,7 +12,7 @@ export abstract class Entity extends PIXI.Container {
     public target: Entity | null = null;
     public isEnemy: boolean = false;  // Default to false, enemies will set this to true
     public isBlocking: boolean = false;
-    protected healthBar: HealthBar | null = null;
+    protected healthBar: PIXI.Container | null = null;
     protected sprite: PIXI.Sprite | PIXI.Graphics | null = null;
     protected debugId: string = 'Entity';
     protected bounds: { width: number; height: number };
@@ -64,9 +64,12 @@ export abstract class Entity extends PIXI.Container {
         }
 
         // Update health bar if it exists
-        if (this.healthBar) {
-            this.healthBar.update(this.health / this.maxHealth);
-        }
+        this.updateHealthBar();
+    }
+
+    protected updateHealthBar(): void {
+        // This should be overridden by child classes
+        // that implement specific health bar behavior
     }
 
     public isAlive(): boolean {
