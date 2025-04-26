@@ -40,14 +40,6 @@ export class GameOverScreen extends PIXI.Container {
             align: 'center'
         });
 
-        const scoreText = new PIXI.Text(
-            `Score: ${currentScore}\nWaves Cleared: ${waveReached}`,
-            scoreStyle
-        );
-        scoreText.anchor.set(0.5);
-        scoreText.x = width / 2;
-        scoreText.y = height / 3 + 20;
-        this.addChild(scoreText);
 
         // Show "New High Score!" if achieved
         if (isHighScore) {

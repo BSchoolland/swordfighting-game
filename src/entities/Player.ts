@@ -357,4 +357,29 @@ export class Player extends Entity {
         // When upgrade is used, reset XP to 0 for the new level
         this.experience = 0;
     }
+
+    // Add multiplier getters
+    public getSpeedMultiplier(): number {
+        return this.speedMultiplier;
+    }
+
+    public getSwordLengthMultiplier(): number {
+        return this.swordLengthMultiplier;
+    }
+
+    public getDamageMultiplier(): number {
+        return this.damageMultiplier;
+    }
+
+    public getSwingSpeedMultiplier(): number {
+        return this.swingSpeedMultiplier;
+    }
+
+    public getDashCooldownMultiplier(): number {
+        return this.dash.getCooldownMultiplier();
+    }
+
+    public reduceDashCooldown(percentage: number): void {
+        this.dash.reduceCooldown(percentage);
+    }
 } 

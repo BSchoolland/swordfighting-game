@@ -12,6 +12,7 @@ import { Entity } from '../entities/Entity';
 import { BossEnemy } from '../entities/enemies/BossEnemy';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import { ExpBar } from '../entities/ExpBar';
+import { StatsDisplay } from '../entities/StatsDisplay';
 
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { MasterOfArmsBoss } from '../entities/enemies/MasterOfArmsBoss';
@@ -28,6 +29,7 @@ export class GameScene extends PIXI.Container {
     private worldToScreenScale: number = 1;
     private dimensions: { width: number; height: number };
     private healthBar!: HealthBar;
+    private statsDisplay!: StatsDisplay;
     private gameOverScreen: GameOverScreen | null = null;
     private isGameOver: boolean = false;
     private soundManager: SoundManager;
@@ -44,7 +46,6 @@ export class GameScene extends PIXI.Container {
     private upgradeAvailableText!: PIXI.Text;
     private static readonly WAVE_ANNOUNCEMENT_DURATION = 3000; // 3 seconds to show new wave message
     private waveAnnouncementTimer: number = 0;
-    private scoreText!: PIXI.Text; // Add score text
 
     private particleSystem: ParticleSystem;
     private upgradeSystem: UpgradeSystem;
@@ -144,9 +145,6 @@ export class GameScene extends PIXI.Container {
         if (this.waveText) {
             this.removeChild(this.waveText);
         }
-        if (this.scoreText) {
-            this.removeChild(this.scoreText);
-        }
         if (this.waveAnnouncement) {
             this.removeChild(this.waveAnnouncement);
         }
@@ -160,6 +158,9 @@ export class GameScene extends PIXI.Container {
         if (this.expBar) {
             this.removeChild(this.expBar);
             this.expBar = null!;
+        }
+        if (this.statsDisplay) {
+            this.removeChild(this.statsDisplay);
         }
         
         // Reset game state
@@ -235,9 +236,6 @@ export class GameScene extends PIXI.Container {
         if (this.waveText) {
             this.removeChild(this.waveText);
         }
-        if (this.scoreText) {
-            this.removeChild(this.scoreText);
-        }
         if (this.waveAnnouncement) {
             this.removeChild(this.waveAnnouncement);
         }
@@ -268,16 +266,23 @@ export class GameScene extends PIXI.Container {
         this.healthBar = new HealthBar();
         this.healthBar.position.set(20, 20);
         this.addChild(this.healthBar);
+        
+        // Create stats display
+        console.log('[GameScene] Creating stats display');
+        this.statsDisplay = new StatsDisplay(this.player, this.dimensions.width - 265, 10);
+        this.addChild(this.statsDisplay);
 
         // Create wave text (top right corner)
         console.log('[GameScene] Creating wave text');
-        this.waveText = new PIXI.Text('Wave 1', {
+        this.waveText = new PIXI.Text('WAVE 1', {
             fontFamily: 'Arial',
             fontSize: 24,
-            fill: 0xffffff,
+            fill: 0x4af6f0,
+            stroke: 0x4af6f0,
+            strokeThickness: 1,
             align: 'center'
         });
-        this.waveText.position.set(this.dimensions.width - 150, 20);
+        this.waveText.position.set(this.dimensions.width - 150, 17.5);
         this.addChild(this.waveText);
 
         // Create upgrade available text
@@ -293,14 +298,6 @@ export class GameScene extends PIXI.Container {
 
         // Create score text under wave text
         console.log('[GameScene] Creating score text');
-        this.scoreText = new PIXI.Text('Score: 0', {
-            fontFamily: 'Arial',
-            fontSize: 20,
-            fill: 0xFFD700,
-            align: 'center'
-        });
-        this.scoreText.position.set(this.dimensions.width - 150, 50);
-        this.addChild(this.scoreText);
 
         // Create centered wave announcement text
         console.log('[GameScene] Creating wave announcement');
@@ -325,13 +322,13 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        this.waveSystem.setWave(3);
+        // this.waveSystem.setWave(3);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
 
         // Update wave text
-        this.waveText.text = `Wave ${waveNumber}`;
+        this.waveText.text = `WAVE ${waveNumber}`;
         
         // Play wave start sound
         this.soundManager.playWaveStartSound();
@@ -378,10 +375,6 @@ export class GameScene extends PIXI.Container {
             console.log('[GameScene] Removing wave text');
             this.removeChild(this.waveText);
         }
-        if (this.scoreText) {
-            console.log('[GameScene] Removing score text');
-            this.removeChild(this.scoreText);
-        }
         if (this.waveAnnouncement) {
             console.log('[GameScene] Removing wave announcement');
             this.removeChild(this.waveAnnouncement);
@@ -394,6 +387,9 @@ export class GameScene extends PIXI.Container {
             console.log('[GameScene] Removing exp bar');
             this.removeChild(this.expBar);
             this.expBar = null!;
+        }
+        if (this.statsDisplay) {
+            this.removeChild(this.statsDisplay);
         }
 
         // Reset game state
@@ -757,19 +753,15 @@ export class GameScene extends PIXI.Container {
         // Update upgrade available indicator
         this.upgradeAvailableText.visible = false //this.player.hasAvailableUpgrade();
 
-        // Skip updates if upgrade screen is visible
-        if (this.upgradeSystem.isUpgradeScreenVisible()) {
-            return;
-        }
+        // Continue updating the game even when upgrade screen is visible
+        // This allows enemies to continue moving and animations to play
+        // The waitingForUpgrade flag prevents starting a new wave
 
         // Handle freeze frames
         if (this.freezeFrameTimer > 0) {
             this.freezeFrameTimer -= delta * 1000;
             return; // Skip update during freeze frame
         }
-
-        // Update score display
-        this.scoreText.text = `Score: ${this.scoreSystem.getCurrentScore()}`;
 
         // Handle wave announcement fade out
         if (this.waveAnnouncement.alpha > 0) {
@@ -856,6 +848,9 @@ export class GameScene extends PIXI.Container {
         // Update health bar
         this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
         this.healthBar.update(delta);
+        
+        // Update stats display
+        this.statsDisplay.update();
 
         // Update boss UI
         this.updateBossUI();

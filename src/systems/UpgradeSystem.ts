@@ -28,10 +28,11 @@ export interface Upgrade {
 }
 
 export class UpgradeSystem extends PIXI.Container {
-    private static readonly CARD_WIDTH = 250;
-    private static readonly CARD_HEIGHT = 350;
+    private static readonly CARD_WIDTH = 216;
+    private static readonly CARD_HEIGHT = 300;
     private static readonly CARD_SPACING = 40;
-    private static readonly BACKGROUND_ALPHA = 0.85;
+    private static readonly SCREEN_MARGIN = 50; // Margin from screen edges
+    private static readonly BACKGROUND_ALPHA = 0.5;
     
     private static readonly RARITY_COLORS = {
         [UpgradeRarity.COMMON]: 0x666666,
@@ -133,7 +134,7 @@ export class UpgradeSystem extends PIXI.Container {
                 description: 'Reduce dash cooldown by 15%',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.15)
+                apply: (player: Player) => player.reduceDashCooldown(0.15)
             },
             {
                 id: 'dash_rare',
@@ -141,7 +142,7 @@ export class UpgradeSystem extends PIXI.Container {
                 description: 'Reduce dash cooldown by 20%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.2)
+                apply: (player: Player) => player.reduceDashCooldown(0.2)
             },
             {
                 id: 'dash_epic',
@@ -149,7 +150,7 @@ export class UpgradeSystem extends PIXI.Container {
                 description: 'Reduce dash cooldown by 25%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.25)
+                apply: (player: Player) => player.reduceDashCooldown(0.25)
             },
             {
                 id: 'dash_legendary',
@@ -157,7 +158,7 @@ export class UpgradeSystem extends PIXI.Container {
                 description: 'Reduce dash cooldown by 50%',
                 rarity: UpgradeRarity.LEGENDARY,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.getDash().reduceCooldown(0.5)
+                apply: (player: Player) => player.reduceDashCooldown(0.5)
             },
             
             // Sword Upgrades
@@ -270,60 +271,71 @@ export class UpgradeSystem extends PIXI.Container {
     private createParticleEffect(rarity: UpgradeRarity): PIXI.Container {
         const container = new PIXI.Container();
         const color = UpgradeSystem.RARITY_COLORS[rarity];
+        const particles: { sprite: PIXI.Graphics; speed: number; fadeSpeed: number }[] = [];
         
-        // Create different particle effects based on rarity
-        for (let i = 0; i < (rarity === UpgradeRarity.LEGENDARY ? 20 : 10); i++) {
+        const particleCount = rarity === UpgradeRarity.LEGENDARY ? 20 : 10;
+    
+        for (let i = 0; i < particleCount; i++) {
             const particle = new PIXI.Graphics();
             particle.beginFill(color);
-            
+    
             if (rarity === UpgradeRarity.LEGENDARY) {
-                // Create a star-like shape using polygon
                 const points: number[] = [];
                 const spikes = 5;
                 const outerRadius = 4;
                 const innerRadius = 2;
                 
-                for (let i = 0; i < spikes * 2; i++) {
-                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
-                    const angle = (i * Math.PI) / spikes;
-                    points.push(
-                        Math.cos(angle) * radius,
-                        Math.sin(angle) * radius
-                    );
+                for (let j = 0; j < spikes * 2; j++) {
+                    const radius = j % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (j * Math.PI) / spikes;
+                    points.push(Math.cos(angle) * radius, Math.sin(angle) * radius);
                 }
-                
                 particle.drawPolygon(points);
             } else {
                 particle.drawCircle(0, 0, 2);
             }
-            
+    
             particle.endFill();
             particle.alpha = 0.6;
-            
+    
             // Random starting position
             particle.x = Math.random() * UpgradeSystem.CARD_WIDTH;
             particle.y = Math.random() * UpgradeSystem.CARD_HEIGHT;
-            
+    
             container.addChild(particle);
-            
-            // Animate particles
-            const animate = () => {
-                particle.y -= 0.5;
-                particle.alpha -= 0.005;
-                
-                if (particle.alpha <= 0) {
-                    particle.y = UpgradeSystem.CARD_HEIGHT;
-                    particle.alpha = 0.6;
-                }
-                
-                requestAnimationFrame(animate);
-            };
-            
-            animate();
+    
+            // Store particle with random properties
+            particles.push({
+                sprite: particle,
+                speed: 0.5 + Math.random() * 0.5, // Move speed between 0.5 and 1
+                fadeSpeed: 0.002 + Math.random() * 0.003, // Fade speed between 0.002 and 0.005
+            });
         }
-        
+    
+        // Single shared animation loop for all particles
+        const animate = () => {
+            for (const p of particles) {
+                p.sprite.y -= p.speed;
+                p.sprite.alpha -= p.fadeSpeed;
+    
+                if (p.sprite.alpha <= 0) {
+                    // Reset position and properties randomly
+                    p.sprite.x = Math.random() * UpgradeSystem.CARD_WIDTH;
+                    p.sprite.y = UpgradeSystem.CARD_HEIGHT;
+                    p.sprite.alpha = 0.6;
+                    p.speed = 0.5 + Math.random() * 0.5;
+                    p.fadeSpeed = 0.002 + Math.random() * 0.003;
+                }
+            }
+    
+            requestAnimationFrame(animate);
+        };
+    
+        animate();
+    
         return container;
     }
+    
 
     public update(): void {
         // No longer automatically show upgrades during combat
@@ -347,21 +359,34 @@ export class UpgradeSystem extends PIXI.Container {
         // Get random upgrades
         const upgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
         
-        // Create and position upgrade cards
+        // Create and position upgrade cards with screen margin
+        const availableWidth = this.dimensions.width - (UpgradeSystem.SCREEN_MARGIN * 2);
         const totalWidth = (UpgradeSystem.CARD_WIDTH * upgrades.length) + (UpgradeSystem.CARD_SPACING * (upgrades.length - 1));
-        const startX = (this.dimensions.width - totalWidth) / 2;
+        
+        // Center cards horizontally with margin
+        const startX = Math.max(
+            UpgradeSystem.SCREEN_MARGIN,
+            (this.dimensions.width - totalWidth) / 2
+        );
+        
+        // Ensure vertical margin as well
+        const cardCenterY = Math.max(
+            UpgradeSystem.CARD_HEIGHT / 2 + UpgradeSystem.SCREEN_MARGIN,
+            (this.dimensions.height / 2) + 20
+        );
         
         upgrades.forEach((upgrade, index) => {
             const card = this.createUpgradeCard(upgrade);
-            card.x = startX + (UpgradeSystem.CARD_WIDTH + UpgradeSystem.CARD_SPACING) * index;
-            card.y = (this.dimensions.height - UpgradeSystem.CARD_HEIGHT) / 2;
+            // Since the card's pivot is now at its center, we need to position by the center point
+            const cardCenterX = startX + (UpgradeSystem.CARD_WIDTH / 2) + (index * (UpgradeSystem.CARD_WIDTH + UpgradeSystem.CARD_SPACING));
+            card.position.set(cardCenterX, cardCenterY);
             this.addChild(card);
             this.cards.push(card);
             
-            // Create particle effect
+            // Create particle effect - also adjust to use the new center position
             const particleContainer = this.createParticleEffect(upgrade.rarity);
-            particleContainer.x = card.x + UpgradeSystem.CARD_WIDTH / 2;
-            particleContainer.y = card.y + UpgradeSystem.CARD_HEIGHT / 2;
+            particleContainer.x = cardCenterX;
+            particleContainer.y = cardCenterY;
             this.addChild(particleContainer);
             this.particleContainers.push(particleContainer);
         });
@@ -370,57 +395,97 @@ export class UpgradeSystem extends PIXI.Container {
     private createUpgradeCard(upgrade: Upgrade): PIXI.Container {
         const card = new PIXI.Container();
         
-        // Card background with rarity-based styling
+        // Card background with modern sci-fi styling
         const background = new PIXI.Graphics();
         const rarityColor = UpgradeSystem.RARITY_COLORS[upgrade.rarity];
         
-        // Outer glow
-        background.lineStyle(4, rarityColor, 0.8);
-        background.beginFill(0x222222, 0.9);
-        background.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 15);
+        // Dark background with subtle gradient
+        background.beginFill(0x111111, 0.9);
+        background.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
         background.endFill();
         
-        // Inner border
-        background.lineStyle(2, rarityColor, 0.6);
-        background.drawRoundedRect(5, 5, UpgradeSystem.CARD_WIDTH - 10, UpgradeSystem.CARD_HEIGHT - 10, 12);
+        // Sci-fi accent lines
+        background.lineStyle(1, rarityColor, 0.7);
+        
+        // Top left corner tech lines
+        background.moveTo(0, 25);
+        background.lineTo(25, 0);
+        
+        // Bottom right corner tech lines
+        background.moveTo(UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT - 25);
+        background.lineTo(UpgradeSystem.CARD_WIDTH - 25, UpgradeSystem.CARD_HEIGHT);
+        
+        
+
         
         card.addChild(background);
         
-        // Rarity text
-        const rarityText = new PIXI.Text(upgrade.rarity.toUpperCase(), {
-            fontFamily: 'Arial',
-            fontSize: 16,
-            fill: rarityColor,
-            fontWeight: 'bold'
-        });
-        rarityText.x = (UpgradeSystem.CARD_WIDTH - rarityText.width) / 2;
-        rarityText.y = 20;
-        card.addChild(rarityText);
+        // Create glowing border effect
+        const border = new PIXI.Graphics();
+        border.lineStyle(2, rarityColor, 0.8);
+        border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+        card.addChild(border);
         
-        // Upgrade name with rarity-based styling
-        const nameText = new PIXI.Text(upgrade.name, {
-            fontFamily: 'Arial',
-            fontSize: 28,
-            fill: rarityColor,
+        // Rarity indicator - minimal dot pattern
+        const rarityIndicator = new PIXI.Graphics();
+        rarityIndicator.beginFill(rarityColor, 0.9);
+        
+        // Number of dots based on rarity
+        const dotCount = {
+            [UpgradeRarity.COMMON]: 1,
+            [UpgradeRarity.RARE]: 2,
+            [UpgradeRarity.EPIC]: 3,
+            [UpgradeRarity.LEGENDARY]: 4
+        }[upgrade.rarity];
+        
+        // Draw dots
+        const dotSize = 4;
+        const dotSpacing = 10;
+        const totalWidth = (dotCount * dotSize) + ((dotCount - 1) * dotSpacing);
+        const startX = (UpgradeSystem.CARD_WIDTH - totalWidth) / 2;
+        
+        for (let i = 0; i < dotCount; i++) {
+            rarityIndicator.drawCircle(
+                startX + (i * (dotSize + dotSpacing)) + dotSize/2,
+                30,
+                dotSize
+            );
+        }
+        rarityIndicator.endFill();
+        card.addChild(rarityIndicator);
+        
+        // Upgrade name with modern sci-fi font styling
+        const nameText = new PIXI.Text(upgrade.name.toUpperCase(), {
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontSize: 22,
+            fill: 0xffffff,
             align: 'center',
             fontWeight: 'bold',
+            letterSpacing: 1,
+            stroke: rarityColor,
+            strokeThickness: 1,
             wordWrap: true,
             wordWrapWidth: UpgradeSystem.CARD_WIDTH - 40
         });
         nameText.x = (UpgradeSystem.CARD_WIDTH - nameText.width) / 2;
-        nameText.y = 50;
+        nameText.y = 55;
         card.addChild(nameText);
-        
-        // Add replacement message if applicable
-        let description = upgrade.description;
-        
+
+        // After adding nameText
+
+        // Horizontal accent line (moved dynamically below the title)
+        const underlineY = nameText.y + nameText.height + 10; // 10 pixels below title
+        background.lineStyle(2, rarityColor, 0.8);
+        background.moveTo(20, underlineY);
+        background.lineTo(UpgradeSystem.CARD_WIDTH - 20, underlineY);
         
         // Upgrade description
-        const descText = new PIXI.Text(description, {
-            fontFamily: 'Arial',
-            fontSize: 20,
-            fill: 0xffffff,
+        const descText = new PIXI.Text(upgrade.description, {
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontSize: 18,
+            fill: 0xcccccc,
             align: 'center',
+            letterSpacing: 0.5,
             wordWrap: true,
             wordWrapWidth: UpgradeSystem.CARD_WIDTH - 40
         });
@@ -428,19 +493,69 @@ export class UpgradeSystem extends PIXI.Container {
         descText.y = 120;
         card.addChild(descText);
         
-        // Make card interactive
+        // Type label - small, minimalist tech-looking tag
+        const typeText = new PIXI.Text(upgrade.type.toUpperCase(), {
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontSize: 12,
+            fill: rarityColor,
+            align: 'center',
+            fontWeight: 'bold',
+            letterSpacing: 2
+        });
+        typeText.x = (UpgradeSystem.CARD_WIDTH - typeText.width) / 2;
+        typeText.y = UpgradeSystem.CARD_HEIGHT - 40;
+        card.addChild(typeText);
+        
+        // Make card interactive with sci-fi hover effects
         background.interactive = true;
         background.cursor = 'pointer';
+        
+        // Tech scan line animation on hover
+        const scanLine = new PIXI.Graphics();
+        scanLine.beginFill(rarityColor, 0.3);
+        scanLine.drawRect(0, 0, UpgradeSystem.CARD_WIDTH, 2);
+        scanLine.endFill();
+        scanLine.y = -10; // Start off-screen
+        scanLine.visible = false;
+        card.addChild(scanLine);
+        
+        // Set pivot point to the center of the card for proper scaling from center
+        card.pivot.set(UpgradeSystem.CARD_WIDTH / 2, UpgradeSystem.CARD_HEIGHT / 2);
+        card.position.set(UpgradeSystem.CARD_WIDTH / 2, UpgradeSystem.CARD_HEIGHT / 2);
         
         // Hover effects
         background.on('mouseover', () => {
             card.scale.set(1.05);
-            background.tint = 0xdddddd;
+            border.clear();
+            border.lineStyle(2, rarityColor, 1);
+            border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+            
+            // Show and animate scan line
+            scanLine.visible = true;
+            let scanPos = 0;
+            const animateScanLine = () => {
+                if (!scanLine.visible) return;
+                
+                scanLine.y = scanPos;
+                scanPos += 5;
+                
+                if (scanPos > UpgradeSystem.CARD_HEIGHT) {
+                    scanPos = -2;
+                }
+                
+                requestAnimationFrame(animateScanLine);
+            };
+            animateScanLine();
         });
         
         background.on('mouseout', () => {
             card.scale.set(1);
-            background.tint = 0xffffff;
+            border.clear();
+            border.lineStyle(2, rarityColor, 0.8);
+            border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+            
+            // Hide scan line
+            scanLine.visible = false;
         });
         
         background.on('click', () => {
@@ -501,15 +616,30 @@ export class UpgradeSystem extends PIXI.Container {
             return upgrades[0]; // Fallback to first upgrade if no valid ones found
         }
         
+        // Group upgrades by rarity
+        const byRarity = new Map<UpgradeRarity, Upgrade[]>();
         for (const upgrade of validUpgrades) {
-            const weight = weights[upgrade.rarity];
-            if (random <= weight) {
-                return upgrade;
+            if (!byRarity.has(upgrade.rarity)) {
+                byRarity.set(upgrade.rarity, []);
             }
-            random -= weight;
+            byRarity.get(upgrade.rarity)!.push(upgrade);
         }
         
-        return validUpgrades[0]; // Fallback to first valid upgrade
+        // Use the rarity weights to select a rarity first
+        let cumulativeWeight = 0;
+        for (const rarity of [UpgradeRarity.COMMON, UpgradeRarity.RARE, UpgradeRarity.EPIC, UpgradeRarity.LEGENDARY]) {
+            if (byRarity.has(rarity)) {
+                cumulativeWeight += weights[rarity];
+                if (random <= cumulativeWeight) {
+                    // Select a random upgrade of this rarity
+                    const rarityUpgrades = byRarity.get(rarity)!;
+                    return rarityUpgrades[Math.floor(Math.random() * rarityUpgrades.length)];
+                }
+            }
+        }
+        
+        // If we get here, just pick the first valid upgrade
+        return validUpgrades[0];
     }
 
     private selectUpgrade(upgrade: Upgrade): void {
