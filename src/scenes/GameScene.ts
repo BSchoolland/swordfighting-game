@@ -39,6 +39,7 @@ export class GameScene extends PIXI.Container {
     private static readonly FREEZE_FRAME_DURATION = 75; // 75ms freeze for regular enemy deaths
     private static readonly BOSS_FREEZE_DURATION = 400; // 400ms freeze for boss deaths
     private playerDeathTimer: number = 0; // Track time since player death
+    private previousUpgradeScreenVisible: boolean = false; // Track previous upgrade screen state
 
     // Wave display
     private waveText!: PIXI.Text;
@@ -475,7 +476,6 @@ export class GameScene extends PIXI.Container {
     private updateBossUI(): void {
         // Find boss in enemies array
         const boss = this.enemies.find(enemy => enemy instanceof BossEnemy) as BossEnemy | undefined;
-        
         if (boss) {
             // If we already have a boss health bar, no need to recreate it
             if (this.bossHealthBar) return;
@@ -491,6 +491,7 @@ export class GameScene extends PIXI.Container {
                 
                 // Add immediately without fade-in effect
                 this.bossHealthBar.alpha = 1;
+                
                 this.addChild(this.bossHealthBar);
             }
         } else if (this.bossHealthBar) {
@@ -742,7 +743,21 @@ export class GameScene extends PIXI.Container {
 
         // Update upgrade system
         this.upgradeSystem.update();
+        
+        // Handle StatsDisplay visibility
+        const upgradeScreenVisible = this.upgradeSystem.isUpgradeScreenVisible();
 
+        // Show stats when upgrade screen is visible
+        if (upgradeScreenVisible) {
+            this.statsDisplay.show();
+        } else if (this.previousUpgradeScreenVisible && !upgradeScreenVisible) {
+            // Only hide when visibility changes from true to false
+            this.statsDisplay.hide(true); // true = use the 3-second delay
+        }
+        this.previousUpgradeScreenVisible = upgradeScreenVisible;
+        
+        // StatsDisplay update happens later in the method, so we don't update here
+        
         // Update EXP bar with new method
         this.updateExpBar();
         // Always update the ExpBar with the current delta time for smooth animations
@@ -845,12 +860,20 @@ export class GameScene extends PIXI.Container {
             this.inputManager.isAttacking()
         );
 
+        // check if the player is near in space to the health bar
+        if (this.healthBar.containsPoint(this.player.x, this.player.y)) {
+            this.healthBar.alpha = 0;
+        } else {
+            this.healthBar.alpha = 1;
+        }
+        
+
         // Update health bar
         this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
         this.healthBar.update(delta);
         
         // Update stats display
-        this.statsDisplay.update();
+        this.statsDisplay.update(delta * 1000);
 
         // Update boss UI
         this.updateBossUI();

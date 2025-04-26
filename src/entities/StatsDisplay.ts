@@ -4,11 +4,16 @@ import { Player } from './Player';
 export class StatsDisplay extends PIXI.Container {
     private static readonly PANEL_WIDTH = 250;
     private static readonly PANEL_HEIGHT = 140;
+    private static readonly FADE_SPEED = 0.05;
     
     private panel: PIXI.Graphics;
     private player: Player;
     private statsTexts: Map<string, PIXI.Text> = new Map();
     private headerText: PIXI.Text;
+    private isFading: boolean = false;
+    private targetAlpha: number = 0;
+    private fadeTimer: number = 0;
+    private showDuration: number = 1750; // 1.75 seconds
     
     constructor(player: Player, xPosition: number, yPosition: number) {
         super();
@@ -16,6 +21,9 @@ export class StatsDisplay extends PIXI.Container {
         
         // Set position
         this.position.set(xPosition, yPosition);
+        
+        // Initially hidden
+        this.alpha = 0;
         
         // Create panel with same style as healthbar
         this.panel = new PIXI.Graphics();
@@ -101,7 +109,64 @@ export class StatsDisplay extends PIXI.Container {
         this.statsTexts.get('swingSpeed')!.text = swingSpeedMultiplier;
     }
     
-    public update(): void {
+    public show(): void {
+        this.isFading = true;
+        this.targetAlpha = 1;
+        this.fadeTimer = 0;
+    }
+    
+    public hide(withDelay: boolean = true): void {
+        if (withDelay && this.fadeTimer <= 0) {
+            // Only set the fade timer if it's not already running
+            this.fadeTimer = this.showDuration;
+        } else if (!withDelay) {
+            // Start fading out immediately
+            this.fadeTimer = 0;
+            this.isFading = true;
+            this.targetAlpha = 0;
+        }
+    }
+    
+    public update(deltaMS: number = 0): void {
+        // Update stats
         this.updateStats();
+        
+        // Handle fading
+        if (this.fadeTimer > 0) {
+            this.fadeTimer -= deltaMS;
+            console.log(`Fade timer: ${this.fadeTimer.toFixed(2)}, deltaMS: ${deltaMS.toFixed(2)}`);
+            
+            if (this.fadeTimer <= 0) {
+                console.log('Fade timer expired, starting fade out');
+                // Begin fading out when timer expires
+                this.fadeTimer = 0;
+                this.isFading = true;
+                this.targetAlpha = 0;
+            }
+        }
+        
+        if (this.isFading) {
+            if (this.targetAlpha > this.alpha) {
+                // Fade in
+                this.alpha += StatsDisplay.FADE_SPEED;
+                if (this.alpha >= this.targetAlpha) {
+                    this.alpha = this.targetAlpha;
+                    this.isFading = false;
+                }
+            } else if (this.targetAlpha < this.alpha) {
+                // Fade out
+                this.alpha -= StatsDisplay.FADE_SPEED;
+                if (this.alpha <= this.targetAlpha) {
+                    this.alpha = this.targetAlpha;
+                    this.isFading = false;
+                }
+            } else {
+                this.isFading = false;
+            }
+        }
+    }
+
+    public isVisible(): boolean {
+        return this.alpha > 0.5; // Consider it visible if more than half opacity
     }
 } 

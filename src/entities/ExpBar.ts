@@ -72,6 +72,8 @@ export class ExpBar extends PIXI.Container {
         this.glowOverlay.drawRoundedRect(10, 62.5, this.barWidth, this.barHeight, 2);
         this.glowOverlay.endFill();
         this.contentContainer.addChild(this.glowOverlay);
+        // scale this object down a bit
+        this.scale.set(0.8);
     }
 
     public updateExp(current: number, max: number, level: number): void {

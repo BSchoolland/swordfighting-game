@@ -131,26 +131,26 @@ export class UpgradeSystem extends PIXI.Container {
             {
                 id: 'dash_common',
                 name: 'Quick Recovery',
-                description: 'Reduce dash cooldown by 15%',
+                description: 'Reduce dash cooldown by 20%',
                 rarity: UpgradeRarity.COMMON,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.reduceDashCooldown(0.15)
+                apply: (player: Player) => player.reduceDashCooldown(0.20)
             },
             {
                 id: 'dash_rare',
                 name: 'Swift Recovery',
-                description: 'Reduce dash cooldown by 20%',
+                description: 'Reduce dash cooldown by 30%',
                 rarity: UpgradeRarity.RARE,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.reduceDashCooldown(0.2)
+                apply: (player: Player) => player.reduceDashCooldown(0.3)
             },
             {
                 id: 'dash_epic',
                 name: 'Shadow Step',
-                description: 'Reduce dash cooldown by 25%',
+                description: 'Reduce dash cooldown by 40%',
                 rarity: UpgradeRarity.EPIC,
                 type: UpgradeType.DASH,
-                apply: (player: Player) => player.reduceDashCooldown(0.25)
+                apply: (player: Player) => player.reduceDashCooldown(0.40)
             },
             {
                 id: 'dash_legendary',

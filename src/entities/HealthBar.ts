@@ -96,6 +96,8 @@ export class HealthBar extends PIXI.Container {
         this.flashOverlay.drawRoundedRect(90, 12.5, this.barWidth, this.barHeight, 2);
         this.flashOverlay.endFill();
         this.shakeContainer.addChild(this.flashOverlay);
+        this.scale.set(0.8);
+
     }
 
     public updateHealth(current: number, max: number): void {
