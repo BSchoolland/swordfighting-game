@@ -16,7 +16,7 @@ export class Boomerang extends RangedWeapon {
         bladeLength: 10,  // Visual size of boomerang
         bladeWidth: 4,
         swingInfluence: 0,
-        color: 0x8B000,  // Wooden color
+        color: 0x8B4513,  // Wooden color
         optimalRange: 30,
         retreatRange: 15,
         windUpTime: 400,
@@ -27,7 +27,7 @@ export class Boomerang extends RangedWeapon {
             damage: 8,
             knockback: 2,
             size: 12,
-            color: 0x8B000,
+            color: 0x8B4513,
             lifetime: 3000, // 3 seconds max flight time
             maxRange: 200  // Distance before returning
         }

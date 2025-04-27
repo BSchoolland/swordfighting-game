@@ -215,8 +215,8 @@ export class GameScene extends PIXI.Container {
 
         // Reset player position and state
         this.player.reset();
-        this.player.increaseSwingSpeed(4);
-        this.player.increaseSwordLength(2);
+        // this.player.increaseSwingSpeed(4);
+        // this.player.increaseSwordLength(2);
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
         // Reset wave system
@@ -566,17 +566,15 @@ export class GameScene extends PIXI.Container {
 
             // Check if it was the Master of Arms
             if (enemy instanceof MasterOfArmsBoss) {
-                // Set game as over to prevent new spawns and upgrades
-                this.isGameOver = true;
-                this.gameStarted = false;
+                // Prevent new upgrades and spawns for 2 seconds
+                this.waitingForUpgrade = true; // This prevents new waves and upgrades
                 
-                // Clear any remaining enemies
-                this.enemies.length = 0;
-                
-                // Show credits after a delay
+                // Show credits after the delay
                 setTimeout(() => {
                     this.showCredits();
-                }, 2000); // Wait 2 seconds after death effects
+                    this.isGameOver = true;
+                    this.gameStarted = false;
+                }, 2000); // Wait 2 seconds before ending
             }
         } else {
             // Regular enemy death

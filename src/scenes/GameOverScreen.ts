@@ -67,7 +67,7 @@ export class GameOverScreen extends PIXI.Container {
             "I'm actually impressed you survived until now",
             "You were doing so well... what happened?",
             "When there are a lot of enemies, it's okay to run",
-
+            "The developer is probably evil",
         ]
     };
 
@@ -96,6 +96,7 @@ export class GameOverScreen extends PIXI.Container {
             "Maybe start with the tutorial next time?",
             "Life isn't fair.  This game isn't life but you get the point.",
             "This game is a lot harder than it looks, and it looks pretty hard",
+            "The developer is probably evil",
         ]
     };
     
