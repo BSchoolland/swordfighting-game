@@ -519,7 +519,7 @@ export class UpgradeSystem extends PIXI.Container {
             wordWrapWidth: UpgradeSystem.CARD_WIDTH - 40
         });
         descText.x = (UpgradeSystem.CARD_WIDTH - descText.width) / 2;
-        descText.y = 120;
+        descText.y = 70 + nameText.height;
         contentContainer.addChild(descText);
         
         // Type label - small, minimalist tech-looking tag

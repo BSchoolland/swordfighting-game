@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { SoundManager } from '../systems/SoundManager';
 import { InputManager } from '../systems/InputManager';
+import { GlowFilter } from '@pixi/filter-glow';
+
 
 interface SelectableElement {
     container: PIXI.Container;
@@ -41,63 +43,27 @@ export class HomeScreen extends PIXI.Container {
 
     private setup(): void {
         // Create dark background with vignette effect
-        const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000);
-        bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
-        bg.endFill();
+        // const bg = new PIXI.Graphics();
+        // bg.beginFill(0x000000);
+        // bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
+        // bg.endFill();
 
-        // Add vignette effect
-        const vignette = new PIXI.Graphics();
-        const gradientSteps = 10;
-        for (let i = 0; i < gradientSteps; i++) {
-            const alpha = (i / gradientSteps) * 0.5;
-            vignette.beginFill(0x000000, alpha);
-            vignette.drawCircle(
-                this.dimensions.width / 2,
-                this.dimensions.height / 2,
-                Math.max(this.dimensions.width, this.dimensions.height) * (1 - i / gradientSteps)
-            );
-            vignette.endFill();
-        }
-        this.addChild(bg, vignette);
-
-        // Create rotating weapon sprites in background
-        for (let i = 0; i < 4; i++) {
-            const weapon = new PIXI.Graphics();
-            weapon.lineStyle(4, this.weaponColors[i]);
-            weapon.moveTo(-30, 0);
-            weapon.lineTo(30, 0);
-            weapon.position.set(
-                this.dimensions.width / 2 + Math.cos(i * Math.PI / 2) * 150,
-                this.dimensions.height / 2 + Math.sin(i * Math.PI / 2) * 150
-            );
-            weapon.alpha = 0.3;
-            this.weaponSprites.push(weapon);
-            this.addChild(weapon);
-        }
 
         // Create glow effect for title
-        const glowSize = 80;
-        const glow = new PIXI.Graphics();
-        glow.beginFill(0xFFD700, 0.3);
-        glow.drawCircle(this.dimensions.width / 2, this.dimensions.height / 3, glowSize);
-        glow.endFill();
-        this.addChild(glow);
-
-        // Animate glow
-        const animateGlow = () => {
-            if (!this.parent) return;
-            glow.scale.x = 1 + Math.sin(Date.now() / 500) * 0.2;
-            glow.scale.y = 1 + Math.sin(Date.now() / 500) * 0.2;
-            requestAnimationFrame(animateGlow);
-        };
-        animateGlow();
+        const glow = new GlowFilter({
+            color: 0xffffff,
+            distance: 70,
+            outerStrength: 0.75,
+            innerStrength: 0.5,
+            quality: 0.1
+        });
+        
 
         // Create main title
         const title = new PIXI.Text('BLADE', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 96,
-            fill: ['#FFD700', '#FFA500'],
+            fill: ['#ffffff', '#FFA500'],
             fillGradientType: 1,
             fillGradientStops: [0.2, 1],
             stroke: '#000000',
@@ -112,7 +78,7 @@ export class HomeScreen extends PIXI.Container {
         });
         title.anchor.set(0.5);
         title.position.set(this.dimensions.width / 2, this.dimensions.height / 3);
-
+        title.filters = [glow];
         // Add pulsing effect to title
         const animateTitle = () => {
             if (!this.parent) return;
@@ -146,16 +112,16 @@ export class HomeScreen extends PIXI.Container {
         strikeText.position.set(this.dimensions.width / 2 + 165, this.dimensions.height / 3 - 45);
         this.addChild(strikeText);
 
-        // Create subtitle
-        const subtitle = new PIXI.Text('A Top-Down Action Combat Game', {
-            fontFamily: 'Arial',
-            fontSize: 24,
-            fill: 0xFFFFFF,
-            align: 'center'
-        });
-        subtitle.anchor.set(0.5);
-        subtitle.position.set(this.dimensions.width / 2, this.dimensions.height / 3 + 80);
-        this.addChild(subtitle);
+        // // Create subtitle
+        // const subtitle = new PIXI.Text('A Top-Down Action Combat Game', {
+        //     fontFamily: 'Arial',
+        //     fontSize: 24,
+        //     fill: 0xFFFFFF,
+        //     align: 'center'
+        // });
+        // subtitle.anchor.set(0.5);
+        // subtitle.position.set(this.dimensions.width / 2, this.dimensions.height / 3 + 80);
+        // this.addChild(subtitle);
 
         // Create start button
         const button = new PIXI.Container();
@@ -239,31 +205,43 @@ export class HomeScreen extends PIXI.Container {
 
         // Add controls text
         const controlsText = new PIXI.Text(
-            'Keyboard Controls:\nWASD - Move\nMouse - Aim\nLeft Click - Attack\nSpace - Dash',
+            'KEYBOARD:\nWASD - Move\nMouse - Aim\nLeft Click - Attack\nSpace - Dash',
             {
                 fontFamily: 'Arial',
                 fontSize: 20,
-                fill: 0xCCCCCC,
-                align: 'center'
+                fill: 0x47eee9,
+                align: 'right'
             }
         );
         controlsText.anchor.set(0.5);
         controlsText.position.set(100, this.dimensions.height - 100);
         this.addChild(controlsText);
+        // box around the controls text
+        const controlsBox = new PIXI.Graphics();
+        controlsBox.lineStyle(1, 0x47eee9);
+        controlsBox.drawRoundedRect(0, 0, controlsText.width + 20, controlsText.height + 10, 4);
+        controlsBox.position.set(controlsText.x - 90, controlsText.y - 60);
+        this.addChild(controlsBox);
 
         // controller controls
         const controllerText = new PIXI.Text(
-            'Gamepad Controls:\nLeft Stick - Move\nRight Stick - Aim\nRT - Attack\nLT - Dash',
+            'GAMEPAD:\nLeft Stick - Move\nRight Stick - Aim\nRT - Attack\nLT - Dash',
             {
                 fontFamily: 'Arial',
                 fontSize: 20,
-                fill: 0xCCCCCC,
-                align: 'center'
+                fill: 0x47eee9,
+                align: 'left'
             }
         );
         controllerText.anchor.set(0.5);
         controllerText.position.set(this.dimensions.width - 100, this.dimensions.height - 100);
         this.addChild(controllerText);
+        // box around the controller text
+        const controllerBox = new PIXI.Graphics();
+        controllerBox.lineStyle(1, 0x47eee9);
+        controllerBox.drawRoundedRect(0, 0, controllerText.width + 20, controllerText.height + 10, 4);
+        controllerBox.position.set(controllerText.x - 87.5, controllerText.y - 60);
+        this.addChild(controllerBox);
 
         // Add settings button
         const settingsButton = new PIXI.Container();
@@ -434,6 +412,12 @@ export class HomeScreen extends PIXI.Container {
         );
 
         this.addChild(this.settingsPanel);
+        
+        // Ensure gamepad cursor is always on top by removing and re-adding it
+        if (this.gamepadCursor) {
+            this.removeChild(this.gamepadCursor);
+            this.addChild(this.gamepadCursor);
+        }
         
         // Move to the first element in the settings panel
         this.setSelectedElement(2);
@@ -624,9 +608,21 @@ export class HomeScreen extends PIXI.Container {
         // Position the gamepad cursor
         if (this.gamepadCursor && this.inputManager.isUsingGamepad()) {
             this.gamepadCursor.visible = true;
+            
+            // Get the global position of the element
+            const globalPos = element.getGlobalPosition();
+            // Convert global position back to local position relative to this container
+            const localPos = this.toLocal(globalPos);
+            
+            // Special adjustment for settings button
+            const isSettingsButton = index === 1;
+            const offsetX = isSettingsButton ? -17.5 : 0;
+            const offsetY = isSettingsButton ? -17.5 : 0;
+            
+            // Set cursor position using local coordinates with potential offset
             this.gamepadCursor.position.set(
-                element.position.x,
-                element.position.y
+                localPos.x + offsetX,
+                localPos.y + offsetY
             );
             
             // Adjust cursor size based on element size
@@ -635,6 +631,10 @@ export class HomeScreen extends PIXI.Container {
             this.gamepadCursor.clear();
             this.gamepadCursor.lineStyle(2, 0xFFFFFF, 0.8);
             this.gamepadCursor.drawRoundedRect(-5, -5, elementWidth + 10, elementHeight + 10, 10);
+
+            // Ensure gamepad cursor is always on top
+            this.removeChild(this.gamepadCursor);
+            this.addChild(this.gamepadCursor);
         }
     }
     

@@ -387,9 +387,11 @@ export class SoundManager {
 
     public playPowerUpSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
-        // FIXME: this is actually the wave start sound
-        zzfx(0.7,.05,520,.04,.18,.24,1,3.1,-6,0,17,.05,.08,0,0,0,0,.87,.27,.48,0);
+        // A gentler, more pleasant chime sound
+        zzfx(.4,.05,440,.3,.15,.2,2,2.1,0,0,50,.05,.08,0,0,.1,.1,.7,.1,.3,0);
+
     }
+
     public playGameOverSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
         zzfx(1, .05, 240, .3, .5, .3, 1, -4, -0.5);
@@ -398,7 +400,9 @@ export class SoundManager {
     public playWaveStartSound(): void {
         console.log("playWaveStartSound");
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
-        zzfx(0.7,.05,520,.04,.18,.24,1,3.1,-6,0,17,.05,.08,0,0,0,0,.87,.27,.48,0);
+        // A softer, more atmospheric wave start sound
+        zzfx(.3,.05,880,.2,.1,.15,0,2.5,0,0,200,.02,.02,0,0,.1,.1,.6,.05,.5,0);
+
     }
 
     public playBossDeathSound(): void {
@@ -412,7 +416,8 @@ export class SoundManager {
     }
 
     public playUpgradeSound(): void {
-        // Play a pleasant chime sound for upgrades
-        console.log("Fixme, play sound")
+        if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
+        // A pleasant, mystical chime sound for when upgrades appear
+        zzfx(.3,.05,1200,.3,.2,.4,1,4.5,0,50,100,.1,.1,0,0,.2,.1,.7,.05,.3,0);
     }
 } 
