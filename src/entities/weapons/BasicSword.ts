@@ -89,13 +89,20 @@ export class BasicSword extends BaseWeapon {
             // Player sword with more interesting design
             let baseColor = this.stats.color;
             try {
+                this.glowFilter.outerStrength = 0;
+                this.glowFilter.color = 0xffffff;
                 // Only check dashing if the player is fully initialized
                 if (this.owner instanceof Player && (this.owner.isDashing() || this.isDuringDashDamageExtension())) {
                     baseColor = 0xff6600; // More orange color during dash
+                    // this.glowFilter.color = 0xfff387;
+                    this.glowFilter.color = 0xfff387;
+                    this.glowFilter.outerStrength = 1;
                 }
+
             } catch (e) {
                 // During initialization, just use the default color
                 baseColor = this.stats.color;
+                // this.glowFilter.color = 0xffffff;
             }
             
             // Draw the main blade

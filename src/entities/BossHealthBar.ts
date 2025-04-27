@@ -89,6 +89,19 @@ export class BossHealthBar extends PIXI.Container {
         this.pivot.x = width / 2;
     }
 
+    public containsPoint(x: number, y: number): boolean {
+        const global = new PIXI.Point(300, 0);  // Get HealthBar's global position
+        const width = this.barWidth + 10; // Width of your panel's overall shape
+        const height = 80; // Height of your panel's overall shape
+        return (
+            x >= global.x &&
+            x <= global.x + width * this.scale.x &&
+            y >= global.y &&
+            y <= global.y + height * this.scale.y
+        ) 
+        
+    }
+
     public setName(name: string): void {
         this.bossName = name;
         this.bossNameText.text = name;

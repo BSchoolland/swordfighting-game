@@ -24,6 +24,8 @@ export abstract class BaseEnemy extends Entity {
     protected stats: EnemyStats;
     protected stunned: boolean = false;
     protected stunTimer: number = 0;
+    protected stunImmunity: number = 500 // 500ms immunity after waking up from stun
+    protected stunImmunityTimer: number = 0;
     protected isChasing: boolean = false;
     protected outOfRangeTimer: number = 0;
     public playerIsAttacking: boolean = false;
@@ -69,7 +71,18 @@ export abstract class BaseEnemy extends Entity {
 
     public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
         const wasAlive = this.isAlive();
-        super.takeDamage(amount, knockbackDir, knockbackForce);
+        // don't allow stacking stun
+        if (!this.stunned && this.stunImmunityTimer <= 0) {
+            this.stunned = true;
+            this.stunTimer = BaseEnemy.STUN_DURATION;
+            this.isChasing = true; // Start chasing when damaged
+            this.outOfRangeTimer = 0;
+            // knockback on stun
+            super.takeDamage(amount, knockbackDir, knockbackForce);
+        } else {
+            super.takeDamage(amount, knockbackDir, 0); // no knockback if already stunned
+        }
+        
         
         // If the enemy died from this damage, award EXP
         if (wasAlive && !this.isAlive()) {
@@ -80,11 +93,7 @@ export abstract class BaseEnemy extends Entity {
                 console.log(`Player leveled up to ${this.player.getLevel()}!`);
             }
         }
-
-        this.stunned = true;
-        this.stunTimer = BaseEnemy.STUN_DURATION;
-        this.isChasing = true; // Start chasing when damaged
-        this.outOfRangeTimer = 0;
+        
     }
 
     public applyRepulsion(): void {
@@ -176,6 +185,7 @@ export abstract class BaseEnemy extends Entity {
             this.stunTimer -= delta * 16.67;
             if (this.stunTimer <= 0 || currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
+                this.stunImmunityTimer = this.stunImmunity;
                 if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
                     this.velocity.x = 0;
                     this.velocity.y = 0;
@@ -184,6 +194,10 @@ export abstract class BaseEnemy extends Entity {
             // Apply velocity and knockback while stunned
             this.applyVelocity();
             return;
+        } else if (this.stunImmunityTimer > 0) {
+            this.stunImmunityTimer -= delta * 1600.67;
+            console.log(`Stun immunity timer: ${this.stunImmunityTimer}`);
+            // continue, we're not stunned
         }
 
         // Apply enemy and screen edge repulsion before movement

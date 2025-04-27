@@ -76,6 +76,29 @@ export class ExpBar extends PIXI.Container {
         this.scale.set(0.8);
     }
 
+    public containsPoint(x: number, y: number): boolean {
+        const global = new PIXI.Point(0, 500);  // EXP's global position
+        const width = 330;
+        const height = 1000; 
+        const exclusionPoint= new PIXI.Point(130, 530); // anything that's to the right and above this point is excluded
+
+        if (
+            x >= global.x &&
+            x <= global.x + width * this.scale.x &&
+            y >= global.y &&
+            y <= global.y + height * this.scale.y
+        ) {
+            if (
+                x >= exclusionPoint.x &&
+                y <= exclusionPoint.y
+            ) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public updateExp(current: number, max: number, level: number): void {
         const newRatio = Math.max(0, Math.min(1, current / max));
         

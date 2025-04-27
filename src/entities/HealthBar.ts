@@ -100,6 +100,29 @@ export class HealthBar extends PIXI.Container {
 
     }
 
+    public containsPoint(x: number, y: number): boolean {
+        const global = new PIXI.Point(0, 0);  // Get HealthBar's global position
+        const width = 280; // Width of your panel's overall shape
+        const height = 120; // Height of your panel's overall shape
+        const exclusionPoint= new PIXI.Point(150, 60); // anything that's right and below this point is excluded
+        // console.log(Math.round(x), Math.round(y));
+        if (
+            x >= global.x &&
+            x <= global.x + width * this.scale.x &&
+            y >= global.y &&
+            y <= global.y + height * this.scale.y
+        ) {
+            if (
+                x >= exclusionPoint.x &&
+                y >= exclusionPoint.y
+            ) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public updateHealth(current: number, max: number): void {
         const newRatio = Math.max(0, Math.min(1, current / max));
         

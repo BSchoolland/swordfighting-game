@@ -215,6 +215,8 @@ export class GameScene extends PIXI.Container {
 
         // Reset player position and state
         this.player.reset();
+        // this.player.increaseSwingSpeed(4);
+        // this.player.increaseSwordLength(2);
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
         // Reset wave system
@@ -323,7 +325,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        // this.waveSystem.setWave(3);
+        // this.waveSystem.setWave(16);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -478,7 +480,11 @@ export class GameScene extends PIXI.Container {
         const boss = this.enemies.find(enemy => enemy instanceof BossEnemy) as BossEnemy | undefined;
         if (boss) {
             // If we already have a boss health bar, no need to recreate it
-            if (this.bossHealthBar) return;
+            if (this.bossHealthBar) {
+                const targetAlpha = this.bossHealthBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
+                this.bossHealthBar.alpha += (targetAlpha - this.bossHealthBar.alpha) * 0.1;
+                return;
+            };
             
             // Add boss UI elements
             this.bossHealthBar = boss.getHealthBar();
@@ -861,12 +867,12 @@ export class GameScene extends PIXI.Container {
         );
 
         // check if the player is near in space to the health bar
-        if (this.healthBar.containsPoint(this.player.x, this.player.y)) {
-            this.healthBar.alpha = 0;
-        } else {
-            this.healthBar.alpha = 1;
-        }
+        const targetAlpha = this.healthBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
+        this.healthBar.alpha += (targetAlpha - this.healthBar.alpha) * 0.1;
         
+        // check if player is near in space to the exp bar
+        const targetExpAlpha = this.expBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
+        this.expBar.alpha += (targetExpAlpha - this.expBar.alpha) * 0.1;
 
         // Update health bar
         this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());

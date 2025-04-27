@@ -44,8 +44,8 @@ export class UpgradeSystem extends PIXI.Container {
     private static readonly RARITY_WEIGHTS = {
         [UpgradeRarity.COMMON]: 65,
         [UpgradeRarity.RARE]: 23,
-        [UpgradeRarity.EPIC]: 10,
-        [UpgradeRarity.LEGENDARY]: 2
+        [UpgradeRarity.EPIC]: 11,
+        [UpgradeRarity.LEGENDARY]: 1
     };
 
     
