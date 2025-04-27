@@ -22,14 +22,8 @@ export class BoomerangProjectile extends Projectile {
         owner: Entity,
         startPos: { x: number, y: number },
         direction: { x: number, y: number },
-        isEnemy: boolean = false
+        stats: ProjectileStats,
     ) {
-        const stats = { ...BoomerangProjectile.STATS };
-        if (isEnemy) {
-            stats.damage = 6;
-            stats.knockback = 1.5;
-            stats.speed = 3;
-        }
         super(bounds, owner, stats, startPos, direction);
         this.initialDirection = { ...direction };
         

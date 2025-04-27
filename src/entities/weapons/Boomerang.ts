@@ -50,7 +50,7 @@ export class Boomerang extends RangedWeapon {
     }
 
     protected createProjectile(startPos: { x: number, y: number }, direction: { x: number, y: number }): BoomerangProjectile {
-        return new BoomerangProjectile(this.owner.parent.getBounds(), this.owner, startPos, direction, this.isEnemy);
+        return new BoomerangProjectile(this.owner.parent.getBounds(), this.owner, startPos, direction, this.stats.projectileStats);
     }
 
     protected drawWeapon(): void {

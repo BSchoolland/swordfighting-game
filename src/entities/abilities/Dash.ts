@@ -69,6 +69,10 @@ export class Dash extends BaseAbility {
         console.log(`Dash cooldown reduced by ${percentage * 100}%. New multiplier: ${this.cooldownMultiplier}`);
     }
 
+    public getCooldownMultiplier(): number {
+        return this.cooldownMultiplier;
+    }
+
     private calculateDashDirection(): { x: number, y: number } {
         const movement = this.inputManager.getMovementVector();
         const length = Math.sqrt(movement.x * movement.x + movement.y * movement.y);

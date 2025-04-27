@@ -9,7 +9,7 @@ export class MasterOfArmsBoss extends BossEnemy {
     private static readonly STATS = {
         health: 400,
         speed: 0.5,
-        maxSpeed: 2.0,
+        maxSpeed: 2.5,
         chaseRange: 600,
         color: 0xFFD700, // Gold color for the master
         movementRestriction: 0.7,
@@ -17,7 +17,7 @@ export class MasterOfArmsBoss extends BossEnemy {
         chaseDuration: 5000,
         knockbackResistance: 0.5,
         maxRotateSpeed: 3.0,
-        expValue: 300 // Final boss gives 300 EXP
+        expValue: 30000 // Final boss gives 30000 EXP
     };
 
     private weaponTypes: (new (owner: Entity) => BaseWeapon)[] = [
@@ -41,6 +41,11 @@ export class MasterOfArmsBoss extends BossEnemy {
         // Start with master sword
         this.weapon = new MasterSword(this);
         this.addChild(this.weapon);
+    }
+    public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
+        // Apply knockback resistance
+        const reducedKnockback = knockbackForce * (1 - this.stats.knockbackResistance!);
+        super.takeDamage(amount, knockbackDir, reducedKnockback);
     }
 
     protected drawSprite(): void {

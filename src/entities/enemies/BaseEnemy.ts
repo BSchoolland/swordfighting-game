@@ -24,6 +24,8 @@ export abstract class BaseEnemy extends Entity {
     protected stats: EnemyStats;
     protected stunned: boolean = false;
     protected stunTimer: number = 0;
+    protected stunImmunity: number = 500 // 500ms immunity after waking up from stun
+    protected stunImmunityTimer: number = 0;
     protected isChasing: boolean = false;
     protected outOfRangeTimer: number = 0;
     public playerIsAttacking: boolean = false;
@@ -69,7 +71,18 @@ export abstract class BaseEnemy extends Entity {
 
     public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
         const wasAlive = this.isAlive();
-        super.takeDamage(amount, knockbackDir, knockbackForce);
+        // don't allow stacking stun
+        if (!this.stunned && this.stunImmunityTimer <= 0) {
+            this.stunned = true;
+            this.stunTimer = BaseEnemy.STUN_DURATION;
+            this.isChasing = true; // Start chasing when damaged
+            this.outOfRangeTimer = 0;
+            // knockback on stun
+            super.takeDamage(amount, knockbackDir, knockbackForce);
+        } else {
+            super.takeDamage(amount, knockbackDir, 0); // no knockback if already stunned
+        }
+        
         
         // If the enemy died from this damage, award EXP
         if (wasAlive && !this.isAlive()) {
@@ -80,11 +93,7 @@ export abstract class BaseEnemy extends Entity {
                 console.log(`Player leveled up to ${this.player.getLevel()}!`);
             }
         }
-
-        this.stunned = true;
-        this.stunTimer = BaseEnemy.STUN_DURATION;
-        this.isChasing = true; // Start chasing when damaged
-        this.outOfRangeTimer = 0;
+        
     }
 
     public applyRepulsion(): void {
@@ -176,6 +185,7 @@ export abstract class BaseEnemy extends Entity {
             this.stunTimer -= delta * 16.67;
             if (this.stunTimer <= 0 || currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
+                this.stunImmunityTimer = this.stunImmunity;
                 if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
                     this.velocity.x = 0;
                     this.velocity.y = 0;
@@ -184,6 +194,10 @@ export abstract class BaseEnemy extends Entity {
             // Apply velocity and knockback while stunned
             this.applyVelocity();
             return;
+        } else if (this.stunImmunityTimer > 0) {
+            this.stunImmunityTimer -= delta * 1600.67;
+            console.log(`Stun immunity timer: ${this.stunImmunityTimer}`);
+            // continue, we're not stunned
         }
 
         // Apply enemy and screen edge repulsion before movement
@@ -229,9 +243,14 @@ export abstract class BaseEnemy extends Entity {
                 this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
                 this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
             } else {
-                // In perfect range, slow down and attack
-                this.velocity.x *= 0.8;
-                this.velocity.y *= 0.8;
+                // In attack range, if not in center of range, move towards center of range
+                if (distance > (this.attackRange + this.retreatRange)/2) {
+                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
+                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
+                } else {
+                    this.velocity.x *= 0.01;
+                    this.velocity.y *= 0.01;
+                }
                 this.weapon.swing();
             }
 
@@ -272,5 +291,14 @@ export abstract class BaseEnemy extends Entity {
         const bounds = this.sprite.getBounds();
         // Use the larger of width/height divided by 2 for the radius
         this.radius = Math.max((Math.max(bounds.width, bounds.height) / 2) - 10, 0);
+    }
+
+    protected updateHealthBar(): void {
+        if (this.healthBar) {
+            // Check if the healthBar has an updateHealth method (HealthBar or BossHealthBar)
+            if ('updateHealth' in this.healthBar) {
+                (this.healthBar as any).updateHealth(this.health, this.maxHealth);
+            }
+        }
     }
 } 

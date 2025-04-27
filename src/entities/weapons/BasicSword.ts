@@ -7,6 +7,8 @@ import { BaseWeapon, WeaponStats } from './BaseWeapon';
 import { Player } from '../Player';
 import { ParticleSystem } from '../../effects/ParticleSystem';
 import { SoundManager } from '../../systems/SoundManager';
+import { GlowFilter } from '@pixi/filter-glow';
+
 
 const BASE_PLAYER_PARAMS = {
     damage: 20,
@@ -65,8 +67,19 @@ export class BasicSword extends BaseWeapon {
     protected readonly TRAIL_INTERVAL = 16; // Collect points every ~16ms
     protected readonly DASH_TRAIL_INTERVAL = 8; // Collect points more frequently during dash
 
+    public glowFilter: GlowFilter;
+
     constructor(owner: Entity, isEnemy: boolean = false) {
         super(owner, isEnemy ? BasicSword.ENEMY_PARAMS : BasicSword.PLAYER_PARAMS, isEnemy);
+        // glow
+        this.glowFilter = new GlowFilter({
+            color: 0xffffff,
+            distance: 30,
+            outerStrength: 0,
+            innerStrength: 0,
+            quality: 1
+        });
+        this.filters = [this.glowFilter];
     }
 
     protected drawWeapon(): void {
@@ -76,13 +89,18 @@ export class BasicSword extends BaseWeapon {
             // Player sword with more interesting design
             let baseColor = this.stats.color;
             try {
+                this.glowFilter.outerStrength = 0;
                 // Only check dashing if the player is fully initialized
                 if (this.owner instanceof Player && (this.owner.isDashing() || this.isDuringDashDamageExtension())) {
                     baseColor = 0xff6600; // More orange color during dash
+                    this.glowFilter.color = 0xfff387;
+                    this.glowFilter.outerStrength = 1;
                 }
+
             } catch (e) {
                 // During initialization, just use the default color
                 baseColor = this.stats.color;
+                // this.glowFilter.color = 0xffffff;
             }
             
             // Draw the main blade
