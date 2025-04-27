@@ -28,7 +28,7 @@ export class BerserkerBoss extends BossEnemy {
     private static readonly RAGE_TRANSITION_DURATION = 1000; // 1 second transition
     private rageGlow: PIXI.Graphics;
     private rageLines: PIXI.Graphics;
-    private pulseTime: number = 0;
+    private ragePulseTime: number = 0;
 
     constructor(bounds: { width: number; height: number }, player: Player) {
         // Create a deep copy of STATS to prevent modifying the shared object
@@ -90,17 +90,17 @@ export class BerserkerBoss extends BossEnemy {
             // Draw pulsing glow
             const glowAlpha = 0.3 * rageIntensity;
             this.rageGlow.beginFill(0xff0000, glowAlpha);
-            this.rageGlow.drawCircle(0, 0, 25 + Math.sin(this.pulseTime * 0.01) * 5);
+            this.rageGlow.drawCircle(0, 0, 25 + Math.sin(this.ragePulseTime * 0.01) * 5);
             this.rageGlow.endFill();
 
             // Draw rage lines
-            const lineIntensity = rageIntensity * (0.7 + Math.sin(this.pulseTime * 0.01) * 0.3);
+            const lineIntensity = rageIntensity * (0.7 + Math.sin(this.ragePulseTime * 0.01) * 0.3);
             this.rageLines.lineStyle(2, 0xff0000, lineIntensity);
             
             // Draw radiating lines
             for (let i = 0; i < 8; i++) {
                 const angle = (i / 8) * Math.PI * 2;
-                const length = 20 + Math.sin(this.pulseTime * 0.01 + i) * 5;
+                const length = 20 + Math.sin(this.ragePulseTime * 0.01 + i) * 5;
                 const x = Math.cos(angle) * length;
                 const y = Math.sin(angle) * length;
                 this.rageLines.moveTo(Math.cos(angle) * 15, Math.sin(angle) * 15);
@@ -122,7 +122,7 @@ export class BerserkerBoss extends BossEnemy {
         // Reset rage state
         this.isEnraged = false;
         this.rageTransitionTime = 0;
-        this.pulseTime = 0;
+        this.ragePulseTime = 0;
         
         // Clear rage effects
         this.rageGlow.clear();
@@ -159,7 +159,7 @@ export class BerserkerBoss extends BossEnemy {
             }
 
             // Update pulse time for animations
-            this.pulseTime += delta * 1000;
+            this.ragePulseTime += delta * 1000;
 
             // Update visual effects
             this.drawRageEffects(rageIntensity);

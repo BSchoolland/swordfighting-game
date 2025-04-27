@@ -381,7 +381,6 @@ export class UpgradeSystem extends PIXI.Container {
         this.displayedUpgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
         
         // Create and position upgrade cards with screen margin
-        const availableWidth = this.dimensions.width - (UpgradeSystem.SCREEN_MARGIN * 2);
         const totalWidth = (UpgradeSystem.CARD_WIDTH * this.displayedUpgrades.length) + (UpgradeSystem.CARD_SPACING * (this.displayedUpgrades.length - 1));
         
         // Center cards horizontally with margin

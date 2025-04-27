@@ -20,7 +20,16 @@ export class WarriorHammer extends BaseWeapon {
         optimalRange: 0.8,
         retreatRange: 0.4,
         windUpTime: 600, // Longer windup for telegraphing
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xcc0000,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
@@ -37,7 +46,16 @@ export class WarriorHammer extends BaseWeapon {
         optimalRange: 1.5,
         retreatRange: 0.6,
         windUpTime: 800, // Even longer windup for enemies
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xcc0000,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity, isEnemy: boolean = false) {

@@ -178,17 +178,7 @@ export class GameOverScreen extends PIXI.Container {
         animate();
 
         // Score information
-        const currentScore = scoreSystem.getCurrentScore();
-        const waveReached = scoreSystem.getHighestWave();
-        const isHighScore = scoreSystem.checkAndSaveHighScore();
-
-        // Create score text
-        const scoreStyle = new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: 32,
-            fill: 0xFFD700,
-            align: 'center'
-        });
+        scoreSystem.checkAndSaveHighScore();
 
         // Show sarcastic tip based on current wave
         const tipStyle = new PIXI.TextStyle({

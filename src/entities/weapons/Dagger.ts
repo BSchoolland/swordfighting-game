@@ -20,7 +20,16 @@ export class Dagger extends BaseWeapon {
         retreatRange: 0.7,
         windUpTime: 100, // Quick wind-up
         previewAlpha: 0.3,
-        range: 30
+        range: 30,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xFFAA00,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity, isEnemy: boolean = true) {

@@ -135,8 +135,6 @@ export class ExpBar extends PIXI.Container {
         if (ratio >= 0.99) {
             // Create a flashing effect between gold and white
             const pulse = Math.sin(Date.now() / 200) * 0.5 + 0.5; // Value between 0 and 1
-            const gold = 0xffcc00;  // Gold: R:255, G:204, B:0
-            const white = 0xffffff; // White: R:255, G:255, B:255
             
             // Interpolate between gold and white based on pulse
             const r = 0xff;
@@ -152,7 +150,7 @@ export class ExpBar extends PIXI.Container {
         return 0xffe666; // Even brighter
     }
 
-    public update(deltaTime: number): void {
+    public update(_deltaTime: number): void {
         // Animate exp bar
         if (this.isAnimating) {
             // Smoothly animate to target exp

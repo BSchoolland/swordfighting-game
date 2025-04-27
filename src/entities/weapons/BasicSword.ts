@@ -24,7 +24,16 @@ const BASE_PLAYER_PARAMS = {
     optimalRange: 0.8,
     retreatRange: 0.6,
     windUpTime: 100,
-    previewAlpha: 0.3
+    previewAlpha: 0.3,
+    projectileStats: {
+        speed: 0,
+        damage: 0,
+        knockback: 0,
+        size: 0,
+        color: 0xcccccc,
+        lifetime: 0,
+        maxRange: 0
+    }
 };
 
 export class BasicSword extends BaseWeapon {
@@ -42,7 +51,16 @@ export class BasicSword extends BaseWeapon {
         optimalRange: 0.8,
         retreatRange: 0.6,
         windUpTime: 100,
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xcccccc,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
@@ -59,7 +77,16 @@ export class BasicSword extends BaseWeapon {
         optimalRange: 0.8,
         retreatRange: 0.6,
         windUpTime: 300,
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xff0000,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     private lastDashTime: number = 0;
@@ -224,7 +251,13 @@ export class BasicSword extends BaseWeapon {
     }
 
     public static setPlayerParam(param: keyof WeaponStats, value: number): void {
-        BasicSword.PLAYER_PARAMS[param] = value;
+        // Check if the parameter is projectileStats and handle it differently
+        if (param === 'projectileStats') {
+            console.error("Cannot set projectileStats directly with setPlayerParam");
+            return;
+        }
+        // Otherwise, set the parameter as a number
+        (BasicSword.PLAYER_PARAMS[param] as number) = value;
     }
 
     public setBladeLength(length: number): void {

@@ -13,7 +13,6 @@ export class HomeScreen extends PIXI.Container {
     private dimensions: { width: number; height: number };
     private onStart: () => Promise<void>;
     private weaponSprites: PIXI.Graphics[] = [];
-    private readonly weaponColors = [0xFFD700, 0xFF4400, 0x00AA44, 0x666666];
     private readonly weaponRotationSpeeds = [0.02, -0.03, 0.025, -0.015];
     private settingsPanel: PIXI.Container | null = null;
     private tipsText!: PIXI.Text;

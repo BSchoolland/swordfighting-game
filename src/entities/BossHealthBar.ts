@@ -154,7 +154,7 @@ export class BossHealthBar extends PIXI.Container {
         return 0xffcc00; // Yellow for low health - makes it feel more urgent/dangerous
     }
 
-    public update(deltaTime: number): void {
+    public update(_deltaTime: number): void {
         // Animate health bar
         if (this.isAnimating) {
             // Smoothly animate to target health

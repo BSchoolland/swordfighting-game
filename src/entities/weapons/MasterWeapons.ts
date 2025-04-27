@@ -26,7 +26,16 @@ export class MasterSword extends BerserkerSword {
         optimalRange: 0.9,
         retreatRange: 0.7,
         windUpTime: 400, // Faster windup than enemy sword
-        previewAlpha: 0.4
+        previewAlpha: 0.4,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xFFD700,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity) {
@@ -53,7 +62,16 @@ export class MasterHammer extends WarriorHammer {
         optimalRange: 1.6,
         retreatRange: 0.7,
         windUpTime: 800,
-        previewAlpha: 0.4
+        previewAlpha: 0.4,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xFFD700,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity) {
@@ -144,7 +162,16 @@ export class MasterSpear extends Spear {
         optimalRange: 0.95,
         retreatRange: 0.6,
         windUpTime: 300, // Faster than enemy spear (400)
-        previewAlpha: 0.4
+        previewAlpha: 0.4,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xFFD700,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity) {
@@ -177,7 +204,16 @@ export class MasterDagger extends Dagger {
         retreatRange: 0.8,
         windUpTime: 80, // Faster windup
         previewAlpha: 0.4,
-        range: 35
+        range: 35,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xFFD700,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     constructor(owner: Entity) {

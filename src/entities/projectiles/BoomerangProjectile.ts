@@ -2,16 +2,6 @@ import { Entity } from '../Entity';
 import { Projectile, ProjectileStats } from './Projectile';
 
 export class BoomerangProjectile extends Projectile {
-    private static readonly STATS: ProjectileStats = {
-        speed: 4,
-        damage: 8,
-        knockback: 2,
-        size: 12,
-        color: 0x8B4513,
-        lifetime: 4000,
-        maxRange: 300
-    };
-
     private rotationSpeed: number = 0.2;
     private isReturning: boolean = false;
     private initialDirection: { x: number, y: number };

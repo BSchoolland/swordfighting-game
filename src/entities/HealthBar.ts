@@ -163,7 +163,7 @@ export class HealthBar extends PIXI.Container {
         return 0xff0000; // Red
     }
 
-    public update(deltaTime: number): void {
+    public update(_deltaTime: number): void {
         // Animate health bar
         if (this.isAnimating) {
             // Smoothly animate to target health

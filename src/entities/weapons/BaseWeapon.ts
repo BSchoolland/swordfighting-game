@@ -4,6 +4,7 @@ import { Entity } from '../Entity';
 import { Player } from '../Player';
 import { ParticleSystem } from '../../effects/ParticleSystem';
 import { SoundManager } from '../../systems/SoundManager';
+import { ProjectileStats } from '../projectiles/Projectile';
 
 export interface WeaponStats {
     projectileStats: ProjectileStats;

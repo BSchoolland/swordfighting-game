@@ -20,7 +20,16 @@ export class Spear extends BaseWeapon {
         optimalRange: 0.9, // Needs to be at tip for max damage
         retreatRange: 0.5,
         windUpTime: 400,
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0x888888,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     private static readonly ENEMY_PARAMS: WeaponStats = {
@@ -37,7 +46,16 @@ export class Spear extends BaseWeapon {
         optimalRange: 0.9,
         retreatRange: 0.5,
         windUpTime: 400, // Longer windup for telegraphing
-        previewAlpha: 0.3
+        previewAlpha: 0.3,
+        projectileStats: {
+            speed: 0,
+            damage: 0,
+            knockback: 0,
+            size: 0,
+            color: 0xaa4444,
+            lifetime: 0,
+            maxRange: 0
+        }
     };
 
     private readonly THRUST_DISTANCE = 30; // How far the spear moves forward during thrust
@@ -163,7 +181,13 @@ export class Spear extends BaseWeapon {
     }
 
     public static setPlayerParam(param: keyof WeaponStats, value: number): void {
-        Spear.PLAYER_PARAMS[param] = value;
+        // Check if the parameter is projectileStats and handle it differently
+        if (param === 'projectileStats') {
+            console.error("Cannot set projectileStats directly with setPlayerParam");
+            return;
+        }
+        // Otherwise, set the parameter as a number
+        (Spear.PLAYER_PARAMS[param] as number) = value;
     }
 
     public getCooldownProgress(): number {

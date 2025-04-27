@@ -2,7 +2,6 @@ import * as PIXI from 'pixi.js';
 import { Player } from './Player';
 
 export class StatsDisplay extends PIXI.Container {
-    private static readonly PANEL_WIDTH = 250;
     private static readonly PANEL_HEIGHT = 140;
     private static readonly FADE_SPEED = 0.05;
     

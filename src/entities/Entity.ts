@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { HealthBar } from './HealthBar';
 import { SoundManager } from '../systems/SoundManager';
 import { GlowFilter } from '@pixi/filter-glow';
 
@@ -21,8 +20,6 @@ export abstract class Entity extends PIXI.Container {
     public canBlock: boolean = false;
      // glow
     public glowFilter: GlowFilter;
-    private pulseTime: number = 0;
-     
 
     constructor(bounds: { width: number; height: number }, maxHealth: number) {
         super();
