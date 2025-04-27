@@ -215,8 +215,8 @@ export class GameScene extends PIXI.Container {
 
         // Reset player position and state
         this.player.reset();
-        // this.player.increaseSwingSpeed(4);
-        // this.player.increaseSwordLength(2);
+        this.player.increaseSwingSpeed(4);
+        this.player.increaseSwordLength(2);
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
         // Reset wave system
@@ -325,7 +325,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        this.waveSystem.setWave(3);
+        // this.waveSystem.setWave(15);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -443,7 +443,8 @@ export class GameScene extends PIXI.Container {
             },
             async () => this.showHomeScreen(),
             this.scoreSystem,
-            this.inputManager
+            this.inputManager,
+            this.waveSystem
         );
         this.addChild(this.gameOverScreen);
         this.soundManager.playGameOverSound();
@@ -663,7 +664,7 @@ export class GameScene extends PIXI.Container {
             'The two or three players who helped test the game',
             'Depending on whether you count me as a player',
             'And of course,',
-            'Our AI overlords',
+            'You!',
             '',
             '',
             'Thank you for playing!'
@@ -903,7 +904,7 @@ export class GameScene extends PIXI.Container {
         if (!this.player.isAlive() && !this.isGameOver) {
             if (this.playerDeathTimer === 0) {
                 // Player just died, start the timer
-                this.playerDeathTimer = 3000; // 3 seconds in milliseconds
+                this.playerDeathTimer = 1250;
                 
                 // Create player death explosion effect
                 this.soundManager.playBossDeathSound(); // Use the same sound as boss death
