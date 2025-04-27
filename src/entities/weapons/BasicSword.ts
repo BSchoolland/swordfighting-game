@@ -75,7 +75,7 @@ export class BasicSword extends BaseWeapon {
         this.glowFilter = new GlowFilter({
             color: 0xffffff,
             distance: 30,
-            outerStrength: 1,
+            outerStrength: 0,
             innerStrength: 0,
             quality: 1
         });
@@ -90,11 +90,9 @@ export class BasicSword extends BaseWeapon {
             let baseColor = this.stats.color;
             try {
                 this.glowFilter.outerStrength = 0;
-                this.glowFilter.color = 0xffffff;
                 // Only check dashing if the player is fully initialized
                 if (this.owner instanceof Player && (this.owner.isDashing() || this.isDuringDashDamageExtension())) {
                     baseColor = 0xff6600; // More orange color during dash
-                    // this.glowFilter.color = 0xfff387;
                     this.glowFilter.color = 0xfff387;
                     this.glowFilter.outerStrength = 1;
                 }

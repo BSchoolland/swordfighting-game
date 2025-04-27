@@ -106,7 +106,7 @@ export class GameScene extends PIXI.Container {
         this.player.position.set(-1000, -1000);
         
         // Initialize upgrade system before wave system
-        this.upgradeSystem = new UpgradeSystem(dimensions, this.player);
+        this.upgradeSystem = new UpgradeSystem(dimensions, this.player, this.inputManager);
         this.addChild(this.upgradeSystem);
 
         // Initialize wave system with upgrade system
@@ -176,7 +176,7 @@ export class GameScene extends PIXI.Container {
         // Move player off screen initially
         this.player.position.set(-1000, -1000);
         
-        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
+        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player, this.inputManager);
         this.addChild(this.upgradeSystem);
         
         this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
@@ -188,7 +188,7 @@ export class GameScene extends PIXI.Container {
         console.log('[GameScene] Creating home screen');
         this.homeScreen = new HomeScreen(this.dimensions, async () => {
             await this.startGame();
-        });
+        }, this.inputManager);
         this.addChild(this.homeScreen);
     }
 
@@ -325,7 +325,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        // this.waveSystem.setWave(16);
+        this.waveSystem.setWave(3);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -409,7 +409,7 @@ export class GameScene extends PIXI.Container {
         
         // Reinitialize upgrade system
         console.log('[GameScene] Reinitializing upgrade system');
-        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player);
+        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player, this.inputManager);
         this.addChild(this.upgradeSystem);
         
         // Reinitialize wave system
@@ -442,7 +442,8 @@ export class GameScene extends PIXI.Container {
                 await this.restart();
             },
             async () => this.showHomeScreen(),
-            this.scoreSystem
+            this.scoreSystem,
+            this.inputManager
         );
         this.addChild(this.gameOverScreen);
         this.soundManager.playGameOverSound();
@@ -745,6 +746,15 @@ export class GameScene extends PIXI.Container {
     }
 
     public update(delta: number): void {
+        // Update Home Screen or Game Over Screen if they exist
+        if (this.homeScreen) {
+            this.homeScreen.update();
+        }
+        
+        if (this.gameOverScreen) {
+            this.gameOverScreen.update();
+        }
+        
         if (!this.gameStarted || this.isGameOver) return;
 
         // Update upgrade system
@@ -752,6 +762,11 @@ export class GameScene extends PIXI.Container {
         
         // Handle StatsDisplay visibility
         const upgradeScreenVisible = this.upgradeSystem.isUpgradeScreenVisible();
+
+        // Always update target cursor visibility based on upgrade screen state
+        if (this.targetCursor) {
+            this.targetCursor.visible = !upgradeScreenVisible;
+        }
 
         // Show stats when upgrade screen is visible
         if (upgradeScreenVisible) {

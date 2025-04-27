@@ -406,6 +406,11 @@ export class SoundManager {
         zzfx(2.1,.05,64,.04,.21,.64,4,3.3,-5,0,0,0,0,1.2,0,.4,.24,.33,.28,0,0);
     }
 
+    public playMenuSound(): void {
+        if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
+        zzfx(.3,.05,980,.01,.03,.08,1,.5,0,0,0,0,0,0,0,0,0,.5,.01,0,0);
+    }
+
     public playUpgradeSound(): void {
         // Play a pleasant chime sound for upgrades
         console.log("Fixme, play sound")

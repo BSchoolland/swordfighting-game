@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Player } from '../entities/Player';
 import { SoundManager } from './SoundManager';
+import { InputManager } from './InputManager';
 
 export enum UpgradeRarity {
     COMMON = 'Common',
@@ -62,13 +63,22 @@ export class UpgradeSystem extends PIXI.Container {
     // Track chosen upgrades
     private chosenUpgrades: Map<UpgradeType, Upgrade> = new Map();
     private onUpgradeSelected: (() => void) | null = null;
+    
+    // Gamepad navigation properties
+    private inputManager: InputManager;
+    private currentSelectedIndex: number = 0;
+    private gamepadCursor: PIXI.Graphics | null = null;
+    private lastInputTime: number = 0;
+    private readonly INPUT_DEBOUNCE_TIME = 200; // ms
+    private displayedUpgrades: Upgrade[] = [];
 
-    constructor(dimensions: { width: number; height: number }, player: Player) {
+    constructor(dimensions: { width: number; height: number }, player: Player, inputManager: InputManager) {
         super();
         this.dimensions = dimensions;
         this.player = player;
         this.soundManager = SoundManager.getInstance();
         this.lastCheckedLevel = player.getLevel();
+        this.inputManager = inputManager;
         
         this.initializeUpgrades();
         
@@ -77,6 +87,11 @@ export class UpgradeSystem extends PIXI.Container {
         this.background.drawRect(0, 0, dimensions.width, dimensions.height);
         this.background.endFill();
         this.addChild(this.background);
+        
+        // Create gamepad selection cursor (initially invisible)
+        this.gamepadCursor = new PIXI.Graphics();
+        this.gamepadCursor.visible = false;
+        this.addChild(this.gamepadCursor);
         
         this.visible = false;
     }
@@ -344,6 +359,11 @@ export class UpgradeSystem extends PIXI.Container {
         if (currentLevel > this.lastCheckedLevel) {
             this.lastCheckedLevel = currentLevel;
         }
+        
+        // Handle gamepad navigation when visible
+        if (this.isVisible) {
+            this.handleGamepadInput();
+        }
     }
 
     public showUpgradeSelection(isBossWave: boolean = false, onSelected?: () => void): void {
@@ -352,16 +372,17 @@ export class UpgradeSystem extends PIXI.Container {
         this.isVisible = true;
         this.visible = true;
         this.onUpgradeSelected = onSelected || null;
+        this.currentSelectedIndex = 0; // Reset selection index
 
         // Play upgrade sound
         this.soundManager.playUpgradeSound();
 
         // Get random upgrades
-        const upgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
+        this.displayedUpgrades = this.getRandomUpgradesOfDifferentTypes(3, isBossWave);
         
         // Create and position upgrade cards with screen margin
         const availableWidth = this.dimensions.width - (UpgradeSystem.SCREEN_MARGIN * 2);
-        const totalWidth = (UpgradeSystem.CARD_WIDTH * upgrades.length) + (UpgradeSystem.CARD_SPACING * (upgrades.length - 1));
+        const totalWidth = (UpgradeSystem.CARD_WIDTH * this.displayedUpgrades.length) + (UpgradeSystem.CARD_SPACING * (this.displayedUpgrades.length - 1));
         
         // Center cards horizontally with margin
         const startX = Math.max(
@@ -375,8 +396,8 @@ export class UpgradeSystem extends PIXI.Container {
             (this.dimensions.height / 2) + 20
         );
         
-        upgrades.forEach((upgrade, index) => {
-            const card = this.createUpgradeCard(upgrade);
+        this.displayedUpgrades.forEach((upgrade, index) => {
+            const card = this.createUpgradeCard(upgrade, index);
             // Since the card's pivot is now at its center, we need to position by the center point
             const cardCenterX = startX + (UpgradeSystem.CARD_WIDTH / 2) + (index * (UpgradeSystem.CARD_WIDTH + UpgradeSystem.CARD_SPACING));
             card.position.set(cardCenterX, cardCenterY);
@@ -390,9 +411,12 @@ export class UpgradeSystem extends PIXI.Container {
             this.addChild(particleContainer);
             this.particleContainers.push(particleContainer);
         });
+        
+        // Highlight the first card
+        this.setSelectedCard(0);
     }
 
-    private createUpgradeCard(upgrade: Upgrade): PIXI.Container {
+    private createUpgradeCard(upgrade: Upgrade, index: number): PIXI.Container {
         const card = new PIXI.Container();
         
         // Card background with modern sci-fi styling
@@ -426,6 +450,11 @@ export class UpgradeSystem extends PIXI.Container {
         border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
         card.addChild(border);
         
+        // Create container for card content to keep it separate from scan line
+        const contentContainer = new PIXI.Container();
+        contentContainer.position.set(0, 0);
+        card.addChild(contentContainer);
+        
         // Rarity indicator - minimal dot pattern
         const rarityIndicator = new PIXI.Graphics();
         rarityIndicator.beginFill(rarityColor, 0.9);
@@ -452,7 +481,7 @@ export class UpgradeSystem extends PIXI.Container {
             );
         }
         rarityIndicator.endFill();
-        card.addChild(rarityIndicator);
+        contentContainer.addChild(rarityIndicator);
         
         // Upgrade name with modern sci-fi font styling
         const nameText = new PIXI.Text(upgrade.name.toUpperCase(), {
@@ -469,7 +498,7 @@ export class UpgradeSystem extends PIXI.Container {
         });
         nameText.x = (UpgradeSystem.CARD_WIDTH - nameText.width) / 2;
         nameText.y = 55;
-        card.addChild(nameText);
+        contentContainer.addChild(nameText);
 
         // After adding nameText
 
@@ -491,7 +520,7 @@ export class UpgradeSystem extends PIXI.Container {
         });
         descText.x = (UpgradeSystem.CARD_WIDTH - descText.width) / 2;
         descText.y = 120;
-        card.addChild(descText);
+        contentContainer.addChild(descText);
         
         // Type label - small, minimalist tech-looking tag
         const typeText = new PIXI.Text(upgrade.type.toUpperCase(), {
@@ -504,11 +533,11 @@ export class UpgradeSystem extends PIXI.Container {
         });
         typeText.x = (UpgradeSystem.CARD_WIDTH - typeText.width) / 2;
         typeText.y = UpgradeSystem.CARD_HEIGHT - 40;
-        card.addChild(typeText);
+        contentContainer.addChild(typeText);
         
-        // Make card interactive with sci-fi hover effects
-        background.interactive = true;
-        background.cursor = 'pointer';
+        // Create a scan line overlay container (this will be on top of content)
+        const scanLineContainer = new PIXI.Container();
+        scanLineContainer.position.set(0, 0);
         
         // Tech scan line animation on hover
         const scanLine = new PIXI.Graphics();
@@ -517,7 +546,14 @@ export class UpgradeSystem extends PIXI.Container {
         scanLine.endFill();
         scanLine.y = -10; // Start off-screen
         scanLine.visible = false;
-        card.addChild(scanLine);
+        scanLineContainer.addChild(scanLine);
+        
+        // Add scanline container to card
+        card.addChild(scanLineContainer);
+        
+        // Make card interactive with sci-fi hover effects
+        background.interactive = true;
+        background.cursor = 'pointer';
         
         // Set pivot point to the center of the card for proper scaling from center
         card.pivot.set(UpgradeSystem.CARD_WIDTH / 2, UpgradeSystem.CARD_HEIGHT / 2);
@@ -525,12 +561,14 @@ export class UpgradeSystem extends PIXI.Container {
         
         // Hover effects
         background.on('mouseover', () => {
+            this.setSelectedCard(index);
             card.scale.set(1.05);
             border.clear();
             border.lineStyle(2, rarityColor, 1);
             border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
             
-            // Show and animate scan line
+            // Show and animate scan line - reference from scanLineContainer
+            const scanLine = scanLineContainer.getChildAt(0) as PIXI.Graphics;
             scanLine.visible = true;
             let scanPos = 0;
             const animateScanLine = () => {
@@ -549,13 +587,16 @@ export class UpgradeSystem extends PIXI.Container {
         });
         
         background.on('mouseout', () => {
-            card.scale.set(1);
-            border.clear();
-            border.lineStyle(2, rarityColor, 0.8);
-            border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
-            
-            // Hide scan line
-            scanLine.visible = false;
+            if (this.currentSelectedIndex !== index) {
+                card.scale.set(1);
+                border.clear();
+                border.lineStyle(2, rarityColor, 0.8);
+                border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+                
+                // Hide scan line - reference from scanLineContainer
+                const scanLine = scanLineContainer.getChildAt(0) as PIXI.Graphics;
+                scanLine.visible = false;
+            }
         });
         
         background.on('click', () => {
@@ -663,6 +704,10 @@ export class UpgradeSystem extends PIXI.Container {
     private hideUpgradeSelection(): void {
         this.visible = false;
         this.isVisible = false;
+        
+        if (this.gamepadCursor) {
+            this.gamepadCursor.visible = false;
+        }
 
         // clean up cards
         this.cards.forEach(card => card.destroy());
@@ -671,9 +716,139 @@ export class UpgradeSystem extends PIXI.Container {
         // Clean up particle effects
         this.particleContainers.forEach(container => container.destroy());
         this.particleContainers = [];
+        
+        // Clear displayed upgrades
+        this.displayedUpgrades = [];
     }
 
     public isUpgradeScreenVisible(): boolean {
         return this.isVisible;
+    }
+
+    private setSelectedCard(index: number): void {
+        if (index < 0 || index >= this.cards.length) return;
+        
+        // Reset previous selection
+        if (this.currentSelectedIndex !== index && this.currentSelectedIndex < this.cards.length) {
+            const prevCard = this.cards[this.currentSelectedIndex];
+            prevCard.scale.set(1);
+            
+            // Reset border
+            if (prevCard.getChildAt(1) instanceof PIXI.Graphics) {
+                const prevBorder = prevCard.getChildAt(1) as PIXI.Graphics;
+                const prevRarityColor = UpgradeSystem.RARITY_COLORS[this.displayedUpgrades[this.currentSelectedIndex].rarity];
+                prevBorder.clear();
+                prevBorder.lineStyle(2, prevRarityColor, 0.8);
+                prevBorder.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+            }
+            
+            // Hide scan line
+            const scanLineContainer = prevCard.getChildAt(3) as PIXI.Container;
+            const prevScanLine = scanLineContainer.getChildAt(0) as PIXI.Graphics;
+            prevScanLine.visible = false;
+        }
+        
+        // Play sound feedback when selection changes (for both mouse and gamepad)
+        if (this.currentSelectedIndex !== index) {
+            this.soundManager.playMenuSound();
+        }
+        
+        // Update current index
+        this.currentSelectedIndex = index;
+        
+        // Apply selection effects
+        const card = this.cards[index];
+        const upgrade = this.displayedUpgrades[index];
+        const rarityColor = UpgradeSystem.RARITY_COLORS[upgrade.rarity];
+        
+        card.scale.set(1.05);
+        
+        // Update border
+        if (card.getChildAt(1) instanceof PIXI.Graphics) {
+            const border = card.getChildAt(1) as PIXI.Graphics;
+            border.clear();
+            border.lineStyle(2, rarityColor, 1);
+            border.drawRoundedRect(0, 0, UpgradeSystem.CARD_WIDTH, UpgradeSystem.CARD_HEIGHT, 8);
+        }
+        
+        // Show scan line - get the scan line from the scanLineContainer
+        const scanLineContainer = card.getChildAt(3) as PIXI.Container;
+        const scanLine = scanLineContainer.getChildAt(0) as PIXI.Graphics;
+        scanLine.visible = true;
+        let scanPos = 0;
+        const animateScanLine = () => {
+            if (!scanLine.visible) return;
+            
+            scanLine.y = scanPos;
+            scanPos += 5;
+            
+            if (scanPos > UpgradeSystem.CARD_HEIGHT) {
+                scanPos = -2;
+            }
+            
+            requestAnimationFrame(animateScanLine);
+        };
+        animateScanLine();
+        
+        // Update gamepad cursor position
+        if (this.gamepadCursor && this.inputManager.isUsingGamepad()) {
+            this.gamepadCursor.visible = true;
+            this.gamepadCursor.position.set(card.position.x, card.position.y);
+            
+            // Recreate the cursor with the right size and color
+            this.gamepadCursor.clear();
+            this.gamepadCursor.lineStyle(3, rarityColor, 0.8);
+            this.gamepadCursor.drawRoundedRect(
+                -UpgradeSystem.CARD_WIDTH / 2 - 5, 
+                -UpgradeSystem.CARD_HEIGHT / 2 - 5, 
+                UpgradeSystem.CARD_WIDTH + 10, 
+                UpgradeSystem.CARD_HEIGHT + 10, 
+                12
+            );
+        }
+    }
+    
+    private handleGamepadInput(): void {
+        const now = Date.now();
+        if (now - this.lastInputTime < this.INPUT_DEBOUNCE_TIME) return;
+        
+        // Check for gamepad input
+        if (!this.inputManager.isUsingGamepad()) return;
+        
+        // Handle directional navigation
+        if (this.inputManager.isMenuLeftTriggered()) {
+            this.navigateCards('left');
+            this.lastInputTime = now;
+        } else if (this.inputManager.isMenuRightTriggered()) {
+            this.navigateCards('right');
+            this.lastInputTime = now;
+        }
+        
+        // Handle selection with A button
+        if (this.inputManager.isPrimaryActionJustPressed()) {
+            this.selectCurrentCard();
+        }
+    }
+    
+    private navigateCards(direction: 'left' | 'right'): void {
+        let newIndex = this.currentSelectedIndex;
+        
+        if (direction === 'left') {
+            newIndex = Math.max(0, newIndex - 1);
+        } else if (direction === 'right') {
+            newIndex = Math.min(this.cards.length - 1, newIndex + 1);
+        }
+        
+        if (newIndex !== this.currentSelectedIndex) {
+            this.setSelectedCard(newIndex);
+            // Sound is now played directly in setSelectedCard when index changes
+        }
+    }
+    
+    private selectCurrentCard(): void {
+        if (this.currentSelectedIndex < this.displayedUpgrades.length) {
+            const upgrade = this.displayedUpgrades[this.currentSelectedIndex];
+            this.selectUpgrade(upgrade);
+        }
     }
 } 
