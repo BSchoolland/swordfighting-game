@@ -377,7 +377,7 @@ export class GameOverScreen extends PIXI.Container {
         if (this.currentSelectedIndex !== index && this.currentSelectedIndex < this.selectableElements.length) {
             const prevElement = this.selectableElements[this.currentSelectedIndex].container;
             if (prevElement.getChildAt(0) instanceof PIXI.Graphics) {
-                (prevElement.getChildAt(0) as PIXI.Graphics).tint = 0xFFFFFF;
+                (prevElement.getChildAt(0) as PIXI.Graphics).tint = 0x666666;
             }
             
             // Reset scale on text
@@ -392,7 +392,7 @@ export class GameOverScreen extends PIXI.Container {
         // Highlight the new selection
         const element = this.selectableElements[index].container;
         if (element.getChildAt(0) instanceof PIXI.Graphics) {
-            (element.getChildAt(0) as PIXI.Graphics).tint = 0x666666;
+            (element.getChildAt(0) as PIXI.Graphics).tint = 0xFFFFFF;
         }
         
         // Scale up text

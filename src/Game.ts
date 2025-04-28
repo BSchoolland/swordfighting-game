@@ -22,7 +22,8 @@ export class Game {
             height: window.innerHeight,
             backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
             antialias: true,
-            resolution: 1, // Fixed resolution of 1 to avoid scaling issues
+            resolution: 2, 
+            autoDensity: true,
             view: document.createElement('canvas') as HTMLCanvasElement
             // Removed resizeTo property to manually handle resizing
         });

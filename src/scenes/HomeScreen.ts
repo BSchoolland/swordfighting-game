@@ -160,13 +160,13 @@ export class HomeScreen extends PIXI.Container {
 
         // Button hover effects
         button.on('mouseover', () => {
-            buttonBg.tint = 0x666666;
+            buttonBg.tint = 0xFFFFFF;
             buttonText.scale.set(1.1);
             this.setSelectedElement(0); // Update selection for gamepad
         });
         button.on('mouseout', () => {
             if (this.currentSelectedIndex !== 0) { // Only reset if not gamepad selected
-                buttonBg.tint = 0xFFFFFF;
+                buttonBg.tint = 0x666666;
                 buttonText.scale.set(1);
             }
         });
@@ -264,12 +264,12 @@ export class HomeScreen extends PIXI.Container {
         settingsButton.cursor = 'pointer';
 
         settingsButton.on('mouseover', () => {
-            settingsIcon.tint = 0x666666;
+            settingsIcon.tint = 0xFFFFFF;
             this.setSelectedElement(1); // Update selection for gamepad
         });
         settingsButton.on('mouseout', () => {
             if (this.currentSelectedIndex !== 1) { // Only reset if not gamepad selected
-                settingsIcon.tint = 0xFFFFFF;
+                settingsIcon.tint = 0x666666;
             }
         });
         settingsButton.on('click', () => {
@@ -581,7 +581,7 @@ export class HomeScreen extends PIXI.Container {
         if (this.currentSelectedIndex !== index && this.currentSelectedIndex < this.selectableElements.length) {
             const prevElement = this.selectableElements[this.currentSelectedIndex].container;
             if (prevElement.getChildAt(0) instanceof PIXI.Graphics) {
-                (prevElement.getChildAt(0) as PIXI.Graphics).tint = 0xFFFFFF;
+                (prevElement.getChildAt(0) as PIXI.Graphics).tint = 0x666666;
             }
             
             // Reset scale on previous element if it's the start button
@@ -596,7 +596,7 @@ export class HomeScreen extends PIXI.Container {
         // Highlight the new selection
         const element = this.selectableElements[index].container;
         if (element.getChildAt(0) instanceof PIXI.Graphics) {
-            (element.getChildAt(0) as PIXI.Graphics).tint = 0x666666;
+            (element.getChildAt(0) as PIXI.Graphics).tint = 0xFFFFFF;
         }
         
         // Scale up text if it's the start button
