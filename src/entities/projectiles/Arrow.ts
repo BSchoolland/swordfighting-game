@@ -1,3 +1,4 @@
+import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Projectile, ProjectileStats } from './Projectile';
 
@@ -13,17 +14,22 @@ export class Arrow extends Projectile {
     };
 
     constructor(
+        x: number,
+        y: number,
+        angle: number,
         bounds: { width: number; height: number },
-        owner: Entity,
-        startPos: { x: number, y: number },
-        direction: { x: number, y: number },
-        isEnemy: boolean = false
+        isEnemy: boolean = false,
+        owner: Entity | null = null
     ) {
-        const stats = Arrow.STATS;
+        const stats = {...Arrow.STATS};
         if (isEnemy) {
             stats.damage = 8; // Less damage for enemy arrows
         }
-        super(bounds, owner, stats, startPos, direction);
+        super(x, y, angle, bounds, stats, isEnemy, owner);
+        
+        // Create sprite - must be initialized before drawProjectile is called
+        this.sprite = new PIXI.Graphics();
+        this.addChild(this.sprite);
     }
 
     protected drawProjectile(): void {

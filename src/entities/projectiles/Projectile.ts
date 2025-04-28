@@ -1,65 +1,69 @@
 import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
+import { ParticleSystem } from '../../effects/ParticleSystem';
 
 export interface ProjectileStats {
-    speed: number;
     damage: number;
     knockback: number;
-    size: number;
+    speed: number;
+    lifetime: number;
     color: number;
-    lifetime: number; // How long the projectile lives before despawning
-    maxRange: number; // Maximum distance the projectile can travel
+    maxRange: number;
+    size: number;
 }
 
 export abstract class Projectile extends Entity {
-    protected override sprite: PIXI.Graphics;
-    protected stats: ProjectileStats;
-    protected direction: { x: number, y: number };
-    protected owner: Entity;
+    protected startPos: { x: number, y: number };
     protected lifetime: number;
     protected distanceTraveled: number = 0;
-    protected startPos: { x: number, y: number };
-
+    protected stats: ProjectileStats;
+    protected declare sprite: PIXI.Graphics;
+    protected owner: Entity | null = null;  // Store the owner entity reference
+    
     constructor(
+        x: number, 
+        y: number, 
+        angle: number, 
         bounds: { width: number; height: number },
-        owner: Entity,
         stats: ProjectileStats,
-        startPos: { x: number, y: number },
-        direction: { x: number, y: number }
+        isEnemy: boolean = false,
+        owner: Entity | null = null  // Add owner parameter
     ) {
-        super(bounds, 1); // Health is 1 so projectiles can be destroyed in one hit
-        this.owner = owner;
-        this.stats = stats;
-        this.direction = direction;
+        super(bounds, 1); // Projectiles have 1 HP
+        this.x = x;
+        this.y = y;
+        this.rotation = angle;
+        this.startPos = { x, y };
         this.lifetime = stats.lifetime;
-        this.radius = stats.size; // Use projectile size as collision radius
-        this.startPos = { x: startPos.x, y: startPos.y };
+        this.stats = stats;
+        this.isEnemy = isEnemy;
+        this.owner = owner;  // Store owner reference
         
-        // Set initial position
-        this.x = startPos.x;
-        this.y = startPos.y;
-
-        // Set initial velocity based on direction and speed
-        this.velocity.x = direction.x * stats.speed;
-        this.velocity.y = direction.y * stats.speed;
-
-        // Create sprite
+        // Set velocity based on direction and speed
+        this.velocity = {
+            x: Math.cos(angle) * stats.speed,
+            y: Math.sin(angle) * stats.speed
+        };
+        
+        // Set radius for collision detection
+        this.radius = stats.size / 2;
+        
+        // Initialize sprite - this must happen before drawProjectile is called
         this.sprite = new PIXI.Graphics();
-        this.drawProjectile();
         this.addChild(this.sprite);
-
-        // Set rotation to match direction
-        this.rotation = Math.atan2(direction.y, direction.x);
+        
+        // Draw the projectile
+        this.drawProjectile();
     }
-
+    
     protected abstract drawProjectile(): void;
 
     public update(delta: number, targets: Entity[]): void {
         // If we're not alive, don't update
         if (!this.isAlive()) return;
 
-        // Update lifetime
-        this.lifetime -= delta * 16.67; // Convert to milliseconds
+        // Update lifetime - use seconds directly instead of converting delta to ms
+        this.lifetime -= delta;
         if (this.lifetime <= 0) {
             this.destroy();
             return;
@@ -72,9 +76,10 @@ export abstract class Projectile extends Entity {
 
         // Start slowing down after max range
         if (this.distanceTraveled > this.stats.maxRange) {
-            // Gentle slowdown - reduce speed by 2% per update
-            this.velocity.x *= 0.98;
-            this.velocity.y *= 0.98;
+            // Gentle slowdown - adjust based on framerate
+            const slowdownFactor = Math.pow(0.98, 60 * delta);
+            this.velocity.x *= slowdownFactor;
+            this.velocity.y *= slowdownFactor;
 
             // Destroy when speed becomes very low
             const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
@@ -94,36 +99,55 @@ export abstract class Projectile extends Entity {
     }
 
     protected checkHits(targets: Entity[]): void {
+        // Filter targets to exclude:
+        // 1. Targets of the same type (enemy vs player)
+        // 2. Dead targets
+        // 3. The entity that created/owned this projectile
+        targets = targets.filter(t => {
+            // Exclude targets of the same type (enemy vs player)
+            if (t.isEnemy === this.isEnemy) return false;
+            
+            // Exclude dead targets
+            if (!t.isAlive()) return false;
+            
+            // Exclude the owner of this projectile
+            if (t === this.owner) return false;
+            
+            return true;
+        });
+        
         for (const target of targets) {
-            // Skip if target is the owner (if owner still exists), is dead, or was already hit
-            if ((this.owner?.isAlive() && target === this.owner) || !target.isAlive()) continue;
-
             const dx = target.x - this.x;
             const dy = target.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-
-            // Simple circle collision
-            if (distance < this.stats.size + target.getRadius()) {
+            
+            if (distance < this.radius + target.getRadius()) {
+                // Calculate knockback direction
                 const knockbackDir = {
-                    x: this.direction.x,
-                    y: this.direction.y
+                    x: dx / distance,
+                    y: dy / distance
                 };
                 
+                // Apply damage and knockback
                 target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
+                
+                // Create hit effect
+                ParticleSystem.getInstance().createHitSparks(target.x, target.y, this.stats.color);
+                
+                // Destroy the projectile
                 this.destroy();
                 break;
             }
         }
     }
 
-    public takeDamage(amount: number, knockbackDir: { x: number, y: number }, knockbackForce: number): void {
-        super.takeDamage(amount, knockbackDir, knockbackForce);
-        // When a projectile takes any damage, it's destroyed
-        this.destroy();
-    }
-
     public destroy(): void {
+
+        
+        // Set health to 0
         this.health = 0;
+        
+        // Remove from parent
         if (this.parent) {
             this.parent.removeChild(this);
         }

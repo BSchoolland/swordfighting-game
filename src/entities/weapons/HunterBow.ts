@@ -101,13 +101,14 @@ export class HunterBow extends RangedWeapon {
         // Get bounds from owner's parent (game scene)
         const bounds = this.owner.parent.getBounds();
         
-        // Create and return the center arrow
+        // Create and return the center arrow with new constructor format
         const centerArrow = new Arrow(
+            startPos.x,
+            startPos.y,
+            baseAngle,
             bounds,
-            this.owner,
-            startPos,
-            direction,
-            this.isEnemy
+            this.isEnemy,
+            this.owner
         );
         
         // Get the game scene
@@ -118,17 +119,15 @@ export class HunterBow extends RangedWeapon {
                 if (i === Math.floor(HunterBow.ARROWS_PER_SHOT / 2)) continue; // Skip center arrow
                 
                 const angle = baseAngle - HunterBow.SPREAD_ANGLE + (spreadStep * i);
-                const sideDirection = {
-                    x: Math.cos(angle),
-                    y: Math.sin(angle)
-                };
                 
+                // Create side arrow with new constructor format
                 const arrow = new Arrow(
+                    startPos.x,
+                    startPos.y,
+                    angle,
                     bounds,
-                    this.owner,
-                    startPos,
-                    sideDirection,
-                    this.isEnemy
+                    this.isEnemy,
+                    this.owner
                 );
                 
                 // Add to game scene properly
