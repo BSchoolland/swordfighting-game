@@ -9,12 +9,18 @@ export class Game {
     private currentScene: GameScene;
     private gameContainer: PIXI.Container;
     private inputManager: InputManager;
+    private isMobile: boolean;
+    private fixedDeltaTime: number = 1/60; // Target time step of 60 FPS
+    private timeAccumulator: number = 0;
 
     // Fixed game world size
     private static readonly GAME_WIDTH = 800;
     private static readonly GAME_HEIGHT = 600;
 
     constructor() {
+        // Check if device is mobile
+        this.isMobile = this.detectMobile();
+        
         // Initialize CrazyGames SDK first
         AdManager.getInstance();
 
@@ -23,15 +29,26 @@ export class Game {
             width: window.innerWidth,
             height: window.innerHeight,
             backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
-            antialias: true,
-            resolution: window.devicePixelRatio || 1, // Use device's pixel ratio
+            antialias: !this.isMobile, // Disable antialiasing on mobile
+            resolution: this.isMobile ? 1 : 1, // Lower resolution on mobile
             autoDensity: true,
+            powerPreference: this.isMobile ? 'low-power' : 'high-performance',
             view: document.createElement('canvas') as HTMLCanvasElement
         });
 
+        const canvas = this.app.renderer.view as HTMLCanvasElement;
+        if (canvas) {
+            canvas.addEventListener('webglcontextlost', (e: Event) => {
+                console.error('WebGL context lost', e);
+                alert('WebGL context lost!');
+                e.preventDefault();
+            });
+        }
+
         document.body.appendChild(this.app.view as HTMLCanvasElement);
 
-        this.app.ticker.maxFPS = 60; // Limit to 60 FPS
+        // Set appropriate FPS limit based on device
+        this.app.ticker.maxFPS = this.isMobile ? 30 : 60; 
 
         // Create a container for the game world with its own background
         this.gameContainer = new PIXI.Container();
@@ -85,6 +102,11 @@ export class Game {
         window.addEventListener('keydown', startMusic);
     }
 
+    private detectMobile(): boolean {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+               (window.innerWidth <= 800 && window.innerHeight <= 600);
+    }
+
     private async toggleFullscreen(): Promise<void> {
         if (!document.fullscreenElement) {
             try {
@@ -121,6 +143,19 @@ export class Game {
     }
 
     private update(): void {
-        this.currentScene.update(this.app.ticker.deltaMS / 1000);
+        // Get the actual elapsed time in seconds
+        const deltaTime = this.app.ticker.deltaMS / 1000;
+        
+        // Update the scene with real delta time for UI and animations
+        this.currentScene.update(deltaTime);
+        
+        // Use fixed time step for physics updates only if there's enough time accumulated
+        this.timeAccumulator += deltaTime;
+        if (this.timeAccumulator >= this.fixedDeltaTime) {
+            // Run as many fixed updates as needed to catch up for physics
+            while (this.timeAccumulator >= this.fixedDeltaTime) {
+                this.timeAccumulator -= this.fixedDeltaTime;
+            }
+        }
     }
 } 

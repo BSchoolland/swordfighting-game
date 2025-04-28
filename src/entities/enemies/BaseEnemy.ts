@@ -157,7 +157,9 @@ export abstract class BaseEnemy extends Entity {
 
     protected rotateTowards(targetAngle: number, delta: number, movementMultiplier: number): void {
         const angleDiff = this.getAngleDifference(targetAngle, this.rotation);
-        // Apply movement restriction to rotation speed
+        
+        // Apply movement restriction to rotation speed (radians per second)
+        // Multiply by delta to get frame rotation
         const frameRotateSpeed = this.stats.maxRotateSpeed * delta * movementMultiplier;
         
         // If we're close enough to the target angle, snap to it
@@ -182,21 +184,18 @@ export abstract class BaseEnemy extends Entity {
 
         // Handle stun and knockback first
         if (this.stunned) {
-            this.stunTimer -= delta * 16.67;
-            if (this.stunTimer <= 0 || currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
+            if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
-                this.stunImmunityTimer = this.stunImmunity;
-                if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
-                    this.velocity.x = 0;
-                    this.velocity.y = 0;
-                }
+                this.velocity.x = 0;
+                this.velocity.y = 0;
             }
             // Apply velocity and knockback while stunned
             this.applyVelocity();
             return;
         } else if (this.stunImmunityTimer > 0) {
-            this.stunImmunityTimer -= delta * 1600.67;
-            console.log(`Stun immunity timer: ${this.stunImmunityTimer}`);
+            // Decrement immunity timer based on delta time in seconds
+            this.stunImmunityTimer -= delta * 1000;
+            if (this.stunImmunityTimer < 0) this.stunImmunityTimer = 0;
             // continue, we're not stunned
         }
 
@@ -227,7 +226,8 @@ export abstract class BaseEnemy extends Entity {
             this.isChasing = true;
             this.outOfRangeTimer = 0;
         } else if (this.isChasing) {
-            this.outOfRangeTimer += delta * 16.67;
+            // Use delta time in seconds * 1000 to convert to milliseconds
+            this.outOfRangeTimer += delta * 1000;
             if (this.outOfRangeTimer >= this.stats.chaseDuration) {
                 this.isChasing = false;
             }
@@ -263,8 +263,10 @@ export abstract class BaseEnemy extends Entity {
             }
         } else {
             // Outside chase range and not chasing, slow down
-            this.velocity.x *= 0.95;
-            this.velocity.y *= 0.95;
+            // Make slowdown framerate-independent
+            const slowdownFactor = Math.pow(0.95, 60 * delta);
+            this.velocity.x *= slowdownFactor;
+            this.velocity.y *= slowdownFactor;
         }
 
         // Apply velocity and knockback

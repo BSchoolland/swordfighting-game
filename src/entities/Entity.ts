@@ -93,11 +93,16 @@ export abstract class Entity extends PIXI.Container {
         return { ...this.velocity };
     }
 
-    protected applyVelocity(): void {
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
-        this.velocity.x *= this.friction;
-        this.velocity.y *= this.friction;
+    protected applyVelocity(delta: number = 1/60): void {
+        // Scale movement by delta time for framerate independence
+        // Default delta of 1/60 maintains backward compatibility
+        this.x += this.velocity.x * delta * 60;
+        this.y += this.velocity.y * delta * 60;
+        
+        // Make friction framerate-independent
+        const frictionFactor = Math.pow(this.friction, 60 * delta);
+        this.velocity.x *= frictionFactor;
+        this.velocity.y *= frictionFactor;
 
         if (Math.abs(this.velocity.x) < 0.01) this.velocity.x = 0;
         if (Math.abs(this.velocity.y) < 0.01) this.velocity.y = 0;

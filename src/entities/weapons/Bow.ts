@@ -56,7 +56,17 @@ export class Bow extends RangedWeapon {
     }
 
     protected createProjectile(startPos: { x: number, y: number }, direction: { x: number, y: number }): Arrow {
-        return new Arrow(this.owner.parent.getBounds(), this.owner, startPos, direction, this.isEnemy);
+        // Calculate angle from direction
+        const angle = Math.atan2(direction.y, direction.x);
+        
+        // Create arrow with updated parameters
+        return new Arrow(
+            startPos.x,
+            startPos.y,
+            angle,
+            this.owner.parent.getBounds(),
+            this.isEnemy
+        );
     }
 
     protected drawWeapon(): void {

@@ -50,7 +50,18 @@ export class Boomerang extends RangedWeapon {
     }
 
     protected createProjectile(startPos: { x: number, y: number }, direction: { x: number, y: number }): BoomerangProjectile {
-        return new BoomerangProjectile(this.owner.parent.getBounds(), this.owner, startPos, direction, this.stats.projectileStats);
+        // Calculate angle from direction
+        const angle = Math.atan2(direction.y, direction.x);
+        
+        return new BoomerangProjectile(
+            startPos.x,
+            startPos.y,
+            angle,
+            this.owner.parent.getBounds(),
+            this.owner,
+            this.stats.projectileStats,
+            this.isEnemy
+        );
     }
 
     protected drawWeapon(): void {

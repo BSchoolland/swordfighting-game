@@ -42,7 +42,7 @@ export class BlitzerEnemy extends BaseEnemy {
 
         // Handle stun and knockback first
         if (this.stunned) {
-            this.stunTimer -= delta * 16.67;
+            this.stunTimer -= delta * 1000;
             if (this.stunTimer <= 0 || currentSpeed < 0.5) {
                 this.stunned = false;
                 if (currentSpeed < 0.5) {
@@ -79,7 +79,7 @@ export class BlitzerEnemy extends BaseEnemy {
             this.isChasing = true;
             this.outOfRangeTimer = 0;
         } else if (this.isChasing) {
-            this.outOfRangeTimer += delta * 16.67;
+            this.outOfRangeTimer += delta * 1000;
             if (this.outOfRangeTimer >= this.stats.chaseDuration) {
                 this.isChasing = false;
             }
@@ -107,8 +107,9 @@ export class BlitzerEnemy extends BaseEnemy {
             }
         } else {
             // Outside chase range and not chasing, slow down
-            this.velocity.x *= 0.95;
-            this.velocity.y *= 0.95;
+            const slowdownFactor = Math.pow(0.95, 60 * delta);
+            this.velocity.x *= slowdownFactor;
+            this.velocity.y *= slowdownFactor;
         }
 
         // Apply velocity

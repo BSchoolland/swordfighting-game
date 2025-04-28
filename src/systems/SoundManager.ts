@@ -394,7 +394,7 @@ export class SoundManager {
 
     public playGameOverSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
-        zzfx(0.5, .05, 240, .3, .5, .3, 1, -4, -0.5);
+        
     }
 
     public playWaveStartSound(): void {

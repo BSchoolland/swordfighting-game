@@ -1,3 +1,4 @@
+import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { Projectile, ProjectileStats } from './Projectile';
 
@@ -6,20 +7,34 @@ export class BoomerangProjectile extends Projectile {
     private isReturning: boolean = false;
     private initialDirection: { x: number, y: number };
     private curveDirection: number = 1; // 1 for right curve, -1 for left curve
+    private owner: Entity;
 
     constructor(
+        x: number,
+        y: number,
+        angle: number,
         bounds: { width: number; height: number },
         owner: Entity,
-        startPos: { x: number, y: number },
-        direction: { x: number, y: number },
         stats: ProjectileStats,
+        isEnemy: boolean = false
     ) {
-        super(bounds, owner, stats, startPos, direction);
-        this.initialDirection = { ...direction };
+        super(x, y, angle, bounds, stats, isEnemy);
+        
+        // Store owner reference (needed for boomerang return behavior)
+        this.owner = owner;
+        
+        // Calculate initial direction from angle
+        this.initialDirection = {
+            x: Math.cos(angle),
+            y: Math.sin(angle)
+        };
+        
+        // Create sprite - must be initialized before drawProjectile is called
+        this.sprite = new PIXI.Graphics();
+        this.addChild(this.sprite);
         
         // Randomly choose initial curve direction
         this.curveDirection = Math.random() < 0.5 ? 1 : -1;
-        console.log('[BoomerangProjectile] Initial curve: ' + (this.curveDirection > 0 ? 'right' : 'left'));
     }
 
     protected drawProjectile(): void {
@@ -94,27 +109,22 @@ export class BoomerangProjectile extends Projectile {
             this.velocity.x = this.initialDirection.x * this.stats.speed * 0.8 + perpComponent.x;
             this.velocity.y = this.initialDirection.y * this.stats.speed * 0.8 + perpComponent.y;
         }
-
-        // Check for hits
-        if (targets && targets.length > 0) {
-            this.checkHits(targets);
-        }
     }
 
     protected checkHits(targets: Entity[]): void {
+        // Filter targets to only include those of opposite type (enemy/player)
+        targets = targets.filter(t => t.isEnemy !== this.isEnemy && t.isAlive() && t !== this.owner);
+        
         for (const target of targets) {
-            // Skip if target is the owner or was already hit
-            if (target === this.owner || !target.isAlive()) continue;
-
             const dx = target.x - this.x;
             const dy = target.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             // Simple circle collision
-            if (distance < this.stats.size + target.getRadius()) {
+            if (distance < this.radius + target.getRadius()) {
                 const knockbackDir = {
-                    x: this.direction.x,
-                    y: this.direction.y
+                    x: dx / distance,
+                    y: dy / distance
                 };
                 
                 target.takeDamage(this.stats.damage, knockbackDir, this.stats.knockback);
