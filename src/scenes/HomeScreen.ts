@@ -37,6 +37,10 @@ export class HomeScreen extends PIXI.Container {
         this.dimensions = dimensions;
         this.onStart = onStart;
         this.inputManager = inputManager;
+        
+        // Explicitly hide mobile controls when home screen is constructed
+        this.inputManager.hideMobileControls();
+        
         this.setup();
     }
 
@@ -176,6 +180,7 @@ export class HomeScreen extends PIXI.Container {
         button.on('pointerdown', () => {
             buttonBg.tint = 0xFFFFFF;
             buttonText.scale.set(1.2);
+            this.setSelectedElement(0);
         });
         button.on('pointerup', async () => {
             SoundManager.getInstance().playPowerUpSound();
@@ -278,6 +283,8 @@ export class HomeScreen extends PIXI.Container {
         settingsButton.addChild(settingsIcon);
         settingsButton.position.set(this.dimensions.width - 40, 40);
         settingsButton.interactive = true;
+        // @ts-ignore - Using buttonMode for backward compatibility
+        settingsButton.buttonMode = true;
         settingsButton.cursor = 'pointer';
 
         settingsButton.on('mouseover', () => {
@@ -290,6 +297,13 @@ export class HomeScreen extends PIXI.Container {
             }
         });
         settingsButton.on('click', () => {
+            this.toggleSettingsPanel();
+        });
+        // Add touch-specific events for mobile
+        settingsButton.on('pointerdown', () => {
+            settingsIcon.tint = 0xFFFFFF;
+        });
+        settingsButton.on('pointerup', () => {
             this.toggleSettingsPanel();
         });
 
@@ -377,6 +391,15 @@ export class HomeScreen extends PIXI.Container {
             soundManager.setMusicEnabled(newState);
             this.updateToggleButton(musicToggle, newState);
         });
+        // Add pointer events for mobile
+        musicToggle.on('pointerdown', () => {
+            this.setSelectedElement(2);
+        });
+        musicToggle.on('pointerup', () => {
+            const newState = !soundManager.isMusicEnabled();
+            soundManager.setMusicEnabled(newState);
+            this.updateToggleButton(musicToggle, newState);
+        });
         this.settingsPanel.addChild(musicToggle);
         
         // Add to selectable elements
@@ -409,6 +432,15 @@ export class HomeScreen extends PIXI.Container {
             soundManager.setSoundEffectsEnabled(newState);
             this.updateToggleButton(sfxToggle, newState);
         });
+        // Add pointer events for mobile
+        sfxToggle.on('pointerdown', () => {
+            this.setSelectedElement(3);
+        });
+        sfxToggle.on('pointerup', () => {
+            const newState = !soundManager.isSoundEffectsEnabled();
+            soundManager.setSoundEffectsEnabled(newState);
+            this.updateToggleButton(sfxToggle, newState);
+        });
         this.settingsPanel.addChild(sfxToggle);
         
         // Add to selectable elements
@@ -437,6 +469,15 @@ export class HomeScreen extends PIXI.Container {
             this.setSelectedElement(4); // Aim assist toggle is the 5th selectable element (index 4)
         });
         aimAssistToggle.on('click', () => {
+            const newState = !this.inputManager.isAimAssistEnabled();
+            this.inputManager.setAimAssistEnabled(newState);
+            this.updateToggleButton(aimAssistToggle, newState);
+        });
+        // Add pointer events for mobile
+        aimAssistToggle.on('pointerdown', () => {
+            this.setSelectedElement(4);
+        });
+        aimAssistToggle.on('pointerup', () => {
             const newState = !this.inputManager.isAimAssistEnabled();
             this.inputManager.setAimAssistEnabled(newState);
             this.updateToggleButton(aimAssistToggle, newState);
@@ -474,6 +515,8 @@ export class HomeScreen extends PIXI.Container {
     private createToggleButton(initialState: boolean): PIXI.Container {
         const container = new PIXI.Container();
         container.interactive = true;
+        // @ts-ignore - Using buttonMode for backward compatibility
+        container.buttonMode = true;
         container.cursor = 'pointer';
 
         const bg = new PIXI.Graphics();

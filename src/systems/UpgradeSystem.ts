@@ -553,6 +553,7 @@ export class UpgradeSystem extends PIXI.Container {
         // Make card interactive with sci-fi hover effects
         background.interactive = true;
         background.cursor = 'pointer';
+        (background as any).eventMode = 'static';
         
         // Set pivot point to the center of the card for proper scaling from center
         card.pivot.set(UpgradeSystem.CARD_WIDTH / 2, UpgradeSystem.CARD_HEIGHT / 2);
@@ -599,6 +600,15 @@ export class UpgradeSystem extends PIXI.Container {
         });
         
         background.on('click', () => {
+            this.selectUpgrade(upgrade);
+        });
+        
+        // Add touch-specific events for mobile
+        background.on('pointerdown', () => {
+            this.setSelectedCard(index);
+        });
+        
+        background.on('pointerup', () => {
             this.selectUpgrade(upgrade);
         });
         

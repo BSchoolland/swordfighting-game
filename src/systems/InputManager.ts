@@ -80,6 +80,9 @@ export class InputManager {
         // Check if mobile
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
+        // Initialize lastDirectionChangeTime on startup
+        this.lastDirectionChangeTime = Date.now();
+        
         if (this.isMobile) {
             try {
                 this.mobileControls = new MobileControls(app);
@@ -311,13 +314,21 @@ export class InputManager {
     }
 
     public showMobileControls(): void {
-        if (this.mobileControls) {
+        // Only show controls if we're actually on a mobile device
+        if (this.mobileControls && this.isMobile) {
+            console.log("Showing mobile controls");
             this.mobileControls.show();
+            
+            // Reset lastDirectionChangeTime when showing mobile controls
+            // This ensures aim assist will start working after a brief delay
+            this.lastDirectionChangeTime = Date.now();
         }
     }
 
     public hideMobileControls(): void {
+        // Always hide controls regardless of device type for safety
         if (this.mobileControls) {
+            console.log("Hiding mobile controls");
             this.mobileControls.hide();
         }
     }

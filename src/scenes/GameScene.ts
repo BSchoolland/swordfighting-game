@@ -99,7 +99,7 @@ export class GameScene extends PIXI.Container {
         this.particleSystem = ParticleSystem.getInstance(this);
 
         // Initialize player first
-        this.player = new Player(dimensions);
+        this.player = new Player(dimensions, this.inputManager);
         this.addChild(this.player);
 
         // make player invisible by moving far offscreen
@@ -169,26 +169,26 @@ export class GameScene extends PIXI.Container {
         this.gameStarted = false;
         this.waitingForUpgrade = false;
         
+        // Hide mobile controls when showing home screen
+        this.inputManager.hideMobileControls();
+        
         // Reinitialize core systems
         console.log('[GameScene] Reinitializing systems for menu');
-        this.player = new Player(this.dimensions);
+        this.player = new Player(this.dimensions, this.inputManager);
         this.addChild(this.player);
         // Move player off screen initially
         this.player.position.set(-1000, -1000);
         
-        this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player, this.inputManager);
-        this.addChild(this.upgradeSystem);
+        // Clear any existing enemies to avoid memory leaks
+        this.enemies = [];
         
-        this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+        // Remove any existing home screen
+        if (this.homeScreen) {
+            this.removeChild(this.homeScreen);
+        }
         
-        // Reset score system
-        this.scoreSystem.reset();
-        
-        // Show the home screen
-        console.log('[GameScene] Creating home screen');
-        this.homeScreen = new HomeScreen(this.dimensions, async () => {
-            await this.startGame();
-        }, this.inputManager);
+        // Create and add home screen
+        this.homeScreen = new HomeScreen(this.dimensions, this.startGame.bind(this), this.inputManager);
         this.addChild(this.homeScreen);
     }
 
@@ -315,6 +315,9 @@ export class GameScene extends PIXI.Container {
         this.waveAnnouncement.alpha = 0;
         this.addChild(this.waveAnnouncement);
 
+        // Show mobile controls when starting the game
+        this.inputManager.showMobileControls();
+
         // Start first wave
         console.log('[GameScene] Starting first wave');
         this.startWave(1);
@@ -399,13 +402,14 @@ export class GameScene extends PIXI.Container {
         console.log('[GameScene] Resetting game state');
         this.isGameOver = false;
         
-        // Reinitialize core systems
-        console.log('[GameScene] Reinitializing core systems');
+        // Show mobile controls when restarting the game
+        this.inputManager.showMobileControls();
         
         // Reinitialize player
         console.log('[GameScene] Reinitializing player');
-        this.player = new Player(this.dimensions);
+        this.player = new Player(this.dimensions, this.inputManager);
         this.addChild(this.player);
+        this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
         
         // Reinitialize upgrade system
         console.log('[GameScene] Reinitializing upgrade system');
@@ -430,15 +434,17 @@ export class GameScene extends PIXI.Container {
         // Notify gameplay stop
         await this.adManager.notifyGameplayStop();
 
+        // Hide mobile controls when showing game over screen
+        this.inputManager.hideMobileControls();
+
         // Create and show game over screen
         this.gameOverScreen = new GameOverScreen(
             this.dimensions.width,
             this.dimensions.height,
             async () => {
-                // Show ad before restarting if the full path includes crazygames.com
-                if (window.location.href.includes('crazygames.com')) {
-                    await this.adManager.showAd();
-                }
+                // Wait for ad to be shown before continuing
+                const adResult = await this.adManager.showAd();
+                console.log('[GameScene] Ad result:', adResult);
                 await this.restart();
             },
             async () => this.showHomeScreen(),
@@ -749,7 +755,7 @@ export class GameScene extends PIXI.Container {
         if (this.homeScreen) {
             this.homeScreen.update();
         }
-        
+
         if (this.gameOverScreen) {
             this.gameOverScreen.update();
         }
@@ -770,7 +776,10 @@ export class GameScene extends PIXI.Container {
         // Show stats when upgrade screen is visible
         if (upgradeScreenVisible) {
             this.statsDisplay.show();
+            this.inputManager.hideMobileControls();
         } else if (this.previousUpgradeScreenVisible && !upgradeScreenVisible) {
+            this.inputManager.showMobileControls();
+
             // Only hide when visibility changes from true to false
             this.statsDisplay.hide(true); // true = use the 3-second delay
         }
@@ -786,7 +795,9 @@ export class GameScene extends PIXI.Container {
         }
 
         // Update upgrade available indicator
-        this.upgradeAvailableText.visible = false //this.player.hasAvailableUpgrade();
+        if (this.upgradeAvailableText) {
+            this.upgradeAvailableText.visible = false; //this.player.hasAvailableUpgrade();
+        }
 
         // Continue updating the game even when upgrade screen is visible
         // This allows enemies to continue moving and animations to play
@@ -799,7 +810,7 @@ export class GameScene extends PIXI.Container {
         }
 
         // Handle wave announcement fade out
-        if (this.waveAnnouncement.alpha > 0) {
+        if (this.waveAnnouncement && this.waveAnnouncement.alpha > 0) {
             const deltaMs = Math.min(delta * 1000, 100);
             this.waveAnnouncementTimer += deltaMs;
             
@@ -882,19 +893,27 @@ export class GameScene extends PIXI.Container {
         );
 
         // check if the player is near in space to the health bar
-        const targetAlpha = this.healthBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
-        this.healthBar.alpha += (targetAlpha - this.healthBar.alpha) * 0.1;
+        if (this.healthBar) {
+            const targetAlpha = this.healthBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
+            this.healthBar.alpha += (targetAlpha - this.healthBar.alpha) * 0.1;
+        }
         
         // check if player is near in space to the exp bar
-        const targetExpAlpha = this.expBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
-        this.expBar.alpha += (targetExpAlpha - this.expBar.alpha) * 0.1;
+        if (this.expBar) {
+            const targetExpAlpha = this.expBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
+            this.expBar.alpha += (targetExpAlpha - this.expBar.alpha) * 0.1;
+        }
 
         // Update health bar
-        this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
-        this.healthBar.update(delta);
+        if (this.healthBar) {
+            this.healthBar.updateHealth(this.player.getHealth(), this.player.getMaxHealth());
+            this.healthBar.update(delta);
+        }
         
         // Update stats display
-        this.statsDisplay.update(delta * 1000);
+        if (this.statsDisplay) {
+            this.statsDisplay.update(delta * 1000);
+        }
 
         // Update boss UI
         this.updateBossUI();

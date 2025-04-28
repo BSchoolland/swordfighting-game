@@ -47,6 +47,9 @@ export class Game {
         // Initialize input manager with PIXI application
         this.inputManager = new InputManager(this.app);
         
+        // Initially hide mobile controls since we start with the home screen
+        this.inputManager.hideMobileControls();
+        
         // Create the game scene with fixed size
         this.currentScene = new GameScene({
             width: Game.GAME_WIDTH,

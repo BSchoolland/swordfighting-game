@@ -34,10 +34,10 @@ export class Player extends Entity {
     private static readonly EXP_SCALING: number = 1.5; // How much more EXP each level needs
     private hasUpgradeAvailable: boolean = false; // Track if upgrade is available
 
-    constructor(screenBounds: { width: number; height: number }) {
+    constructor(screenBounds: { width: number; height: number }, inputManager?: InputManager | null) {
         super(screenBounds, 100); // 100 health points
         this.soundManager = SoundManager.getInstance();
-        this.inputManager = new InputManager();
+        this.inputManager = inputManager || new InputManager({} as PIXI.Application);
         
         // Create cooldown indicators
         this.dashIndicator = new PIXI.Graphics();
