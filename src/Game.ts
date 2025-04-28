@@ -2,11 +2,13 @@ import * as PIXI from 'pixi.js';
 import { GameScene } from './scenes/GameScene';
 import { SoundManager } from './systems/SoundManager';
 import { AdManager } from './systems/AdManager';
+import { InputManager } from './systems/InputManager';
 
 export class Game {
     private app: PIXI.Application;
     private currentScene: GameScene;
     private gameContainer: PIXI.Container;
+    private inputManager: InputManager;
 
     // Fixed game world size
     private static readonly GAME_WIDTH = 800;
@@ -22,10 +24,9 @@ export class Game {
             height: window.innerHeight,
             backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
             antialias: true,
-            resolution: 2, 
+            resolution: window.devicePixelRatio || 1, // Use device's pixel ratio
             autoDensity: true,
             view: document.createElement('canvas') as HTMLCanvasElement
-            // Removed resizeTo property to manually handle resizing
         });
 
         document.body.appendChild(this.app.view as HTMLCanvasElement);
@@ -41,17 +42,19 @@ export class Game {
         gameBackground.drawRect(0, 0, Game.GAME_WIDTH, Game.GAME_HEIGHT);
         gameBackground.endFill();
         this.gameContainer.addChild(gameBackground);
-        
         this.app.stage.addChild(this.gameContainer);
+        
+        // Initialize input manager with PIXI application
+        this.inputManager = new InputManager(this.app);
         
         // Create the game scene with fixed size
         this.currentScene = new GameScene({
             width: Game.GAME_WIDTH,
             height: Game.GAME_HEIGHT
-        });
+        }, this.inputManager);
         this.gameContainer.addChild(this.currentScene);
 
-        // Initial resize
+        // Handle initial resize
         this.handleResize();
 
         // Handle fullscreen toggle with F key
@@ -61,10 +64,8 @@ export class Game {
             }
         });
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            this.handleResize();
-        });
+        // Add resize listener
+        window.addEventListener('resize', () => this.handleResize());
 
         this.app.ticker.add(() => {
             this.update();

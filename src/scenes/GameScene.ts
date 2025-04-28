@@ -60,10 +60,10 @@ export class GameScene extends PIXI.Container {
 
     private expBar!: ExpBar;
 
-    constructor(dimensions: { width: number; height: number }) {
+    constructor(dimensions: { width: number; height: number }, inputManager: InputManager) {
         super();
         this.dimensions = dimensions;
-        this.inputManager = new InputManager();
+        this.inputManager = inputManager;
         this.soundManager = SoundManager.getInstance();
         this.adManager = AdManager.getInstance();
         

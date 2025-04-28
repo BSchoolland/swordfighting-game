@@ -156,6 +156,9 @@ export class HomeScreen extends PIXI.Container {
             this.dimensions.height * 0.7
         );
         button.interactive = true;
+        // buttonMode is deprecated in newer PIXI versions
+        // @ts-ignore - Using buttonMode for backward compatibility
+        button.buttonMode = true;
         button.cursor = 'pointer';
 
         // Button hover effects
@@ -166,6 +169,20 @@ export class HomeScreen extends PIXI.Container {
         });
         button.on('mouseout', () => {
             if (this.currentSelectedIndex !== 0) { // Only reset if not gamepad selected
+                buttonBg.tint = 0x666666;
+                buttonText.scale.set(1);
+            }
+        });
+        button.on('pointerdown', () => {
+            buttonBg.tint = 0xFFFFFF;
+            buttonText.scale.set(1.2);
+        });
+        button.on('pointerup', async () => {
+            SoundManager.getInstance().playPowerUpSound();
+            await this.onStart();
+        });
+        button.on('pointerupoutside', () => {
+            if (this.currentSelectedIndex !== 0) {
                 buttonBg.tint = 0x666666;
                 buttonText.scale.set(1);
             }

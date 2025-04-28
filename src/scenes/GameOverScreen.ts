@@ -306,6 +306,8 @@ export class GameOverScreen extends PIXI.Container {
         // Position and interactivity
         button.position.set(x - 100, y - 30);
         button.interactive = true;
+        // @ts-ignore - Using buttonMode for backward compatibility
+        button.buttonMode = true;
         button.cursor = 'pointer';
 
         // Hover effects
@@ -314,6 +316,25 @@ export class GameOverScreen extends PIXI.Container {
             buttonText.scale.set(1.1);
         });
         button.on('mouseout', () => {
+            if (button !== this.selectableElements[this.currentSelectedIndex]?.container) {
+                bg.tint = 0xFFFFFF;
+                buttonText.scale.set(1);
+            }
+        });
+        
+        // Touch events
+        button.on('pointerdown', () => {
+            bg.tint = 0x666666;
+            buttonText.scale.set(1.2);
+        });
+        button.on('pointerup', () => {
+            const index = this.selectableElements.findIndex(el => el.container === button);
+            if (index !== -1) {
+                this.setSelectedElement(index);
+                this.selectCurrentElement();
+            }
+        });
+        button.on('pointerupoutside', () => {
             if (button !== this.selectableElements[this.currentSelectedIndex]?.container) {
                 bg.tint = 0xFFFFFF;
                 buttonText.scale.set(1);

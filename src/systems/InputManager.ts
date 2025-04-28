@@ -1,5 +1,7 @@
 import { Entity } from "../entities/Entity";
 import { Player } from "../entities/Player";
+import { MobileControls } from "./MobileControls";
+import * as PIXI from 'pixi.js';
 
 export class InputManager {
     private keys: Set<string> = new Set();
@@ -9,6 +11,8 @@ export class InputManager {
     private hasGamepadInput: boolean = false;
     private lastAimDirection: { x: number, y: number } = { x: 1, y: 0 };
     private currentAimPosition: { x: number, y: number } = { x: 0, y: 0 };
+    private mobileControls: MobileControls | null = null;
+    private isMobile: boolean = false;
     private gamepadState: {
         leftStick: { x: number, y: number },
         rightStick: { x: number, y: number },
@@ -45,7 +49,7 @@ export class InputManager {
     private static readonly DEADZONE = 0.1;
     private static readonly TRIGGER_THRESHOLD = 0.1;
     private lastDirectionChangeTime = 0;
-    private static readonly AIM_ASSIST_DELAY = 500;
+    private static readonly AIM_ASSIST_DELAY = 750;
     private static readonly AIM_ASSIST_SPEED = 0.05; // Speed of aim assist transition (0-1)
     private aimAssistEnabled: boolean = false;
     private static readonly STORAGE_KEY = 'pixel_rage_settings';
@@ -72,19 +76,41 @@ export class InputManager {
         }
     };
 
-    constructor() {
+    constructor(app: PIXI.Application) {
+        // Check if mobile
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (this.isMobile) {
+            try {
+                this.mobileControls = new MobileControls(app);
+            } catch (error) {
+                console.error('Failed to initialize mobile controls:', error);
+                this.isMobile = false; // Fall back to non-mobile controls
+            }
+        }
+
         // Keyboard events
         window.addEventListener('keydown', (e) => this.keys.add(e.code));
         window.addEventListener('keyup', (e) => this.keys.delete(e.code));
         
         // Mouse events
         window.addEventListener('mousemove', (e) => {
+            // Ignore touch events from mobile controls
+            if (this.isMobile && this.isFromMobileControls(e)) {
+                return;
+            }
+            
             this.mousePosition = { x: e.clientX, y: e.clientY };
             // Reset gamepad input when mouse moves
             this.hasGamepadInput = false;
             this.lastDirectionChangeTime = Date.now();
         });
-        window.addEventListener('mousedown', () => {
+        window.addEventListener('mousedown', (e) => {
+            // Ignore touch events from mobile controls
+            if (this.isMobile && this.isFromMobileControls(e)) {
+                return;
+            }
+            
             this.isMouseDown = true;
             // Reset gamepad input on mouse click
             this.hasGamepadInput = false;
@@ -284,9 +310,29 @@ export class InputManager {
         }
     }
 
+    public showMobileControls(): void {
+        if (this.mobileControls) {
+            this.mobileControls.show();
+        }
+    }
+
+    public hideMobileControls(): void {
+        if (this.mobileControls) {
+            this.mobileControls.hide();
+        }
+    }
+
     public getMovementVector(): { x: number, y: number } {
         let x = 0;
         let y = 0;
+
+        // Mobile controls take priority on mobile devices
+        if (this.isMobile && this.mobileControls) {
+            const mobileVector = this.mobileControls.getMovementVector();
+            if (Math.abs(mobileVector.x) > 0.1 || Math.abs(mobileVector.y) > 0.1) {
+                return mobileVector; // Return directly if using joystick
+            }
+        }
 
         // Keyboard input
         if (this.keys.has('KeyA')) x -= 1;
@@ -345,7 +391,7 @@ export class InputManager {
         return this.keys.has(code);
     }
 
-    public getMousePosition(player: Player, enemies: Entity[]): { x: number, y: number } {
+    public getMousePosition(player: Player, enemies: Entity[]): { x: number, y: number, convert?: boolean } {
         if (this.aimAssistEnabled && this.lastDirectionChangeTime && Date.now() - this.lastDirectionChangeTime > InputManager.AIM_ASSIST_DELAY) {
             // Find nearest enemy
             let nearestEnemy: Entity | null = null;
@@ -383,18 +429,20 @@ export class InputManager {
         return { x: this.mousePosition.x, y: this.mousePosition.y, convert: true };
     }
 
+    public isAttacking(): boolean {
+        return this.isMouseDown || 
+               (this.hasGamepadInput && this.gamepadState.triggers.right > InputManager.TRIGGER_THRESHOLD) ||
+               (this.mobileControls?.isAttackingPressed() || false);
+    }
+
     public isDashActive(): boolean {
         return this.isDashing || 
-               (this.hasGamepadInput && this.gamepadState.triggers.left > InputManager.TRIGGER_THRESHOLD);
+               (this.hasGamepadInput && this.gamepadState.triggers.left > InputManager.TRIGGER_THRESHOLD) ||
+               (this.mobileControls?.isDashingPressed() || false);
     }
 
     public getKeys(): Set<string> {
         return this.keys;
-    }
-
-    public isAttacking(): boolean {
-        return this.isMouseDown || 
-               (this.hasGamepadInput && this.gamepadState.triggers.right > InputManager.TRIGGER_THRESHOLD);
     }
 
     public isUsingGamepad(): boolean {
@@ -460,5 +508,39 @@ export class InputManager {
      */
     public isMenuRightTriggered(): boolean {
         return this.directionStatus.right.pressed;
+    }
+
+    // Helper to check if an event is from our mobile controls
+    private isFromMobileControls(event: any): boolean {
+        if (!this.mobileControls) return false;
+        
+        // Get the attack and dash button positions
+        const attackButton = this.mobileControls.getAttackButtonPosition();
+        const dashButton = this.mobileControls.getDashButtonPosition();
+        const joystick = this.mobileControls.getJoystickPosition();
+        
+        // Define regions where mobile controls are located
+        if (attackButton) {
+            // Check if event is within attack button area 
+            const dx = event.clientX - attackButton.x;
+            const dy = event.clientY - attackButton.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 50) return true;
+        }
+        
+        if (dashButton) {
+            // Check if event is within dash button area
+            const dx = event.clientX - dashButton.x;
+            const dy = event.clientY - dashButton.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 50) return true;
+        }
+        
+        if (joystick) {
+            // Check if event is within joystick area or left side of screen
+            if (event.clientX < window.innerWidth / 2) return true;
+        }
+        
+        return false;
     }
 } 
