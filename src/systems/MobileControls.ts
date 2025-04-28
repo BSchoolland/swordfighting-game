@@ -1,5 +1,14 @@
 import * as PIXI from 'pixi.js';
 
+// Define our own interface that doesn't conflict with the imported namespace
+interface PixiInteractionEvent {
+    data: {
+        global: PIXI.Point;
+        pointerId: number;
+    };
+    stopPropagation(): void;
+}
+
 export class MobileControls {
     private app: PIXI.Application;
     private joystick: PIXI.Container | null = null;
@@ -19,6 +28,7 @@ export class MobileControls {
     private isDashing: boolean = false;
     private isInitialized: boolean = false;
     private isTouchDevice: boolean = false;
+    private resizeListener: (() => void) | null = null;
 
     constructor(app: PIXI.Application) {
         this.app = app;
@@ -39,10 +49,63 @@ export class MobileControls {
             this.setupJoystick();
             this.setupButtons();
             this.setupTouchEvents();
+            this.setupResizeListener();
+            
+            // Update positions after setup
+            this.updateControlPositions();
+            
             this.isInitialized = true;
         } catch (error) {
             console.error('Failed to initialize mobile controls:', error);
         }
+    }
+
+    private setupResizeListener(): void {
+        // Store reference to the bound method so we can remove it later if needed
+        this.resizeListener = this.updateControlPositions.bind(this);
+        window.addEventListener('resize', this.resizeListener);
+        
+        // Also listen for orientation change events on mobile
+        window.addEventListener('orientationchange', this.resizeListener);
+    }
+
+    private updateControlPositions(): void {
+        if (!this.app || !this.app.screen || !this.isInitialized) return;
+        
+        // Update joystick start position
+        this.joystickStartPosition = {
+            x: 100,
+            y: this.app.screen.height - 100
+        };
+        
+        // Only update joystick position if it's not currently active
+        if (this.joystick && !this.joystickActive) {
+            this.joystick.position.set(this.joystickStartPosition.x, this.joystickStartPosition.y);
+        }
+        
+        // Update attack button position
+        if (this.attackButton) {
+            this.attackButton.position.set(
+                this.app.screen.width - 100,
+                this.app.screen.height - 100
+            );
+        }
+        
+        // Update dash button position
+        if (this.dashButton) {
+            this.dashButton.position.set(
+                this.app.screen.width - 100,
+                this.app.screen.height - 200
+            );
+        }
+        
+        // Update hit area of the stage
+        if (this.app && this.app.stage) {
+            this.app.stage.hitArea = new PIXI.Rectangle(0, 0, this.app.screen.width, this.app.screen.height);
+        }
+        
+        console.log("Mobile controls positions updated for screen size:", 
+                    this.app.screen.width, "x", this.app.screen.height);
     }
 
     private setupJoystick(): void {
@@ -127,6 +190,8 @@ export class MobileControls {
     }
 
     private setupTouchEvents(): void {
+        if (!this.app || !this.app.stage || !this.attackButton || !this.dashButton) return;
+        
         // Make app stage interactive for joystick
         this.app.stage.interactive = true;
         this.app.stage.hitArea = new PIXI.Rectangle(0, 0, this.app.screen.width, this.app.screen.height);
@@ -138,7 +203,7 @@ export class MobileControls {
         let activeJoystickPointerId: number | null = null;
         
         // Touch start anywhere on left half to activate joystick
-        this.app.stage.on('pointerdown', (e: PIXI.InteractionEvent) => {
+        this.app.stage.on('pointerdown', (e: PixiInteractionEvent) => {
             const position = e.data.global;
             
             // Only activate joystick if touch is on left half of screen, no active joystick pointer,
@@ -153,7 +218,9 @@ export class MobileControls {
                 this.joystick.position.set(position.x, position.y);
                 
                 // Reset knob position relative to the base
-                this.joystickKnob.position.set(0, 0);
+                if (this.joystickKnob) {
+                    this.joystickKnob.position.set(0, 0);
+                }
                 
                 // Make joystick visible if it wasn't
                 this.joystick.visible = true;
@@ -165,7 +232,7 @@ export class MobileControls {
         });
         
         // Handle touch move for joystick
-        this.app.stage.on('pointermove', (e: PIXI.InteractionEvent) => {
+        this.app.stage.on('pointermove', (e: PixiInteractionEvent) => {
             // Only process moves for the active joystick pointer ID
             if (this.joystickActive && e.data.pointerId === activeJoystickPointerId) {
                 this.updateJoystickPosition(e.data.global);
@@ -173,7 +240,7 @@ export class MobileControls {
         });
         
         // Handle touch end
-        this.app.stage.on('pointerup', (e: PIXI.InteractionEvent) => {
+        this.app.stage.on('pointerup', (e: PixiInteractionEvent) => {
             // Only handle the end of the active joystick touch
             if (this.joystickActive && e.data.pointerId === activeJoystickPointerId) {
                 activeJoystickPointerId = null;
@@ -181,11 +248,13 @@ export class MobileControls {
                 this.resetJoystick();
                 
                 // Return joystick to original position
-                this.joystick.position.set(this.joystickStartPosition.x, this.joystickStartPosition.y);
+                if (this.joystick) {
+                    this.joystick.position.set(this.joystickStartPosition.x, this.joystickStartPosition.y);
+                }
             }
         });
         
-        this.app.stage.on('pointerupoutside', (e: PIXI.InteractionEvent) => {
+        this.app.stage.on('pointerupoutside', (e: PixiInteractionEvent) => {
             // Only handle the end of the active joystick touch
             if (this.joystickActive && e.data.pointerId === activeJoystickPointerId) {
                 activeJoystickPointerId = null;
@@ -193,43 +262,45 @@ export class MobileControls {
                 this.resetJoystick();
                 
                 // Return joystick to original position
-                this.joystick.position.set(this.joystickStartPosition.x, this.joystickStartPosition.y);
+                if (this.joystick) {
+                    this.joystick.position.set(this.joystickStartPosition.x, this.joystickStartPosition.y);
+                }
             }
         });
 
         // Attack button events
-        this.attackButton.on('pointerdown', (e: PIXI.InteractionEvent) => {
+        this.attackButton.on('pointerdown', (e: PixiInteractionEvent) => {
             // Stop event propagation to prevent it from reaching the stage
             e.stopPropagation();
             this.isAttacking = true;
         });
         
-        this.attackButton.on('pointerup', (e: PIXI.InteractionEvent) => {
+        this.attackButton.on('pointerup', (e: PixiInteractionEvent) => {
             // Stop event propagation
             e.stopPropagation();
             this.isAttacking = false;
         });
         
-        this.attackButton.on('pointerupoutside', (e: PIXI.InteractionEvent) => {
+        this.attackButton.on('pointerupoutside', (e: PixiInteractionEvent) => {
             // Stop event propagation
             e.stopPropagation();
             this.isAttacking = false;
         });
 
         // Dash button events
-        this.dashButton.on('pointerdown', (e: PIXI.InteractionEvent) => {
+        this.dashButton.on('pointerdown', (e: PixiInteractionEvent) => {
             // Stop event propagation to prevent it from reaching the stage
             e.stopPropagation();
             this.isDashing = true;
         });
         
-        this.dashButton.on('pointerup', (e: PIXI.InteractionEvent) => {
+        this.dashButton.on('pointerup', (e: PixiInteractionEvent) => {
             // Stop event propagation
             e.stopPropagation();
             this.isDashing = false;
         });
         
-        this.dashButton.on('pointerupoutside', (e: PIXI.InteractionEvent) => {
+        this.dashButton.on('pointerupoutside', (e: PixiInteractionEvent) => {
             // Stop event propagation
             e.stopPropagation();
             this.isDashing = false;
@@ -300,6 +371,9 @@ export class MobileControls {
             if (this.joystick && this.isInitialized) this.joystick.visible = true;
             if (this.attackButton && this.isInitialized) this.attackButton.visible = true;
             if (this.dashButton && this.isInitialized) this.dashButton.visible = true;
+            
+            // Update positions whenever showing controls
+            this.updateControlPositions();
         } catch (error) {
             console.error("Error showing mobile controls:", error);
         }
@@ -343,5 +417,14 @@ export class MobileControls {
             x: this.joystick.position.x,
             y: this.joystick.position.y
         };
+    }
+
+    // Add a cleanup method to remove event listeners
+    public cleanup(): void {
+        if (this.resizeListener) {
+            window.removeEventListener('resize', this.resizeListener);
+            window.removeEventListener('orientationchange', this.resizeListener);
+            this.resizeListener = null;
+        }
     }
 } 

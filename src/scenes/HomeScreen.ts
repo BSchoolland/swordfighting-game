@@ -31,6 +31,8 @@ export class HomeScreen extends PIXI.Container {
     private gamepadCursor: PIXI.Graphics | null = null;
     private lastInputTime: number = 0;
     private readonly INPUT_DEBOUNCE_TIME = 200; // ms
+    private isLoading: boolean = false; // Track loading state
+    private startButtonText!: PIXI.Text; // Reference to start button text
 
     constructor(dimensions: { width: number; height: number }, onStart: () => Promise<void>, inputManager: InputManager) {
         super();
@@ -135,7 +137,8 @@ export class HomeScreen extends PIXI.Container {
         buttonBg.endFill();
         button.addChild(buttonBg);
 
-        const buttonText = new PIXI.Text('START GAME', {
+        // Save reference to button text
+        this.startButtonText = new PIXI.Text('START GAME', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 24,
             fill: ['#FFD700', '#FFA500'],
@@ -151,9 +154,9 @@ export class HomeScreen extends PIXI.Container {
             align: 'center',
             fontWeight: 'bold'
         });
-        buttonText.anchor.set(0.5);
-        buttonText.position.set(100, 34);
-        button.addChild(buttonText);
+        this.startButtonText.anchor.set(0.5);
+        this.startButtonText.position.set(100, 34);
+        button.addChild(this.startButtonText);
 
         button.position.set(
             (this.dimensions.width - 200) / 2,
@@ -167,34 +170,44 @@ export class HomeScreen extends PIXI.Container {
 
         // Button hover effects
         button.on('mouseover', () => {
-            buttonBg.tint = 0xFFFFFF;
-            buttonText.scale.set(1.1);
-            this.setSelectedElement(0); // Update selection for gamepad
+            if (!this.isLoading) {
+                buttonBg.tint = 0xFFFFFF;
+                this.startButtonText.scale.set(1.1);
+                this.setSelectedElement(0); // Update selection for gamepad
+            }
         });
         button.on('mouseout', () => {
-            if (this.currentSelectedIndex !== 0) { // Only reset if not gamepad selected
+            if (!this.isLoading && this.currentSelectedIndex !== 0) { // Only reset if not gamepad selected
                 buttonBg.tint = 0x666666;
-                buttonText.scale.set(1);
+                this.startButtonText.scale.set(1);
             }
         });
         button.on('pointerdown', () => {
-            buttonBg.tint = 0xFFFFFF;
-            buttonText.scale.set(1.2);
-            this.setSelectedElement(0);
+            if (!this.isLoading) {
+                buttonBg.tint = 0xFFFFFF;
+                this.startButtonText.scale.set(1.2);
+                this.setSelectedElement(0);
+            }
         });
         button.on('pointerup', async () => {
-            SoundManager.getInstance().playPowerUpSound();
-            await this.onStart();
+            if (!this.isLoading) {
+                this.startLoading();
+                SoundManager.getInstance().playPowerUpSound();
+                await this.onStart();
+            }
         });
         button.on('pointerupoutside', () => {
-            if (this.currentSelectedIndex !== 0) {
+            if (!this.isLoading && this.currentSelectedIndex !== 0) {
                 buttonBg.tint = 0x666666;
-                buttonText.scale.set(1);
+                this.startButtonText.scale.set(1);
             }
         });
         button.on('click', async () => {
-            SoundManager.getInstance().playPowerUpSound();
-            await this.onStart();
+            if (!this.isLoading) {
+                this.startLoading();
+                SoundManager.getInstance().playPowerUpSound();
+                await this.onStart();
+            }
         });
 
         this.addChild(button);
@@ -203,8 +216,11 @@ export class HomeScreen extends PIXI.Container {
         this.selectableElements.push({
             container: button,
             onSelect: async () => {
-                SoundManager.getInstance().playPowerUpSound();
-                await this.onStart();
+                if (!this.isLoading) {
+                    this.startLoading();
+                    SoundManager.getInstance().playPowerUpSound();
+                    await this.onStart();
+                }
             }
         });
 
@@ -356,7 +372,7 @@ export class HomeScreen extends PIXI.Container {
         const panelBg = new PIXI.Graphics();
         panelBg.lineStyle(3, 0xFFD700);
         panelBg.beginFill(0x000000, 0.9);
-        panelBg.drawRoundedRect(0, 0, 300, 200, 15);
+        panelBg.drawRoundedRect(0, 0, 300, 220, 15);
         panelBg.endFill();
         this.settingsPanel.addChild(panelBg);
 
@@ -743,5 +759,11 @@ export class HomeScreen extends PIXI.Container {
     public update(): void {
         // Method to be called from game loop to update UI state
         this.handleGamepadInput();
+    }
+
+    private startLoading(): void {
+        this.isLoading = true;
+        this.startButtonText.text = 'LOADING...';
+        this.startButtonText.scale.set(1);
     }
 } 
