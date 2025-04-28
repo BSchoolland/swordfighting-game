@@ -404,6 +404,38 @@ export class HomeScreen extends PIXI.Container {
             }
         });
 
+        // Aim assist toggle
+        const aimAssistLabel = new PIXI.Text('Aim Assist', {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            fill: 0xFFFFFF,
+            align: 'left'
+        });
+        aimAssistLabel.position.set(30, 170);
+        this.settingsPanel.addChild(aimAssistLabel);
+
+        const aimAssistToggle = this.createToggleButton(this.inputManager.isAimAssistEnabled());
+        aimAssistToggle.position.set(200, 170);
+        aimAssistToggle.on('mouseover', () => {
+            this.setSelectedElement(4); // Aim assist toggle is the 5th selectable element (index 4)
+        });
+        aimAssistToggle.on('click', () => {
+            const newState = !this.inputManager.isAimAssistEnabled();
+            this.inputManager.setAimAssistEnabled(newState);
+            this.updateToggleButton(aimAssistToggle, newState);
+        });
+        this.settingsPanel.addChild(aimAssistToggle);
+        
+        // Add to selectable elements
+        this.selectableElements.push({
+            container: aimAssistToggle,
+            onSelect: () => {
+                const newState = !this.inputManager.isAimAssistEnabled();
+                this.inputManager.setAimAssistEnabled(newState);
+                this.updateToggleButton(aimAssistToggle, newState);
+            }
+        });
+
         // Position the panel
         this.settingsPanel.position.set(
             this.dimensions.width - 340,
@@ -534,12 +566,14 @@ export class HomeScreen extends PIXI.Container {
             // When settings panel is open
             switch (direction) {
                 case 'up':
-                    if (newIndex === 3) newIndex = 2;
+                    if (newIndex === 4) newIndex = 3;
+                    else if (newIndex === 3) newIndex = 2;
                     else if (newIndex === 2) newIndex = 1;
                     break;
                 case 'down':
                     if (newIndex === 1) newIndex = 2;
                     else if (newIndex === 2) newIndex = 3;
+                    else if (newIndex === 3) newIndex = 4;
                     break;
                 case 'left':
                     if (newIndex === 1) newIndex = 0;

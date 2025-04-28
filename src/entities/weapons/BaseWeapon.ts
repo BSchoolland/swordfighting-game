@@ -24,6 +24,7 @@ export interface WeaponStats {
     previewAlpha: number;
     originalAttackSpeed?: number;
     originalWindUpTime?: number;
+    swingSound?: string; // Optional sound effect for weapon swing
 }
 
 export abstract class BaseWeapon extends PIXI.Container {
@@ -200,6 +201,16 @@ export abstract class BaseWeapon extends PIXI.Container {
             this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
             this.hitEntities.clear();
+
+            // Play weapon-specific swing sound if it exists
+            if (this.stats.swingSound) {
+                // wait the windup time
+                setTimeout(() => {
+                    if (this.stats.swingSound) {
+                        SoundManager.getInstance().playSound(this.stats.swingSound);
+                    }
+                }, this.stats.windUpTime);
+            }
         }
     }
 

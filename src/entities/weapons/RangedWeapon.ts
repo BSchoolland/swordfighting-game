@@ -5,6 +5,7 @@ import * as PIXI from 'pixi.js';
 import { Entity } from '../Entity';
 import { BaseWeapon, WeaponStats } from './BaseWeapon';
 import { Projectile, ProjectileStats } from '../projectiles/Projectile';
+import { SoundManager } from '../../systems/SoundManager';
 
 export interface RangedWeaponStats extends WeaponStats {
     projectileStats: ProjectileStats;
@@ -92,6 +93,16 @@ export abstract class RangedWeapon extends BaseWeapon {
             this.rotation = 0; // No swing rotation for ranged weapons
             this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
+            // play the swing sound
+            // Play weapon-specific swing sound if it exists
+            if (this.stats.swingSound) {
+                // wait the windup time
+                setTimeout(() => {
+                    if (this.stats.swingSound) {
+                        SoundManager.getInstance().playSound(this.stats.swingSound);
+                    }
+                }, this.stats.windUpTime);
+            }
         } else {
         }
     }

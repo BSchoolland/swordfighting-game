@@ -27,6 +27,7 @@ export class MasterSword extends BerserkerSword {
         retreatRange: 0.7,
         windUpTime: 400, // Faster windup than enemy sword
         previewAlpha: 0.4,
+        swingSound: 'master_sword',
         projectileStats: {
             speed: 0,
             damage: 0,
@@ -63,6 +64,7 @@ export class MasterHammer extends WarriorHammer {
         retreatRange: 0.7,
         windUpTime: 800,
         previewAlpha: 0.4,
+        swingSound: 'master_hammer',
         projectileStats: {
             speed: 0,
             damage: 0,
@@ -163,6 +165,7 @@ export class MasterSpear extends Spear {
         retreatRange: 0.6,
         windUpTime: 300, // Faster than enemy spear (400)
         previewAlpha: 0.4,
+        swingSound: 'master_spear',
         projectileStats: {
             speed: 0,
             damage: 0,
@@ -204,6 +207,7 @@ export class MasterDagger extends Dagger {
         retreatRange: 0.8,
         windUpTime: 80, // Faster windup
         previewAlpha: 0.4,
+        swingSound: 'master_dagger',
         range: 35,
         projectileStats: {
             speed: 0,
@@ -252,6 +256,7 @@ export class MasterBoomerang extends Boomerang {
         retreatRange: 20,
         windUpTime: 50,
         previewAlpha: 0.4,
+        swingSound: 'master_boomerang',
         range: 350,
         projectileStats: {
             speed: 6.5, // Faster than enemy boomerang

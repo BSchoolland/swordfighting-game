@@ -341,7 +341,7 @@ export class SoundManager {
 
     public playSwingSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('movement')) return;
-        zzfx(.2,.05,477,.1,.01,.17,2,3,12,12,0,0,0,.2,32,0,0,.63,.17,.2,0);
+        zzfx(.2,.05,477,.1,.01,.17,2,3,12,12,0,0,0,.2,32,0,0,.63,.17,.2,0); // Sound 1
     }
 
     public playHitSound(): void {
@@ -394,7 +394,7 @@ export class SoundManager {
 
     public playGameOverSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
-        zzfx(1, .05, 240, .3, .5, .3, 1, -4, -0.5);
+        zzfx(0.5, .05, 240, .3, .5, .3, 1, -4, -0.5);
     }
 
     public playWaveStartSound(): void {
@@ -417,7 +417,41 @@ export class SoundManager {
 
     public playUpgradeSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('ambient')) return;
-        // A pleasant, mystical chime sound for when upgrades appear
         zzfx(.3,.05,1200,.3,.2,.4,1,4.5,0,50,100,.1,.1,0,0,.2,.1,.7,.05,.3,0);
+    }
+
+    public playSound(soundName: string): void {
+        if (this.isSoundEffectsMuted) return;
+        
+        // Define sound parameters for different weapon types
+        const soundParams: { [key: string]: number[] } = {
+            // Master Sword - Sharp, clean sound with a slight whoosh
+            'master_sword': [0.5, 0.05, 440, 0.1, 0.1, 0.1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            
+            // Master Hammer - Heavy, impactful sound with low frequency and longer sustain
+            'master_hammer': [0.7, 0.05, 220, 0.1, 0.3, 0.2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            
+            // Master Spear - Piercing sound with quick attack and high frequency
+            'master_spear': [0.6, 0.05, 660, 0.05, 0.1, 0.1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            
+            // Master Dagger - Quick, light sound with very fast attack
+            'master_dagger': [0.4, 0.05, 880, 0.02, 0.05, 0.05, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            
+            // Master Boomerang - Whirling sound with modulation
+            'master_boomerang': [0.5, 0.05, 550, 0.1, 0.2, 0.2, 1, 1, 0, 0, 0, 0, 0, 0.2, 0.1, 0, 0, 1, 0, 0],
+            
+            // Berserker Sword - Aggressive, heavy sound with distortion
+            'berserker_sword': [.4,5,200,.1,.01,.17,2,3,12,12,0,0,0,.2,32,.2,0,.63,.17,.2,0]            ,
+            
+            // Warrior Hammer - Heavy, crushing sound with low frequency
+            'warrior_hammer': [.5, 3,78,.01,.13,.12,1,3.6,-5,8,0,0,0,0,0,.4,0,.85,.16,0,0], // 40k
+            
+            // Hunter Bow - Quick, twangy sound
+            'hunter_bow': [.2,5,391,.1,.19,.13,2,.1,-11,-11,0,0,.09,0,0,.1,0,.96,.17,.14,0]
+        };
+
+        if (soundParams[soundName]) {
+            zzfx(...soundParams[soundName]);
+        }
     }
 } 

@@ -21,6 +21,7 @@ export class WarriorHammer extends BaseWeapon {
         retreatRange: 0.4,
         windUpTime: 600, // Longer windup for telegraphing
         previewAlpha: 0.3,
+        swingSound: 'warrior_hammer',
         projectileStats: {
             speed: 0,
             damage: 0,
@@ -47,6 +48,7 @@ export class WarriorHammer extends BaseWeapon {
         retreatRange: 0.6,
         windUpTime: 800, // Even longer windup for enemies
         previewAlpha: 0.3,
+        swingSound: 'warrior_hammer',
         projectileStats: {
             speed: 0,
             damage: 0,

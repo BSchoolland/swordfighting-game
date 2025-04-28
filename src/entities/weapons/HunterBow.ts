@@ -22,6 +22,7 @@ export class HunterBow extends RangedWeapon {
         retreatRange: 200,
         windUpTime: 400,
         previewAlpha: 0.3,
+        swingSound: 'hunter_bow',
         projectileStats: {
             speed: 7,
             damage: 12,
@@ -48,6 +49,7 @@ export class HunterBow extends RangedWeapon {
         retreatRange: 50,
         windUpTime: 500,
         previewAlpha: 0.3,
+        swingSound: 'hunter_bow',
         projectileStats: {
             speed: 6,
             damage: 10,

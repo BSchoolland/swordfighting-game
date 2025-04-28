@@ -325,7 +325,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        // this.waveSystem.setWave(15);
+        // this.waveSystem.setWave(11);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -850,10 +850,10 @@ export class GameScene extends PIXI.Container {
         }
 
         // Get input vectors
-        const aim = this.inputManager.getAimDirection();
         
         // Update target cursor position based on input type
         if (this.inputManager.isUsingGamepad()) {
+            const aim = this.inputManager.getAimDirection();
             // For gamepad, position relative to player
             const aimDistance = 100;
             this.targetCursor.position.set(
@@ -862,11 +862,12 @@ export class GameScene extends PIXI.Container {
             );
         } else {
             // For mouse, use exact mouse position in world space
-            const mousePos = this.screenToWorldSpace(
-                this.inputManager.getMousePosition().x,
-                this.inputManager.getMousePosition().y
-            );
-            this.targetCursor.position.set(mousePos.x, mousePos.y);
+            let mousePos = this.inputManager.getMousePosition(this.player, this.enemies);
+            if (mousePos.convert){
+                this.targetCursor.position.set(this.screenToWorldSpace(mousePos.x, mousePos.y).x, this.screenToWorldSpace(mousePos.x, mousePos.y).y);
+            } else {
+                this.targetCursor.position.set(mousePos.x, mousePos.y)
+            }
         }
 
         // Update player with new input methods

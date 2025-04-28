@@ -1,3 +1,6 @@
+import { Entity } from "../entities/Entity";
+import { Player } from "../entities/Player";
+
 export class InputManager {
     private keys: Set<string> = new Set();
     private mousePosition: { x: number, y: number } = { x: 0, y: 0 };
@@ -5,6 +8,7 @@ export class InputManager {
     private isMouseDown: boolean = false;
     private hasGamepadInput: boolean = false;
     private lastAimDirection: { x: number, y: number } = { x: 1, y: 0 };
+    private currentAimPosition: { x: number, y: number } = { x: 0, y: 0 };
     private gamepadState: {
         leftStick: { x: number, y: number },
         rightStick: { x: number, y: number },
@@ -40,6 +44,11 @@ export class InputManager {
     private static readonly INPUT_REPEAT_RATE = 150;  // ms between repeats after initial delay
     private static readonly DEADZONE = 0.1;
     private static readonly TRIGGER_THRESHOLD = 0.1;
+    private lastDirectionChangeTime = 0;
+    private static readonly AIM_ASSIST_DELAY = 500;
+    private static readonly AIM_ASSIST_SPEED = 0.05; // Speed of aim assist transition (0-1)
+    private aimAssistEnabled: boolean = false;
+    private static readonly STORAGE_KEY = 'pixel_rage_settings';
     
     // Gamepad button constants for readability
     public static readonly GAMEPAD = {
@@ -73,6 +82,7 @@ export class InputManager {
             this.mousePosition = { x: e.clientX, y: e.clientY };
             // Reset gamepad input when mouse moves
             this.hasGamepadInput = false;
+            this.lastDirectionChangeTime = Date.now();
         });
         window.addEventListener('mousedown', () => {
             this.isMouseDown = true;
@@ -93,8 +103,40 @@ export class InputManager {
             }
         });
 
+        // Load settings
+        this.loadSettings();
+        
         // Start gamepad polling
         this.startGamepadPolling();
+    }
+
+    private loadSettings(): void {
+        const settings = localStorage.getItem(InputManager.STORAGE_KEY);
+        if (settings) {
+            const { aimAssistEnabled } = JSON.parse(settings);
+            this.aimAssistEnabled = aimAssistEnabled;
+        } else {
+            // First time setup - check if mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            this.aimAssistEnabled = isMobile;
+            this.saveSettings();
+        }
+    }
+
+    private saveSettings(): void {
+        const settings = {
+            aimAssistEnabled: this.aimAssistEnabled
+        };
+        localStorage.setItem(InputManager.STORAGE_KEY, JSON.stringify(settings));
+    }
+
+    public setAimAssistEnabled(enabled: boolean): void {
+        this.aimAssistEnabled = enabled;
+        this.saveSettings();
+    }
+
+    public isAimAssistEnabled(): boolean {
+        return this.aimAssistEnabled;
     }
 
     private startGamepadPolling(): void {
@@ -303,8 +345,42 @@ export class InputManager {
         return this.keys.has(code);
     }
 
-    public getMousePosition(): { x: number, y: number } {
-        return this.mousePosition;
+    public getMousePosition(player: Player, enemies: Entity[]): { x: number, y: number } {
+        if (this.aimAssistEnabled && this.lastDirectionChangeTime && Date.now() - this.lastDirectionChangeTime > InputManager.AIM_ASSIST_DELAY) {
+            // Find nearest enemy
+            let nearestEnemy: Entity | null = null;
+            let minDistance = Infinity;
+            
+            for (const enemy of enemies) {
+                if (!enemy.isAlive()) continue;
+                
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            }
+            
+            if (nearestEnemy) {
+                // Gradually move current aim position towards the enemy
+                this.currentAimPosition.x += (nearestEnemy.x - this.currentAimPosition.x) * InputManager.AIM_ASSIST_SPEED;
+                this.currentAimPosition.y += (nearestEnemy.y - this.currentAimPosition.y) * InputManager.AIM_ASSIST_SPEED;
+                return { x: this.currentAimPosition.x, y: this.currentAimPosition.y };
+            } else {
+                // move towards 0 0
+                this.currentAimPosition.x += (0 - this.currentAimPosition.x) * InputManager.AIM_ASSIST_SPEED;
+                this.currentAimPosition.y += (0 - this.currentAimPosition.y) * InputManager.AIM_ASSIST_SPEED;
+                return { x: this.currentAimPosition.x, y: this.currentAimPosition.y };
+            }
+        }
+        
+        // Reset current aim position to mouse position when not using aim assist
+        this.currentAimPosition.x = this.mousePosition.x;
+        this.currentAimPosition.y = this.mousePosition.y;
+        return { x: this.mousePosition.x, y: this.mousePosition.y, convert: true };
     }
 
     public isDashActive(): boolean {

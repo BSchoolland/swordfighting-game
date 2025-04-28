@@ -21,6 +21,7 @@ export class BerserkerSword extends BaseWeapon {
         retreatRange: 0.6,
         windUpTime: 400, // Longer windup due to bigger sword
         previewAlpha: 0.3,
+        swingSound: 'berserker_sword',
         projectileStats: {
             speed: 0,
             damage: 0,
