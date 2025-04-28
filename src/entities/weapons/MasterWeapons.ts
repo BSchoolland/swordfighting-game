@@ -10,6 +10,7 @@ import { Dagger } from './Dagger';
 import { Boomerang } from './Boomerang';
 import { WarriorHammer } from './WarriorHammer';
 import { BerserkerSword } from './BerserkerSword';
+import { SoundManager } from '../../systems/SoundManager';
 // Enhanced Master of Arms Sword
 export class MasterSword extends BerserkerSword {
     private static readonly MASTER_PARAMS: WeaponStats = {
@@ -98,6 +99,17 @@ export class MasterHammer extends WarriorHammer {
             this.previewSprite.visible = true;
             this.lastSwingTime = currentTime;
             this.hitEntities.clear();
+            
+            // Play weapon-specific swing sound if it exists (fixed for master hammer)
+            if (this.stats.swingSound) {
+                // Wait the windup time
+                SoundManager.getInstance().playSound('master_hammer_charge');
+                setTimeout(() => {
+                    if (this.stats.swingSound) {
+                        SoundManager.getInstance().playSound(this.stats.swingSound);
+                    }
+                }, this.stats.windUpTime);
+            }
         }
     }
 
