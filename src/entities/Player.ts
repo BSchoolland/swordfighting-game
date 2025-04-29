@@ -172,7 +172,7 @@ export class Player extends Entity {
 
         // Handle stun and knockback first
         if (this.stunned) {
-            this.stunTimer -= delta * 1000;
+            this.stunTimer -= delta * 16;
             if (this.stunTimer <= 0 || currentSpeed < Player.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
                 if (currentSpeed < Player.KNOCKBACK_THRESHOLD) {

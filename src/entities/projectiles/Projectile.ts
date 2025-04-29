@@ -103,7 +103,7 @@ export abstract class Projectile extends Entity {
         // 1. Targets of the same type (enemy vs player)
         // 2. Dead targets
         // 3. The entity that created/owned this projectile
-        targets = targets.filter(t => {
+        const eligibleTargets = targets.filter(t => {
             // Exclude targets of the same type (enemy vs player)
             if (t.isEnemy === this.isEnemy) return false;
             
@@ -116,7 +116,7 @@ export abstract class Projectile extends Entity {
             return true;
         });
         
-        for (const target of targets) {
+        for (const target of eligibleTargets) {
             const dx = target.x - this.x;
             const dy = target.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -141,9 +141,7 @@ export abstract class Projectile extends Entity {
         }
     }
 
-    public destroy(): void {
-
-        
+    public destroy(): void {        
         // Set health to 0
         this.health = 0;
         

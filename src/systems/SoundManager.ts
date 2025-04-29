@@ -394,7 +394,7 @@ export class SoundManager {
 
     public playGameOverSound(): void {
         if (this.isSoundEffectsMuted || !this.canPlaySound('important')) return;
-        
+
     }
 
     public playWaveStartSound(): void {
@@ -426,22 +426,24 @@ export class SoundManager {
         // Define sound parameters for different weapon types
         const soundParams: { [key: string]: number[] } = {
             // Master Sword - Sharp, clean sound with a slight whoosh
-            'master_sword': [0.5, 0.05, 440, 0.1, 0.1, 0.1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            'master_sword': [.5,5,150,.1,.01,.17,2,3,12,12,0,0,0,.2,32,.2,0,.63,.17,.2,0],
             
             // Master Hammer - Heavy, impactful sound with low frequency and longer sustain
-            'master_hammer': [0.7, 0.05, 220, 0.1, 0.3, 0.2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            'master_hammer': [1,.05,31,.03,.07,.69,0,.8,6,3,0,0,0,.2,0,.3,0,.45,.29,.35,0],
+
+            'master_hammer_charge': [1.6,.05,372,.03,.15,.06,1,2,-10,10,0,0,0,0,0,.2,.18,.95,.13,0,0],
             
             // Master Spear - Piercing sound with quick attack and high frequency
-            'master_spear': [0.6, 0.05, 660, 0.05, 0.1, 0.1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            'master_spear': [0.8,.05,305,.03,.01,.16,2,.7,-17,3,0,0,0,0,0,.4,0,.89,.13,.06,0],
             
             // Master Dagger - Quick, light sound with very fast attack
-            'master_dagger': [0.4, 0.05, 880, 0.02, 0.05, 0.05, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            'master_dagger': [.3,.1,477,.1,.01,.17,2,3,12,12,0,0,0,.2,32,0.05,0,.63,.17,.2,0],
             
             // Master Boomerang - Whirling sound with modulation
-            'master_boomerang': [0.5, 0.05, 550, 0.1, 0.2, 0.2, 1, 1, 0, 0, 0, 0, 0, 0.2, 0.1, 0, 0, 1, 0, 0],
+            'master_boomerang': [1.4,.05,204,.01,.07,.15,0,1.9,-17,-17,0,0,.08,0,0,0,.07,.96,.15,.29,0],
             
             // Berserker Sword - Aggressive, heavy sound with distortion
-            'berserker_sword': [.4,5,200,.1,.01,.17,2,3,12,12,0,0,0,.2,32,.2,0,.63,.17,.2,0]            ,
+            'berserker_sword': [.4,5,200,.1,.01,.17,2,3,12,12,0,0,0,.2,32,.2,0,.63,.17,.2,0],
             
             // Warrior Hammer - Heavy, crushing sound with low frequency
             'warrior_hammer': [.5, 3,78,.01,.13,.12,1,3.6,-5,8,0,0,0,0,0,.4,0,.85,.16,0,0], // 40k

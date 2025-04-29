@@ -111,7 +111,14 @@ export class MasterOfArmsBoss extends BossEnemy {
         
         // Create and add new weapon
         const WeaponClass = this.weaponTypes[this.currentWeaponIndex];
-        this.weapon = new WeaponClass(this);
+        
+        // For HunterBow, explicitly create it with isEnemy=true
+        if (WeaponClass === HunterBow) {
+            this.weapon = new HunterBow(this, true);
+        } else {
+            this.weapon = new WeaponClass(this);
+        }
+        
         this.addChild(this.weapon);
 
         // Adjust stats based on weapon type AFTER creating weapon

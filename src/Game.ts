@@ -30,7 +30,7 @@ export class Game {
             height: window.innerHeight,
             backgroundColor: 0x0a0a0a, // Very dark gray for letterboxed areas
             antialias: !this.isMobile, // Disable antialiasing on mobile
-            resolution: this.isMobile ? 1 : 1, // Lower resolution on mobile
+            resolution: 1, // Lower resolution on mobile
             autoDensity: true,
             powerPreference: this.isMobile ? 'low-power' : 'high-performance',
             view: document.createElement('canvas') as HTMLCanvasElement

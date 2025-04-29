@@ -299,9 +299,14 @@ export class HomeScreen extends PIXI.Container {
         settingsButton.addChild(settingsIcon);
         settingsButton.position.set(this.dimensions.width - 40, 40);
         settingsButton.interactive = true;
+        settingsIcon.interactive = true;  // Make the icon itself interactive too
         // @ts-ignore - Using buttonMode for backward compatibility
         settingsButton.buttonMode = true;
         settingsButton.cursor = 'pointer';
+        settingsIcon.cursor = 'pointer';  // Add cursor to icon as well
+
+        // Add a hitArea to make the entire icon clickable
+        settingsButton.hitArea = new PIXI.Circle(0, 0, 20);
 
         settingsButton.on('mouseover', () => {
             settingsIcon.tint = 0xFFFFFF;
@@ -312,15 +317,14 @@ export class HomeScreen extends PIXI.Container {
                 settingsIcon.tint = 0x666666;
             }
         });
-        settingsButton.on('click', () => {
-            this.toggleSettingsPanel();
-        });
         // Add touch-specific events for mobile
         settingsButton.on('pointerdown', () => {
             settingsIcon.tint = 0xFFFFFF;
+            this.setSelectedElement(1);
         });
         settingsButton.on('pointerup', () => {
             this.toggleSettingsPanel();
+            SoundManager.getInstance().playMenuSound();
         });
 
         this.addChild(settingsButton);
@@ -329,6 +333,7 @@ export class HomeScreen extends PIXI.Container {
         this.selectableElements.push({
             container: settingsButton,
             onSelect: () => {
+                SoundManager.getInstance().playMenuSound();
                 this.toggleSettingsPanel();
             }
         });
@@ -402,11 +407,6 @@ export class HomeScreen extends PIXI.Container {
         musicToggle.on('mouseover', () => {
             this.setSelectedElement(2); // Music toggle is the 3rd selectable element (index 2)
         });
-        musicToggle.on('click', () => {
-            const newState = !soundManager.isMusicEnabled();
-            soundManager.setMusicEnabled(newState);
-            this.updateToggleButton(musicToggle, newState);
-        });
         // Add pointer events for mobile
         musicToggle.on('pointerdown', () => {
             this.setSelectedElement(2);
@@ -443,11 +443,6 @@ export class HomeScreen extends PIXI.Container {
         sfxToggle.on('mouseover', () => {
             this.setSelectedElement(3); // SFX toggle is the 4th selectable element (index 3)
         });
-        sfxToggle.on('click', () => {
-            const newState = !soundManager.isSoundEffectsEnabled();
-            soundManager.setSoundEffectsEnabled(newState);
-            this.updateToggleButton(sfxToggle, newState);
-        });
         // Add pointer events for mobile
         sfxToggle.on('pointerdown', () => {
             this.setSelectedElement(3);
@@ -483,11 +478,6 @@ export class HomeScreen extends PIXI.Container {
         aimAssistToggle.position.set(200, 170);
         aimAssistToggle.on('mouseover', () => {
             this.setSelectedElement(4); // Aim assist toggle is the 5th selectable element (index 4)
-        });
-        aimAssistToggle.on('click', () => {
-            const newState = !this.inputManager.isAimAssistEnabled();
-            this.inputManager.setAimAssistEnabled(newState);
-            this.updateToggleButton(aimAssistToggle, newState);
         });
         // Add pointer events for mobile
         aimAssistToggle.on('pointerdown', () => {

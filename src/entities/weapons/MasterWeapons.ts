@@ -51,7 +51,7 @@ export class MasterSword extends BerserkerSword {
 // Enhanced Master of Arms Hammer
 export class MasterHammer extends WarriorHammer {
     private static readonly MASTER_PARAMS: WeaponStats = {
-        damage: 35, // Increased from 20
+        damage: 45, // Insane damage
         knockback: 18, // Increased from 12
         attackSpeed: 1500, // Faster than enemy hammer (2000)
         range: 120, // Increased from 100

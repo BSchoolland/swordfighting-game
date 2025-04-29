@@ -328,7 +328,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        this.waveSystem.setWave(15);
+        // this.waveSystem.setWave(14);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -427,7 +427,10 @@ export class GameScene extends PIXI.Container {
 
     private async showGameOver(): Promise<void> {
         if (this.isGameOver) return;
-        
+        // Wait for ad to be shown before continuing
+        const adResult = this.adManager.showAd();
+        console.log('[GameScene] Ad result:', adResult);
+
         this.isGameOver = true;
         this.gameStarted = false;
 
@@ -442,9 +445,7 @@ export class GameScene extends PIXI.Container {
             this.dimensions.width,
             this.dimensions.height,
             async () => {
-                // Wait for ad to be shown before continuing
-                const adResult = await this.adManager.showAd();
-                console.log('[GameScene] Ad result:', adResult);
+                
                 await this.restart();
             },
             async () => this.showHomeScreen(),
