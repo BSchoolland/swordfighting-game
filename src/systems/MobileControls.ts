@@ -14,7 +14,6 @@ export class MobileControls {
     private joystick: PIXI.Container | null = null;
     private joystickKnob: PIXI.Graphics | null = null;
     private joystickBase: PIXI.Graphics | null = null;
-    private joystickPosition: { x: number, y: number } = { x: 0, y: 0 };
     private joystickActive: boolean = false;
     private joystickRadius: number = 50;
     private joystickKnobRadius: number = 20;
@@ -27,12 +26,10 @@ export class MobileControls {
     private isAttacking: boolean = false;
     private isDashing: boolean = false;
     private isInitialized: boolean = false;
-    private isTouchDevice: boolean = false;
     private resizeListener: (() => void) | null = null;
 
     constructor(app: PIXI.Application) {
         this.app = app;
-        this.isTouchDevice = 'ontouchstart' in window;
         // Wait for the next frame to ensure app is fully initialized
         requestAnimationFrame(() => {
             this.initialize();
@@ -195,9 +192,6 @@ export class MobileControls {
         // Make app stage interactive for joystick
         this.app.stage.interactive = true;
         this.app.stage.hitArea = new PIXI.Rectangle(0, 0, this.app.screen.width, this.app.screen.height);
-        
-        // Left half of screen for joystick controls
-        const leftHalfHitArea = new PIXI.Rectangle(0, 0, this.app.screen.width / 2, this.app.screen.height);
         
         // Track the pointer ID to handle multi-touch properly
         let activeJoystickPointerId: number | null = null;

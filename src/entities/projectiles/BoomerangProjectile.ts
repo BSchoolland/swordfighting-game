@@ -7,7 +7,7 @@ export class BoomerangProjectile extends Projectile {
     private isReturning: boolean = false;
     private initialDirection: { x: number, y: number };
     private curveDirection: number = 1; // 1 for right curve, -1 for left curve
-    private owner: Entity;
+    protected owner: Entity;
 
     constructor(
         x: number,

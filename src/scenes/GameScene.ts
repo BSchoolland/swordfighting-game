@@ -973,6 +973,8 @@ export class GameScene extends PIXI.Container {
                     this.handleEnemyDeath(enemy);
                     this.removeChild(enemy);
                     this.enemies.splice(i, 1);
+                    // Add freeze frame effect based on enemy type
+                    this.freezeFrameTimer = wasBoss ? GameScene.BOSS_FREEZE_DURATION : GameScene.FREEZE_FRAME_DURATION;
                 }
             }
         }
