@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "tsc && vite build && rm -rf /var/www/bladegame && cp -r dist /var/www/bladegame",
     "preview": "vite preview"
   },
   "keywords": [
