@@ -33,6 +33,3 @@ A fast-paced top-down action combat game where you face hordes of enemies and ep
 
 - **Buttons and joysticks on the screen for movement and actions**
 - **Automatic system for smoothly aiming at the enemy**
-
-## License
-MIT License - See LICENSE file for details
