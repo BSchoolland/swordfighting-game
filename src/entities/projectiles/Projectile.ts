@@ -153,8 +153,10 @@ export abstract class Projectile extends Entity {
 
     protected applyVelocity(): void {
         // Override Entity's applyVelocity to remove friction for projectiles
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
+        // Scale movement by delta time for framerate independence
+        const delta = 1/60; // Use fixed timestep for consistent physics
+        this.x += this.velocity.x * delta * 60;
+        this.y += this.velocity.y * delta * 60;
 
         // Keep within bounds
         this.x = Math.max(this.radius, Math.min(this.bounds.width - this.radius, this.x));

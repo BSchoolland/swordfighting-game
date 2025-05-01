@@ -882,17 +882,9 @@ export class GameScene extends PIXI.Container {
             }
         }
 
-        // Update player with new input methods
-        this.player.update(
-            delta,
-            this.inputManager.getKeys(),
-            this.targetCursor.x,
-            this.targetCursor.y,
-            this.inputManager.isDashActive(),
-            [...this.enemies, ...this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]],
-            this.inputManager.isAttacking()
-        );
-
+        // We no longer need to update physics here since it's done in fixedUpdate
+        // But we need to keep updating player animation, health display, etc.
+        
         // check if the player is near in space to the health bar
         if (this.healthBar) {
             const targetAlpha = this.healthBar.containsPoint(this.player.x, this.player.y) ? 0.2 : 1;
@@ -940,44 +932,61 @@ export class GameScene extends PIXI.Container {
                     return;
                 }
             }
-            // Note: We don't return here anymore, allowing enemies to continue moving
         }
 
-        // Update enemies and remove dead ones
+        // Update particle effects
+        this.particleSystem.update(delta);
+    }
+
+    /**
+     * Fixed timestep update for physics calculations
+     * @param fixedDelta fixed delta time in seconds (typically 1/60)
+     */
+    public fixedUpdate(fixedDelta: number): void {
+        if (!this.gameStarted || this.isGameOver || this.freezeFrameTimer > 0) return;
+        
+        // Skip physics when upgrade screen is visible
+        const upgradeScreenVisible = this.upgradeSystem.isUpgradeScreenVisible();
+        if (upgradeScreenVisible) return;
+
+        // Only update player physics if player is alive
+        if (this.player.isAlive()) {
+            this.player.update(
+                fixedDelta,
+                this.inputManager.getKeys(),
+                this.targetCursor.x,
+                this.targetCursor.y,
+                this.inputManager.isDashActive(),
+                [...this.enemies, ...this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]],
+                this.inputManager.isAttacking()
+            );
+        }
+
+        // Update enemies physics
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             if (enemy instanceof BaseEnemy) {
                 enemy.playerIsAttacking = this.inputManager.isAttacking();
-                enemy.update(delta, this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]);
+                enemy.update(fixedDelta, this.projectiles.filter(p => p.isAlive() && p instanceof Entity) as unknown as Entity[]);
                 if (!enemy.isAlive()) {
                     const wasBoss = enemy instanceof BossEnemy;
                     this.handleEnemyDeath(enemy);
                     this.removeChild(enemy);
                     this.enemies.splice(i, 1);
-
-                    // Show upgrade screen after boss death
-                    if (wasBoss) {
-                        // setTimeout(() => {
-                        //     this.upgradeSystem.showUpgradeSelection();
-                        // }, 1000); // Show after 1 second delay
-                    }
                 }
             }
         }
 
-        // Update projectiles
+        // Update projectiles physics
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const projectile = this.projectiles[i];
             if (projectile.isAlive()) {
-                projectile.update(delta, [this.player, ...this.enemies]);
+                projectile.update(fixedDelta, [this.player, ...this.enemies]);
             } else {
                 this.removeChild(projectile);
                 this.projectiles.splice(i, 1);
             }
         }
-
-        // Update particle effects
-        this.particleSystem.update(delta);
     }
 
     private createExpBar(): void {

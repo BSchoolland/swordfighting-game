@@ -81,6 +81,7 @@ export class HunterBoss extends BossEnemy {
         const distToPlayer = this.distanceToPlayer();
         const optimalRange = 300; // Optimal shooting distance
         const tolerance = 50; // Range tolerance
+        const delta = 1/60; // Use fixed timestep for consistent physics
 
         if (!this.isDodging) {
             if (distToPlayer < optimalRange - tolerance) {
@@ -88,16 +89,16 @@ export class HunterBoss extends BossEnemy {
                 const dx = this.player.x - this.x;
                 const dy = this.player.y - this.y;
                 const angle = Math.atan2(dy, dx);
-                this.velocity.x -= Math.cos(angle) * this.stats.speed * 1.2;
-                this.velocity.y -= Math.sin(angle) * this.stats.speed * 1.2;
+                this.velocity.x -= Math.cos(angle) * this.stats.speed * 1.2 * delta * 60;
+                this.velocity.y -= Math.sin(angle) * this.stats.speed * 1.2 * delta * 60;
                 this.performDodge();
             } else if (distToPlayer > optimalRange + tolerance) {
                 // Too far, move closer
                 const dx = this.player.x - this.x;
                 const dy = this.player.y - this.y;
                 const angle = Math.atan2(dy, dx);
-                this.velocity.x += Math.cos(angle) * this.stats.speed;
-                this.velocity.y += Math.sin(angle) * this.stats.speed;
+                this.velocity.x += Math.cos(angle) * this.stats.speed * delta * 60;
+                this.velocity.y += Math.sin(angle) * this.stats.speed * delta * 60;
             } else {
                 
             }
@@ -116,8 +117,8 @@ export class HunterBoss extends BossEnemy {
             // Handle dodge movement
             if (this.isDodging) {
                 this.dodgeTimer -= delta * 1000;
-                this.x += this.dodgeDirection.x * HunterBoss.DODGE_SPEED;
-                this.y += this.dodgeDirection.y * HunterBoss.DODGE_SPEED;
+                this.x += this.dodgeDirection.x * HunterBoss.DODGE_SPEED * delta * 60;
+                this.y += this.dodgeDirection.y * HunterBoss.DODGE_SPEED * delta * 60;
 
                 if (this.dodgeTimer <= 0) {
                     this.isDodging = false;

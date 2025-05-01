@@ -45,15 +45,16 @@ export class RangedEnemy extends BaseEnemy {
             // Try to maintain optimal range
             if (distance < this.attackRange * 0.8) {
                 // Too close, back away faster
-                this.velocity.x *= 1.2;
-                this.velocity.y *= 1.2;
+                const backawayScale = Math.pow(1.2, 60 * delta);
+                this.velocity.x *= backawayScale;
+                this.velocity.y *= backawayScale;
             } else if (distance > this.attackRange * 1.2) {
                 // Too far, move in
                 const dx = this.player.x - this.x;
                 const dy = this.player.y - this.y;
                 const angle = Math.atan2(dy, dx);
-                this.velocity.x += Math.cos(angle) * this.stats.speed;
-                this.velocity.y += Math.sin(angle) * this.stats.speed;
+                this.velocity.x += Math.cos(angle) * this.stats.speed * delta * 60;
+                this.velocity.y += Math.sin(angle) * this.stats.speed * delta * 60;
             }
 
             // Attack if in good range and facing player

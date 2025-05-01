@@ -154,6 +154,7 @@ export class Game {
         if (this.timeAccumulator >= this.fixedDeltaTime) {
             // Run as many fixed updates as needed to catch up for physics
             while (this.timeAccumulator >= this.fixedDeltaTime) {
+                this.currentScene.fixedUpdate?.(this.fixedDeltaTime);
                 this.timeAccumulator -= this.fixedDeltaTime;
             }
         }

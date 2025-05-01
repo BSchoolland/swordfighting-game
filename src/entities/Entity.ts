@@ -113,4 +113,12 @@ export abstract class Entity extends PIXI.Container {
     }
 
     public abstract update(...args: any[]): void;
+
+    /**
+     * Helper method to conveniently apply velocity with a fixed delta time
+     * Used by update methods to ensure frame-rate independent physics
+     */
+    protected applyVelocityWithFixedDelta(): void {
+        this.applyVelocity(1/60);
+    }
 } 

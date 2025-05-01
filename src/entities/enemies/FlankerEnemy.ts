@@ -69,8 +69,8 @@ export class FlankerEnemy extends BaseEnemy {
                 this.velocity.y = 0;
             } else {
                 // Apply dodge velocity
-                this.velocity.x = this.dodgeDirection.x * FlankerEnemy.DODGE_SPEED;
-                this.velocity.y = this.dodgeDirection.y * FlankerEnemy.DODGE_SPEED;
+                this.velocity.x = this.dodgeDirection.x * FlankerEnemy.DODGE_SPEED * delta * 60;
+                this.velocity.y = this.dodgeDirection.y * FlankerEnemy.DODGE_SPEED * delta * 60;
                 this.applyVelocity();
                 return; // Skip normal movement while dodging
             }

@@ -182,6 +182,9 @@ export abstract class BaseEnemy extends Entity {
 
         const currentSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
+        // Apply enemy and screen edge repulsion before movement
+        this.applyRepulsion();
+
         // Handle stun and knockback first
         if (this.stunned) {
             if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
@@ -190,7 +193,7 @@ export abstract class BaseEnemy extends Entity {
                 this.velocity.y = 0;
             }
             // Apply velocity and knockback while stunned
-            this.applyVelocity();
+            this.applyVelocity(delta);
             return;
         } else if (this.stunImmunityTimer > 0) {
             // Decrement immunity timer based on delta time in seconds
@@ -198,9 +201,6 @@ export abstract class BaseEnemy extends Entity {
             if (this.stunImmunityTimer < 0) this.stunImmunityTimer = 0;
             // continue, we're not stunned
         }
-
-        // Apply enemy and screen edge repulsion before movement
-        this.applyRepulsion();
 
         // Calculate movement restriction
         let movementMultiplier = 1.0;
@@ -236,20 +236,22 @@ export abstract class BaseEnemy extends Entity {
         if (this.isChasing) {
             if (distance > this.attackRange) {
                 // Move towards player if too far
-                this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
-                this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
+                this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier * delta * 60;
+                this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier * delta * 60;
             } else if (distance < this.retreatRange) {
                 // Back away if too close
-                this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
-                this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2;
+                this.velocity.x -= Math.cos(targetAngle) * this.stats.speed * movementMultiplier * 1.2 * delta * 60;
+                this.velocity.y -= Math.sin(targetAngle) * this.stats.speed * movementMultiplier * 1.2 * delta * 60;
             } else {
                 // In attack range, if not in center of range, move towards center of range
                 if (distance > (this.attackRange + this.retreatRange)/2) {
-                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier;
-                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier;
+                    this.velocity.x += Math.cos(targetAngle) * this.stats.speed * movementMultiplier * delta * 60;
+                    this.velocity.y += Math.sin(targetAngle) * this.stats.speed * movementMultiplier * delta * 60;
                 } else {
-                    this.velocity.x *= 0.01;
-                    this.velocity.y *= 0.01;
+                    // Use a frame-rate independent approach to reduce velocity
+                    const reductionFactor = Math.pow(0.01, 60 * delta);
+                    this.velocity.x *= reductionFactor;
+                    this.velocity.y *= reductionFactor;
                 }
                 this.weapon.swing();
             }
@@ -270,7 +272,7 @@ export abstract class BaseEnemy extends Entity {
         }
 
         // Apply velocity and knockback
-        this.applyVelocity();
+        this.applyVelocity(delta);
     }
 
     public getColor(): number {
