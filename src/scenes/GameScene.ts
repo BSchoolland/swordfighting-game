@@ -915,7 +915,7 @@ export class GameScene extends PIXI.Container {
         if (!this.player.isAlive() && !this.isGameOver) {
             if (this.playerDeathTimer === 0) {
                 // Player just died, start the timer
-                this.playerDeathTimer = 1250;
+                this.playerDeathTimer = 2000;
                 
                 // Create player death explosion effect
                 this.soundManager.playBossDeathSound(); // Use the same sound as boss death
