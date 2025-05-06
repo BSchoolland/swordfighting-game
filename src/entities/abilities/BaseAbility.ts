@@ -9,8 +9,8 @@ export interface AbilityStats {
 export abstract class BaseAbility {
     protected owner: Entity;
     protected stats: AbilityStats;
-    protected isActive: boolean = false;
     protected lastUseTime: number = 0;
+    public isActive: boolean = false;
 
     constructor(owner: Entity, stats: AbilityStats) {
         this.owner = owner;

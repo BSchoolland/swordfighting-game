@@ -133,10 +133,11 @@ const WAVE_DEFINITIONS: WaveDefinition[] = [
     {
         composition: {
             ...zeroComposition,
-            rangedEnemies: 8,
+            rangedEnemies: 7,
             tankEnemies: 3,
             blitzerEnemies: 3,
             fastEnemies: 2,
+            boomerangEnemies: 2,
         },
         spawnDelay: 800,
         description: "Rain of Death"
@@ -241,12 +242,21 @@ export class WaveSystem {
     private currentBoss: Entity | null = null;
     // @ts-ignore - upgradeSystem is used for type safety
     private upgradeSystem: UpgradeSystem;
+    private isHardcoreMode: boolean = false;
 
     constructor(bounds: { width: number; height: number }, player: Player, enemies: Entity[], upgradeSystem: UpgradeSystem) {
         this.bounds = bounds;
         this.player = player;
         this.enemies = enemies;
         this.upgradeSystem = upgradeSystem;
+    }
+
+    public setHardcoreMode(enabled: boolean): void {
+        this.isHardcoreMode = enabled;
+    }
+
+    public getHardcoreMode(): boolean {
+        return this.isHardcoreMode;
     }
 
     private createSpawnQueue(composition: WaveComposition): void {
@@ -409,25 +419,34 @@ export class WaveSystem {
         }
 
         // Position enemy at a random edge of the screen
-        const side = Math.floor(Math.random() * 4);
-        switch(side) {
-            case 0: // Top
-                enemy.x = Math.random() * this.bounds.width;
-                enemy.y = -50;
-                break;
-            case 1: // Right
-                enemy.x = this.bounds.width + 50;
-                enemy.y = Math.random() * this.bounds.height;
-                break;
-            case 2: // Bottom
-                enemy.x = Math.random() * this.bounds.width;
-                enemy.y = this.bounds.height + 50;
-                break;
-            case 3: // Left
-                enemy.x = -50;
-                enemy.y = Math.random() * this.bounds.height;
-                break;
-        }
+        let validPosition = false;
+        do {
+            const side = Math.floor(Math.random() * 4);
+            switch(side) {
+                case 0: // Top
+                    enemy.x = Math.random() * this.bounds.width;
+                    enemy.y = -50;
+                    break;
+                case 1: // Right
+                    enemy.x = this.bounds.width + 50;
+                    enemy.y = Math.random() * this.bounds.height;
+                    break;
+                case 2: // Bottom
+                    enemy.x = Math.random() * this.bounds.width;
+                    enemy.y = this.bounds.height + 50;
+                    break;
+                case 3: // Left
+                    enemy.x = -50;
+                    enemy.y = Math.random() * this.bounds.height;
+                    break;
+            }
+            
+            // Check distance from player
+            const dx = this.player.x - enemy.x;
+            const dy = this.player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            validPosition = distance >= 250;
+        } while (!validPosition);
 
         this.enemies.push(enemy);
         this.enemiesSpawned++;
@@ -462,9 +481,35 @@ export class WaveSystem {
                 (boss as any).reset();
             }
 
-            // Position boss at center top of screen
-            boss.x = this.bounds.width / 2;
-            boss.y = -50;
+            // Position boss at a random edge, ensuring minimum distance from player
+            let validPosition = false;
+            do {
+                const side = Math.floor(Math.random() * 4);
+                switch(side) {
+                    case 0: // Top
+                        boss.x = Math.random() * this.bounds.width;
+                        boss.y = -50;
+                        break;
+                    case 1: // Right
+                        boss.x = this.bounds.width + 50;
+                        boss.y = Math.random() * this.bounds.height;
+                        break;
+                    case 2: // Bottom
+                        boss.x = Math.random() * this.bounds.width;
+                        boss.y = this.bounds.height + 50;
+                        break;
+                    case 3: // Left
+                        boss.x = -50;
+                        boss.y = Math.random() * this.bounds.height;
+                        break;
+                }
+                
+                // Check distance from player
+                const dx = this.player.x - boss.x;
+                const dy = this.player.y - boss.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                validPosition = distance >= 250;
+            } while (!validPosition);
 
             this.enemies.push(boss);
             this.currentBoss = boss;
@@ -491,10 +536,12 @@ export class WaveSystem {
             if (this.currentBoss && !this.currentBoss.isAlive()) {
                 this.waveActive = false;
                 this.currentBoss = null;
-                // Heal player by 30% of max health
-                const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
-                this.player.heal(healAmount);
-                SoundManager.getInstance().playHealSound();
+                // Heal player by 30% of max health unless in hardcore mode
+                if (!this.isHardcoreMode) {
+                    const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
+                    this.player.heal(healAmount);
+                    SoundManager.getInstance().playHealSound();
+                }
                 // Transition back to normal music when boss dies
                 SoundManager.getInstance().transitionToNormalMusic();
                 // Don't start next wave if it was the Master of Arms
@@ -541,10 +588,12 @@ export class WaveSystem {
             // Check if wave is complete (all enemies spawned and none alive)
             if (this.enemiesSpawned >= totalEnemies && this.enemies.length === 0) {
                 this.waveActive = false;
-                // Heal player by 30% of max health between waves
-                const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
-                this.player.heal(healAmount);
-                SoundManager.getInstance().playHealSound();
+                // Heal player by 30% of max health between waves unless in hardcore mode
+                if (!this.isHardcoreMode) {
+                    const healAmount = Math.floor(this.player.getMaxHealth() * 0.3);
+                    this.player.heal(healAmount);
+                    SoundManager.getInstance().playHealSound();
+                }
             }
         }
     }

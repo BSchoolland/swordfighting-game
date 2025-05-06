@@ -734,6 +734,18 @@ export class UpgradeSystem extends PIXI.Container {
         return this.isVisible;
     }
 
+    public forceHideUpgradeSelection(): void {
+        // Force hide the upgrade selection, resetting all state
+        this.hideUpgradeSelection();
+    }
+
+    public forceShowUpgradeSelection(isBossWave: boolean = false, onSelected?: () => void): void {
+        // Force show by resetting visibility state first
+        this.isVisible = false;
+        this.visible = false;
+        this.showUpgradeSelection(isBossWave, onSelected);
+    }
+
     private setSelectedCard(index: number): void {
         if (index < 0 || index >= this.cards.length) return;
         

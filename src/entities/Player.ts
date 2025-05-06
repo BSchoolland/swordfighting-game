@@ -16,7 +16,7 @@ export class Player extends Entity {
     private inputManager: InputManager;
     private stunned: boolean = false;
     private stunTimer: number = 0;
-    private static readonly STUN_DURATION: number = 100; 
+    private static readonly STUN_DURATION: number = 1000; 
     private static readonly KNOCKBACK_THRESHOLD: number = 1.0; 
     private static readonly BASE_SPEED = 1.75;
     private baseSpeed: number = Player.BASE_SPEED;
@@ -201,9 +201,14 @@ export class Player extends Entity {
         // Get movement from input manager
         const movement = this.inputManager.getMovementVector();
         
-        // Apply movement using getSpeed() to include the multiplier
-        this.velocity.x = movement.x * this.getSpeed();
-        this.velocity.y = movement.y * this.getSpeed();
+        // Apply movement using getSpeed() to include the multiplier if not dashing
+        if (this.dash.isActive) {
+            this.velocity.x = movement.x * this.speed;
+            this.velocity.y = movement.y * this.speed;
+        } else {
+            this.velocity.x = movement.x * this.getSpeed();
+            this.velocity.y = movement.y * this.getSpeed();
+        }
 
         // Handle dash
         if (isDashing) {
@@ -262,6 +267,10 @@ export class Player extends Entity {
 
     public setSpeed(speed: number): void {
         this.baseSpeed = speed;
+    }
+
+    public setBaseSpeedDirectly(speed: number): void {
+        this.speed = speed;
     }
 
     public resetSpeed(): void {

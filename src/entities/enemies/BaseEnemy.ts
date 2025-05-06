@@ -31,7 +31,7 @@ export abstract class BaseEnemy extends Entity {
     public playerIsAttacking: boolean = false;
     public isEnemy: boolean = true;  // Changed to public to match Entity class
 
-    private static readonly STUN_DURATION = 200;
+    private static readonly STUN_DURATION = 1000;
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
     private static readonly REPULSION_RANGE = 100; // Distance at which enemies start repelling each other
     private static readonly REPULSION_FORCE = 0.3; // Strength of the repulsion
@@ -52,12 +52,6 @@ export abstract class BaseEnemy extends Entity {
 
         // Initialize weapon (to be set by child class)
         this.initializeWeapon();
-
-        // Random spawn position away from player
-        do {
-            this.x = Math.random() * (bounds.width - 20) + 10;
-            this.y = Math.random() * (bounds.height - 20) + 10;
-        } while (this.distanceToPlayer() < 250);
     }
 
     protected abstract initializeWeapon(): void;
@@ -187,7 +181,9 @@ export abstract class BaseEnemy extends Entity {
 
         // Handle stun and knockback first
         if (this.stunned) {
-            if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD) {
+            // start stun timer
+            this.stunTimer -= delta * 1000;
+            if (currentSpeed < BaseEnemy.KNOCKBACK_THRESHOLD || this.stunTimer <= 0) {
                 this.stunned = false;
                 this.velocity.x = 0;
                 this.velocity.y = 0;

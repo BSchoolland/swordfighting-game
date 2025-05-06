@@ -1,6 +1,6 @@
 import { Player } from '../Player';
 import { BaseEnemy, EnemyStats } from './BaseEnemy';
-import { BasicSword } from '../weapons/BasicSword';
+import { SpinningSword } from '../weapons/SpinningSword';
 import { Entity } from '../Entity';
 
 export class FlankerEnemy extends BaseEnemy {
@@ -30,26 +30,26 @@ export class FlankerEnemy extends BaseEnemy {
     }
 
     protected initializeWeapon(): void {
-        this.weapon = new BasicSword(this, true);88
+        this.weapon = new SpinningSword(this, true);
         this.addChild(this.weapon);
     }
 
     protected drawSprite(): void {
         this.sprite.beginFill(this.stats.color);
-        // Nimble, diamond shape
-        this.sprite.moveTo(0, -10);
-        this.sprite.lineTo(10, 0);
-        this.sprite.lineTo(0, 10);
-        this.sprite.lineTo(-10, 0);
-        this.sprite.lineTo(0, -10);
+        // Nimble, diamond shape (20% larger)
+        this.sprite.moveTo(0, -12);  // from -10 to -12
+        this.sprite.lineTo(12, 0);   // from 10 to 12
+        this.sprite.lineTo(0, 12);   // from 10 to 12
+        this.sprite.lineTo(-12, 0);  // from -10 to -12
+        this.sprite.lineTo(0, -12);  // from -10 to -12
         this.sprite.endFill();
 
-        // Add some agile-looking details
+        // Add some agile-looking details (20% larger)
         this.sprite.lineStyle(1, 0x66ffff);
-        this.sprite.moveTo(-5, -5);
-        this.sprite.lineTo(5, 5);
-        this.sprite.moveTo(-5, 5);
-        this.sprite.lineTo(5, -5);
+        this.sprite.moveTo(-6, -6);  // from -5 to -6
+        this.sprite.lineTo(6, 6);    // from 5 to 6
+        this.sprite.moveTo(-6, 6);   // from -5 to 6
+        this.sprite.lineTo(6, -6);   // from 5 to -6
     }
 
     public update(delta: number, targets: Entity[] = []): void {

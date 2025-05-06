@@ -89,6 +89,10 @@ export abstract class Entity extends PIXI.Container {
         this.speed = speed;
     }
 
+    public setBaseSpeedDirectly(speed: number): void {
+        this.speed = speed;
+    }
+
     public getVelocity(): { x: number, y: number } {
         return { ...this.velocity };
     }

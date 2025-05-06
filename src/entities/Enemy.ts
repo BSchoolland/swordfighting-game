@@ -11,7 +11,7 @@ export class Enemy extends Entity {
     private maxSpeed: number = 2;
     private stunned: boolean = false;
     private stunTimer: number = 0;
-    private static readonly STUN_DURATION = 200;
+    private static readonly STUN_DURATION = 1000; // MAX
     private static readonly KNOCKBACK_THRESHOLD = 0.5;
     private weapon: BasicSword;
     private attackRange: number;
@@ -67,6 +67,7 @@ export class Enemy extends Entity {
         // Handle stun and knockback first
         if (this.stunned) {
             this.stunTimer -= delta * 16.67;
+            console.log('stunTimer', this.stunTimer);
             if (this.stunTimer <= 0 || currentSpeed < Enemy.KNOCKBACK_THRESHOLD) {
                 this.stunned = false;
                 if (currentSpeed < Enemy.KNOCKBACK_THRESHOLD) {

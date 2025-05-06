@@ -33,6 +33,7 @@ export class HomeScreen extends PIXI.Container {
     private readonly INPUT_DEBOUNCE_TIME = 200; // ms
     private isLoading: boolean = false; // Track loading state
     private startButtonText!: PIXI.Text; // Reference to start button text
+    private hardcoreMode: boolean = false; // Track hardcore mode state
 
     constructor(dimensions: { width: number; height: number }, onStart: () => Promise<void>, inputManager: InputManager) {
         super();
@@ -44,6 +45,10 @@ export class HomeScreen extends PIXI.Container {
         this.inputManager.hideMobileControls();
         
         this.setup();
+    }
+
+    public isHardcoreModeEnabled(): boolean {
+        return this.hardcoreMode;
     }
 
     private setup(): void {
@@ -133,7 +138,7 @@ export class HomeScreen extends PIXI.Container {
         const buttonBg = new PIXI.Graphics();
         buttonBg.lineStyle(3, 0xFFD700);
         buttonBg.beginFill(0x000000, 0.5);
-        buttonBg.drawRoundedRect(0, 0, 200, 60, 15);
+        buttonBg.drawRoundedRect(0, 0, 200, 68, 10);
         buttonBg.endFill();
         button.addChild(buttonBg);
 
@@ -172,7 +177,6 @@ export class HomeScreen extends PIXI.Container {
         button.on('mouseover', () => {
             if (!this.isLoading) {
                 buttonBg.tint = 0xFFFFFF;
-                this.startButtonText.scale.set(1.1);
                 this.setSelectedElement(0); // Update selection for gamepad
             }
         });
@@ -238,7 +242,65 @@ export class HomeScreen extends PIXI.Container {
         this.tipsText.position.set(this.dimensions.width / 2, this.dimensions.height * 0.7 + 80);
         this.addChild(this.tipsText);
 
-        
+        // Add hardcore mode toggle if game has been completed
+        if (localStorage.getItem('gameCompleted') === 'true') {
+            const hardcoreToggle = new PIXI.Container();
+            hardcoreToggle.position.set(
+                (this.dimensions.width - 200) / 2,
+                this.dimensions.height * 0.7 + 80
+            );
+            hardcoreToggle.interactive = true;
+            // @ts-ignore - Using buttonMode for backward compatibility
+            hardcoreToggle.buttonMode = true;
+            hardcoreToggle.cursor = 'pointer';
+
+            const toggleBg = new PIXI.Graphics();
+            toggleBg.lineStyle(2, 0xFFD700);
+            toggleBg.beginFill(0x000000, 0.5);
+            toggleBg.drawRoundedRect(0, 0, 200, 40, 10);
+            toggleBg.endFill();
+            hardcoreToggle.addChild(toggleBg);
+
+            const toggleText = new PIXI.Text('Hardcore Mode: OFF', {
+                fontFamily: 'Arial',
+                fontSize: 18,
+                fill: 0xFFD700,
+                align: 'center'
+            });
+            toggleText.anchor.set(0.5);
+            toggleText.position.set(100, 20);
+            hardcoreToggle.addChild(toggleText);
+
+            hardcoreToggle.on('mouseover', () => {
+                toggleBg.tint = 0xFFFFFF;
+                this.setSelectedElement(2); // Hardcore toggle is the 3rd selectable element
+            });
+            hardcoreToggle.on('mouseout', () => {
+                if (this.currentSelectedIndex !== 2) {
+                    toggleBg.tint = 0x666666;
+                }
+            });
+            hardcoreToggle.on('click', () => {
+                this.hardcoreMode = !this.hardcoreMode;
+                toggleText.text = `Hardcore Mode: ${this.hardcoreMode ? 'ON' : 'OFF'}`;
+                SoundManager.getInstance().playMenuSound();
+            });
+
+            this.addChild(hardcoreToggle);
+
+            // Add to selectable elements
+            this.selectableElements.push({
+                container: hardcoreToggle,
+                onSelect: () => {
+                    this.hardcoreMode = !this.hardcoreMode;
+                    toggleText.text = `Hardcore Mode: ${this.hardcoreMode ? 'ON' : 'OFF'}`;
+                    SoundManager.getInstance().playMenuSound();
+                }
+            });
+
+            // Move tips text down to accommodate hardcore toggle
+            this.tipsText.position.set(this.dimensions.width / 2, this.dimensions.height * 0.7 + 140);
+        }
 
         // Add controls text
         const controlsText = new PIXI.Text(

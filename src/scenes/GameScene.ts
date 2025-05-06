@@ -215,12 +215,20 @@ export class GameScene extends PIXI.Container {
 
         // Reset player position and state
         this.player.reset();
-        // this.player.increaseSwingSpeed(4);
+        // this.player.increaseSpeed(1);
         // this.player.increaseSwordLength(2);
         this.player.position.set(this.dimensions.width / 2, this.dimensions.height / 2);
 
-        // Reset wave system
+        // Reset wave system, but only set hardcore mode if coming from home screen
+        const wasHardcore = this.waveSystem.getHardcoreMode();
         this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+        if (this.homeScreen) {
+            // Only set hardcore mode from home screen if we're not restarting
+            this.waveSystem.setHardcoreMode(this.homeScreen.isHardcoreModeEnabled());
+        } else {
+            // If no home screen, we're restarting, so keep previous hardcore mode
+            this.waveSystem.setHardcoreMode(wasHardcore);
+        }
 
         // Remove home screen if it exists
         if (this.homeScreen) {
@@ -328,7 +336,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        // this.waveSystem.setWave(14);
+        this.waveSystem.setWave(8);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -359,6 +367,10 @@ export class GameScene extends PIXI.Container {
         
         // Reset player death timer
         this.playerDeathTimer = 0;
+
+        // Store hardcore mode state before clearing game elements
+        const wasHardcore = this.waveSystem.getHardcoreMode();
+        console.log('[GameScene] Storing hardcore mode state:', wasHardcore);
 
         // Clear existing game elements
         console.log('[GameScene] Clearing game elements');
@@ -416,9 +428,11 @@ export class GameScene extends PIXI.Container {
         this.upgradeSystem = new UpgradeSystem(this.dimensions, this.player, this.inputManager);
         this.addChild(this.upgradeSystem);
         
-        // Reinitialize wave system
+        // Reinitialize wave system and restore hardcore mode setting
         console.log('[GameScene] Reinitializing wave system');
         this.waveSystem = new WaveSystem(this.dimensions, this.player, this.enemies, this.upgradeSystem);
+        this.waveSystem.setHardcoreMode(wasHardcore);
+        console.log('[GameScene] Restored hardcore mode state:', wasHardcore);
         
         // Start game immediately instead of showing home screen
         console.log('[GameScene] Starting new game');
@@ -431,6 +445,10 @@ export class GameScene extends PIXI.Container {
         const adResult = this.adManager.showAd();
         console.log('[GameScene] Ad result:', adResult);
 
+        // Reset any pending upgrade state
+        this.waitingForUpgrade = false;
+        this.upgradeSystem.forceHideUpgradeSelection();
+        
         this.isGameOver = true;
         this.gameStarted = false;
 
@@ -556,6 +574,10 @@ export class GameScene extends PIXI.Container {
 
         // Check if the enemy is a boss
         if (enemy instanceof BossEnemy) {
+            // Reset any pending upgrade state before boss death sequence
+            this.waitingForUpgrade = false;
+            this.upgradeSystem.forceHideUpgradeSelection();
+            
             // Kill all other enemies
             this.enemies.forEach(e => {
                 if (e !== enemy && e.isAlive()) {
@@ -578,6 +600,8 @@ export class GameScene extends PIXI.Container {
                 
                 // Show credits after the delay
                 setTimeout(() => {
+                    // Set the game completion flag in localStorage
+                    localStorage.setItem('gameCompleted', 'true');
                     this.showCredits();
                     this.isGameOver = true;
                     this.gameStarted = false;
@@ -594,35 +618,39 @@ export class GameScene extends PIXI.Container {
         // Create credits container
         const credits = new PIXI.Container();
         
-        // Create semi-transparent background
+        // Get hardcore mode state
+        const isHardcore = this.waveSystem.getHardcoreMode();
+        
+        // Create semi-transparent background with different color for hardcore
         const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000, 0.9);
+        bg.beginFill(isHardcore ? 0x110000 : 0x000000, 0.9);
         bg.drawRect(0, 0, this.dimensions.width, this.dimensions.height);
         bg.endFill();
         credits.addChild(bg);
 
-        // Create glow effect for title
+        // Create glow effect for title with different color for hardcore
         const glowSize = 60;
         const glow = new PIXI.Graphics();
-        glow.beginFill(0xFFD700, 0.3);
+        glow.beginFill(isHardcore ? 0xFF0000 : 0xFFD700, 0.3);
         glow.drawCircle(this.dimensions.width / 2, 100, glowSize);
         glow.endFill();
         credits.addChild(glow);
 
-        // Animate glow
+        // Animate glow with more intense animation for hardcore
         const animateGlow = () => {
             if (!credits.parent) return;
-            glow.scale.x = 1 + Math.sin(Date.now() / 500) * 0.1;
-            glow.scale.y = 1 + Math.sin(Date.now() / 500) * 0.1;
+            const intensity = isHardcore ? 0.2 : 0.1;
+            glow.scale.x = 1 + Math.sin(Date.now() / 500) * intensity;
+            glow.scale.y = 1 + Math.sin(Date.now() / 500) * intensity;
             requestAnimationFrame(animateGlow);
         };
         animateGlow();
 
-        // Title with gradient and outline
+        // Title with different style for hardcore
         const title = new PIXI.Text('BLADE STRIKE', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 64,
-            fill: ['#FFD700', '#FFA500'], // Gold to orange gradient
+            fill: isHardcore ? ['#FF0000', '#8B0000'] : ['#FFD700', '#FFA500'], // Red gradient for hardcore, gold for normal
             fillGradientType: 1,
             fillGradientStops: [0.2, 1],
             stroke: '#000000',
@@ -639,17 +667,45 @@ export class GameScene extends PIXI.Container {
         title.position.set(this.dimensions.width / 2, 100);
         credits.addChild(title);
 
-        // Add pulsing effect to title
+        // Add pulsing effect to title with more intense animation for hardcore
         const animateTitle = () => {
             if (!credits.parent) return;
-            title.scale.x = 1 + Math.sin(Date.now() / 1000) * 0.05;
-            title.scale.y = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            const intensity = isHardcore ? 0.08 : 0.05;
+            title.scale.x = 1 + Math.sin(Date.now() / 1000) * intensity;
+            title.scale.y = 1 + Math.sin(Date.now() / 1000) * intensity;
             requestAnimationFrame(animateTitle);
         };
         animateTitle();
 
-        // Credits text
-        const creditsText = [
+        // Different credits text for hardcore mode
+        const creditsText = isHardcore ? [
+            'INCREDIBLE ACHIEVEMENT!',
+            'You have conquered Blade Strike',
+            'in HARDCORE MODE!',
+            '',
+            'This puts you among the elite few',
+            'who have mastered the game',
+            'without the safety net of healing.',
+            '',
+            'Game Design & Development By:',
+            'Benjamin Schoolland',
+            '',
+            'Music By:',
+            'Suno AI',
+            '',
+            'Your Achievement:',
+            'Blade Strike Hardcore Champion',
+            '',
+            'Special Recognition:',
+            'Your exceptional skill and perseverance',
+            'have earned you a place among',
+            'the greatest warriors.',
+            '',
+            'Thank you for pushing the limits',
+            'of what we thought possible!',
+            '',
+            'A true master of the blade!'
+        ] : [
             'Congratulations!',
             'You have defeated the Final Boss',
             'and completed the game!',
@@ -684,8 +740,12 @@ export class GameScene extends PIXI.Container {
             const text = new PIXI.Text(line, {
                 fontFamily: 'Arial',
                 fontSize: index < 3 ? 32 : 24,
-                fill: index < 3 ? 0xFFD700 : 0xFFFFFF,
-                align: 'center'
+                fill: isHardcore ? 
+                    (index < 3 ? 0xFF0000 : 0xFFFFFF) : // Red for hardcore titles
+                    (index < 3 ? 0xFFD700 : 0xFFFFFF),  // Gold for normal titles
+                align: 'center',
+                stroke: isHardcore && index < 3 ? '#600000' : undefined,
+                strokeThickness: isHardcore && index < 3 ? 2 : 0
             });
             text.anchor.set(0.5);
             text.position.set(this.dimensions.width / 2, yPos);
@@ -696,14 +756,14 @@ export class GameScene extends PIXI.Container {
         // Calculate total height of credits
         const totalCreditsHeight = yPos;
 
-        // Add restart button
+        // Add restart button with different style for hardcore
         const button = new PIXI.Graphics();
-        button.beginFill(0x444444);
+        button.beginFill(isHardcore ? 0x660000 : 0x444444);
         button.drawRoundedRect(0, 0, 150, 50, 10);
         button.endFill();
         button.position.set(
-            this.dimensions.width - 160, // Move to the top right
-            50 // Position it near the top
+            this.dimensions.width - 160,
+            50
         );
         button.interactive = true;
         button.cursor = 'pointer';
@@ -717,7 +777,7 @@ export class GameScene extends PIXI.Container {
         buttonText.position.set(75, 25);
         button.addChild(buttonText);
         
-        button.on('mouseover', () => button.tint = 0x666666);
+        button.on('mouseover', () => button.tint = isHardcore ? 0x880000 : 0x666666);
         button.on('mouseout', () => button.tint = 0xFFFFFF);
         button.on('click', () => {
             this.removeChild(credits);
@@ -732,17 +792,14 @@ export class GameScene extends PIXI.Container {
         // Position text container to start below screen
         textContainer.y = this.dimensions.height;
 
-        // Start credits scroll animation
-        const scrollSpeed = 0.3;
+        // Start credits scroll animation (slightly faster for hardcore)
+        const scrollSpeed = isHardcore ? 0.35 : 0.3;
         const animate = () => {
-            if (!credits.parent) return; // Stop if credits were removed
+            if (!credits.parent) return;
             
-            // Move text container up
             textContainer.y -= scrollSpeed;
             
-            // If all text has scrolled past the top (with extra padding)
             if (textContainer.y < -totalCreditsHeight - 200) {
-                // Reset to below screen with extra padding
                 textContainer.y = this.dimensions.height + 200;
             }
             
@@ -768,6 +825,17 @@ export class GameScene extends PIXI.Container {
         
         // Handle StatsDisplay visibility
         const upgradeScreenVisible = this.upgradeSystem.isUpgradeScreenVisible();
+
+        // Safety check - if we're waiting for upgrade but screen isn't visible after 1 second
+        if (this.waitingForUpgrade && !upgradeScreenVisible && this.player.hasAvailableUpgrade()) {
+            // Force show upgrade selection
+            this.upgradeSystem.forceShowUpgradeSelection(this.waveSystem.getCurrentWaveDefinition().isBossWave, () => {
+                this.player.clearUpgradeAvailable();
+                this.waitingForUpgrade = false;
+                console.log(`Wave ${this.waveSystem.getCurrentWave()} complete! Starting next wave.`);
+                this.startWave(this.waveSystem.getCurrentWave() + 1);
+            });
+        }
 
         // Always update target cursor visibility based on upgrade screen state
         if (this.targetCursor) {

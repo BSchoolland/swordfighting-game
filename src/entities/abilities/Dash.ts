@@ -30,7 +30,12 @@ export class Dash extends BaseAbility {
 
     public tryActivate(): boolean {
         if (super.tryActivate()) {
-            this.owner.setSpeed(this.dashSpeed);
+            const player = this.owner as Player;
+            const speedMultiplier = player.getSpeedMultiplier();
+            const adjustedDashSpeed = this.dashSpeed * speedMultiplier;
+            const adjustedDuration = this.stats.duration / speedMultiplier;
+            
+            this.owner.setBaseSpeedDirectly(adjustedDashSpeed);
             this.dashDirection = this.calculateDashDirection();
             
             // Apply initial dash force
@@ -42,8 +47,8 @@ export class Dash extends BaseAbility {
                 SoundManager.getInstance().playDashSound();
             }
 
-            // Deactivate after duration
-            setTimeout(() => this.deactivate(), this.stats.duration);
+            // Deactivate after adjusted duration
+            setTimeout(() => this.deactivate(), adjustedDuration);
             return true;
         }
         return false;
