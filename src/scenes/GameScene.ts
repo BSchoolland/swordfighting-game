@@ -336,7 +336,7 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        this.waveSystem.setWave(8);
+        // this.waveSystem.setWave(8);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -647,7 +647,7 @@ export class GameScene extends PIXI.Container {
         animateGlow();
 
         // Title with different style for hardcore
-        const title = new PIXI.Text('BLADE STRIKE', {
+        const title = new PIXI.Text('SLASH DASH', {
             fontFamily: 'Arial Black, Arial Bold, Arial',
             fontSize: 64,
             fill: isHardcore ? ['#FF0000', '#8B0000'] : ['#FFD700', '#FFA500'], // Red gradient for hardcore, gold for normal
@@ -680,12 +680,11 @@ export class GameScene extends PIXI.Container {
         // Different credits text for hardcore mode
         const creditsText = isHardcore ? [
             'INCREDIBLE ACHIEVEMENT!',
-            'You have conquered Blade Strike',
+            'You have conquered Slash Dash',
             'in HARDCORE MODE!',
             '',
             'This puts you among the elite few',
-            'who have mastered the game',
-            'without the safety net of healing.',
+            'who have truly mastered the game',
             '',
             'Game Design & Development By:',
             'Benjamin Schoolland',
@@ -694,7 +693,7 @@ export class GameScene extends PIXI.Container {
             'Suno AI',
             '',
             'Your Achievement:',
-            'Blade Strike Hardcore Champion',
+            'Slash Dash Hardcore Champion',
             '',
             'Special Recognition:',
             'Your exceptional skill and perseverance',

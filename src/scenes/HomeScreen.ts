@@ -70,25 +70,10 @@ export class HomeScreen extends PIXI.Container {
         
 
         // Create main title
-        const title = new PIXI.Text('BLADE', {
-            fontFamily: 'Arial Black, Arial Bold, Arial',
-            fontSize: 96,
-            fill: ['#ffffff', '#FFA500'],
-            fillGradientType: 1,
-            fillGradientStops: [0.2, 1],
-            stroke: '#000000',
-            strokeThickness: 8,
-            dropShadow: true,
-            dropShadowColor: '#000000',
-            dropShadowBlur: 6,
-            dropShadowAngle: Math.PI / 4,
-            dropShadowDistance: 8,
-            align: 'center',
-            fontWeight: 'bold'
-        });
+        const title = new PIXI.Sprite(PIXI.Texture.from('src/assets/title.png'));
         title.anchor.set(0.5);
+        title.scale.set(0.5);
         title.position.set(this.dimensions.width / 2, this.dimensions.height / 3);
-        title.filters = [glow];
         // Add pulsing effect to title
         const animateTitle = () => {
             if (!this.parent) return;
@@ -99,28 +84,7 @@ export class HomeScreen extends PIXI.Container {
         animateTitle();
         this.addChild(title);
 
-        // add "STRIKE" Diagonally at the top right of the title
-        const strikeText = new PIXI.Text('STRIKE', {
-            fontFamily: 'Arial Black, Arial Bold, Arial',
-            fontSize: 32,
-            fill: ['#FF4500', '#FF6347'],
-            fillGradientType: 1,
-            fillGradientStops: [0.2, 1],
-            stroke: '#000000',
-            strokeThickness: 8,
-            dropShadow: true,
-            dropShadowColor: '#000000',
-            dropShadowBlur: 6,
-            dropShadowAngle: Math.PI / 4,
-            dropShadowDistance: 8,
-            align: 'center',
-            fontWeight: 'bold'
-        });
-        strikeText.anchor.set(0.5);
-        // rotate the text 45 degrees
-        strikeText.rotation = Math.PI / 4;
-        strikeText.position.set(this.dimensions.width / 2 + 165, this.dimensions.height / 3 - 45);
-        this.addChild(strikeText);
+
 
         // // Create subtitle
         // const subtitle = new PIXI.Text('A Top-Down Action Combat Game', {
@@ -712,20 +676,25 @@ export class HomeScreen extends PIXI.Container {
             }
         } else {
             // Main menu navigation
+            const hasHardcoreToggle = this.selectableElements.length > 2;
             switch (direction) {
                 case 'up':
-                    if (newIndex === 0) newIndex = 1;
-                    else newIndex = 0;
+                    if (newIndex === 0) newIndex = hasHardcoreToggle ? 2 : 1;
+                    else if (newIndex === 1) newIndex = 0;
+                    else if (newIndex === 2) newIndex = 1;
                     break;
                 case 'down':
-                    if (newIndex === 1) newIndex = 0;
-                    else newIndex = 1;
+                    if (newIndex === 2) newIndex = 0;
+                    else if (newIndex === 1) newIndex = hasHardcoreToggle ? 2 : 0;
+                    else if (newIndex === 0) newIndex = 1;
                     break;
                 case 'left':
-                    newIndex = 0;
+                    if (newIndex === 2) newIndex = 1;
+                    else if (newIndex === 1) newIndex = 0;
                     break;
                 case 'right':
-                    newIndex = 1;
+                    if (newIndex === 0) newIndex = 1;
+                    else if (newIndex === 1) newIndex = hasHardcoreToggle ? 2 : 1;
                     break;
             }
         }
@@ -775,8 +744,8 @@ export class HomeScreen extends PIXI.Container {
             // Convert global position back to local position relative to this container
             const localPos = this.toLocal(globalPos);
             
-            // Special adjustment for settings button
-            const isSettingsButton = index === 1;
+            // Check if this is the settings button by its position (top-right corner)
+            const isSettingsButton = element.x > this.dimensions.width - 100 && element.y < 100;
             const offsetX = isSettingsButton ? -17.5 : 0;
             const offsetY = isSettingsButton ? -17.5 : 0;
             
