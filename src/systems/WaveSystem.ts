@@ -546,6 +546,7 @@ export class WaveSystem {
                 SoundManager.getInstance().transitionToNormalMusic();
                 // Don't start next wave if it was the Master of Arms
                 if (waveDef.bossType === 'master') {
+                    this.waveActive = false; // Ensure wave system stays inactive
                     return;
                 }
                 return;

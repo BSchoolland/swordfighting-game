@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { SoundManager } from '../systems/SoundManager';
 import { InputManager } from '../systems/InputManager';
-import { GlowFilter } from '@pixi/filter-glow';
+import titleImage from '../assets/title.png';
 
 
 interface SelectableElement {
@@ -59,18 +59,10 @@ export class HomeScreen extends PIXI.Container {
         // bg.endFill();
 
 
-        // Create glow effect for title
-        const glow = new GlowFilter({
-            color: 0xffffff,
-            distance: 70,
-            outerStrength: 0.75,
-            innerStrength: 0.5,
-            quality: 0.1
-        });
         
 
         // Create main title
-        const title = new PIXI.Sprite(PIXI.Texture.from('src/assets/title.png'));
+        const title = new PIXI.Sprite(PIXI.Texture.from(titleImage));
         title.anchor.set(0.5);
         title.scale.set(0.5);
         title.position.set(this.dimensions.width / 2, this.dimensions.height / 3);

@@ -336,7 +336,11 @@ export class GameScene extends PIXI.Container {
         if (this.waitingForUpgrade) {
             return;
         }
-        // this.waveSystem.setWave(8);
+        // TESTING, final boss wave
+        // this.waveSystem.setWave(15);
+        // // give player crazy sword length
+        // this.player.increaseSwordLength(2);
+        // this.player.increaseSwingSpeed(2);
         // Update score system with new wave
         this.scoreSystem.setWave(waveNumber);
         this.waveSystem.startNextWave();
@@ -595,17 +599,16 @@ export class GameScene extends PIXI.Container {
 
             // Check if it was the Master of Arms
             if (enemy instanceof MasterOfArmsBoss) {
-                // Prevent new upgrades and spawns for 2 seconds
-                this.waitingForUpgrade = true; // This prevents new waves and upgrades
-                
-                // Show credits after the delay
+                // Prevent new waves and upgrades
+                this.waitingForUpgrade = true;
+                // Show credits after the delay, allowing death animation to play
                 setTimeout(() => {
+                    this.isGameOver = true; // Set game over after death animation
+                    this.gameStarted = false;
                     // Set the game completion flag in localStorage
                     localStorage.setItem('gameCompleted', 'true');
                     this.showCredits();
-                    this.isGameOver = true;
-                    this.gameStarted = false;
-                }, 2000); // Wait 2 seconds before ending
+                }, GameScene.BOSS_FREEZE_DURATION + 500); // Wait for freeze frame + a little extra
             }
         } else {
             // Regular enemy death
@@ -679,12 +682,10 @@ export class GameScene extends PIXI.Container {
 
         // Different credits text for hardcore mode
         const creditsText = isHardcore ? [
-            'INCREDIBLE ACHIEVEMENT!',
-            'You have conquered Slash Dash',
-            'in HARDCORE MODE!',
-            '',
-            'This puts you among the elite few',
-            'who have truly mastered the game',
+            'Extra Congratulations!',
+            'You actually did it!',
+            'On HARDCORE mode.  Somehow.',
+            'I truly am impressed.',
             '',
             'Game Design & Development By:',
             'Benjamin Schoolland',
@@ -692,18 +693,11 @@ export class GameScene extends PIXI.Container {
             'Music By:',
             'Suno AI',
             '',
-            'Your Achievement:',
-            'Slash Dash Hardcore Champion',
-            '',
-            'Special Recognition:',
-            'Your exceptional skill and perseverance',
-            'have earned you a place among',
-            'the greatest warriors.',
-            '',
-            'Thank you for pushing the limits',
-            'of what we thought possible!',
-            '',
-            'A true master of the blade!'
+            'No seriously, I never thought anyone would make it this far.',
+            'How low were you at the end there?',
+            'Did you get like 4 legendary upgrades?',
+            'Is my game too easy?',
+            'Anyway, congrats on 100 percent completion, guess you can finally go play something else now',
         ] : [
             'Congratulations!',
             'You have defeated the Final Boss',
@@ -743,7 +737,7 @@ export class GameScene extends PIXI.Container {
                     (index < 3 ? 0xFF0000 : 0xFFFFFF) : // Red for hardcore titles
                     (index < 3 ? 0xFFD700 : 0xFFFFFF),  // Gold for normal titles
                 align: 'center',
-                stroke: isHardcore && index < 3 ? '#600000' : undefined,
+                stroke: isHardcore && index < 3 ? '#600000' : '#000000',
                 strokeThickness: isHardcore && index < 3 ? 2 : 0
             });
             text.anchor.set(0.5);
